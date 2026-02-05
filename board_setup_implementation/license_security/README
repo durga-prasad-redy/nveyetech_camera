@@ -1,0 +1,142 @@
+# License Security - Certificate Provisioning POC
+
+## Overview
+
+This Proof of Concept implements a secure license provisioning system using OpenSSL. It allows a camera device to:
+
+* Generate its own private key and Certificate Signing Request (CSR)
+* Submit the CSR to a trusted server
+* Get back a signed certificate (`device.crt`) or a full chain certificate (`device_fullchain.crt`)
+* Verify the trust chain against the root CA
+
+---
+
+## Folder Structure
+
+```
+license_security/
+├── camera/
+│   ├── generate_device_csr.c       # CSR generation logic
+│   ├── Makefile                    # Build system
+│   ├── openssl/                    # Includes OpenSSL headers and libs
+│   └── keys/                       # Outputs device.key and device.csr
+│
+├── server/
+│   ├── sign_device_csr.sh          # Signs the CSR using Root CA
+│   └── verify_fullchain.sh         # Verifies fullchain against Root CA
+│
+└── rootCerts/
+    ├── create_root_ca.sh          # Generates rootCA.key and rootCA.pem
+    └── certs/                     # Contains the root CA files
+```
+
+---
+
+## 1. Setup Root CA (Server-side)
+
+Run once to create the CA certificate and key:
+
+```bash
+cd rootCerts
+./create_root_ca.sh
+```
+
+Outputs:
+
+* `certs/rootCA.key`
+* `certs/rootCA.pem`
+
+> **Note:** `rootCA.key` and `rootCA.pem` form the Root Certificate Authority. These should be generated **only once**, kept local to the secure signing system, and **must never be shared**.
+
+---
+
+## 2. Generate Device CSR (Camera-side)
+
+Build and run the CSR generator:
+
+```bash
+cd camera
+make
+./generate_device_csr
+```
+
+Outputs:
+
+* `keys/device.key`  (private key, keep securely)
+* `keys/device.csr`  (to be sent to server)
+
+---
+
+## 3. Sign CSR (Server-side)
+
+Sign the device CSR and create both `device.crt` and fullchain:
+
+```bash
+cd server
+./sign_device_csr.sh ../camera/keys/device.csr
+```
+
+Outputs:
+
+* `device.crt`
+* `device_fullchain.crt` (device.crt + rootCA.pem)
+
+---
+
+## 4. Verify Fullchain Certificate (Optional)
+
+Ensure the fullchain is trusted by verifying:
+
+```bash
+./verify_fullchain.sh device_fullchain.crt ../rootCerts/certs/rootCA.pem
+```
+
+---
+
+## Key Terminology
+
+| File                   | Description                       |
+| ---------------------- | --------------------------------- |
+| `device.key`           | Device private key (never shared) |
+| `device.csr`           | Request to be signed by server    |
+| `device.crt`           | Signed certificate from rootCA    |
+| `device_fullchain.crt` | device.crt + rootCA.pem combined  |
+| `rootCA.key`           | Server's private root CA key      |
+| `rootCA.pem`           | Public certificate of the Root CA |
+
+---
+
+## Notes
+
+* `device_fullchain.crt` makes it easier for the client to verify the device identity.
+* Expiry of certificates (default: 365 days) can be updated in `sign_device_csr.sh`.
+* Server does **not** store device private keys.
+* The private key remains strictly on the camera.
+* `rootCA.key` and `rootCA.pem` are sensitive and should remain secure and local to the signing system only.
+
+---
+
+## Real-World Example: Why `device.key` is Important
+
+* `device.key` is like a secret signature pen owned only by the camera. It never leaves the device.
+* When a client (like a server or app) connects to the camera, it says: "Prove you are real."
+* The camera signs a message using `device.key`, and sends that along with `device_fullchain.crt`.
+* The client uses `device_fullchain.crt` to:
+
+  * Verify that the signature is valid.
+  * Verify that the chain ends in a known trusted root (via rootCA).
+
+This proves the camera is genuine **without ever revealing** its private key.
+
+If someone else got the `device.key`, they could pretend to be the camera — so **it must remain private and secure.**
+
+---
+
+## License
+
+This POC is for internal development and evaluation purposes only.
+
+Author: Shah Rikin R.
+Date: 25 June 2025
+---
+

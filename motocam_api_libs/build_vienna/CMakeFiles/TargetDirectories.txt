@@ -1,0 +1,3 @@
+/home/sr/durgaws/vatics/vatics_sdk/sdk/apps/motocam_api_libs/build_vienna/CMakeFiles/motocam_apis.dir
+/home/sr/durgaws/vatics/vatics_sdk/sdk/apps/motocam_api_libs/build_vienna/CMakeFiles/edit_cache.dir
+/home/sr/durgaws/vatics/vatics_sdk/sdk/apps/motocam_api_libs/build_vienna/CMakeFiles/rebuild_cache.dir
