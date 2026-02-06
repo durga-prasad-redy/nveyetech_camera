@@ -79,7 +79,9 @@ void load_snapshot()
 
         char *key = line;
         char *val = eq + 1;
-        val[strcspn(val, "\n")] = 0;
+	char *newline = strchr(val, '\n');
+	if (newline)
+		*newline = '\0';
 
         strncpy(entries[entry_count].key, key, sizeof(entries[entry_count].key));
         strncpy(entries[entry_count].value, val, sizeof(entries[entry_count].value));
