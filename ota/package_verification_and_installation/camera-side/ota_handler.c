@@ -225,10 +225,11 @@ int set_config_file_var(const char *var, const char *val) {
     }
     fclose(fp);
 
-    size_t len = strcspn(read_back, "\n");
-    if (len< VALUE_SIZE)
-    // Remove trailing newline if present
-        read_back[len] = 0;
+    read_back[sizeof(read_back) - 1] = '\0';           // belt-and-suspenders NUL
+    size_t len = strcspn(read_back, "\n");             // safe now: always terminates
+    if (len >= sizeof(read_back))                      // paranoid clamp (analyzer-friendly)
+        len = sizeof(read_back) - 1;
+    read_back[len] = '\0';
 
     if (strcmp(read_back, val) != 0) {
         fprintf(stderr, "Verification failed: Expected '%s', Got '%s'\n", val, read_back);
