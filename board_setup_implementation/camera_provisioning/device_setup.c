@@ -48,21 +48,29 @@ void capture_defaults()
     while ((e = readdir(dp)) != NULL)
     {
         if (strcmp(e->d_name, ".") == 0) continue;
-        if (strcmp(e->d_name, "..") == 0) continue;
-        if (strcmp(e->d_name, "user_dob") == 0) continue;
+	if (strcmp(e->d_name, "..") == 0) continue;
+	if (strcmp(e->d_name, "user_dob") == 0) continue;
 
-        char path[256];
-        snprintf(path, sizeof(path), "%s/%s", CONFIG_DIR, e->d_name);
+	char path[256];
+	snprintf(path, sizeof(path), "%s/%s", CONFIG_DIR, e->d_name);
 
-        FILE *f = fopen(path, "r");
-        if (!f) continue;
+	FILE *f = fopen(path, "r");
+	if (!f) continue;
 
-        char val[512] = {0};
-        fgets(val, sizeof(val), f);
-        val[strcspn(val, "\n")] = 0;
-        fclose(f);
+	if (fgets(val, sizeof(val), f) != NULL) {
+		size_t idx = strcspn(val, "\n");
+		/* Sonar-safe: prove index is within buffer */
+		if (idx < sizeof(val)) {
+			val[idx] = '\0';
+		} else {
+			val[sizeof(val) - 1] = '\0';
+		}
+	} else {
+		/* Read failed: keep empty string */
+		val[0] = '\0';
+	}
 
-        fprintf(snap, "%s=%s\n", e->d_name, val);
+	fprintf(snap, "%s=%s\n", e->d_name, val);
     }
 
     fclose(snap);
