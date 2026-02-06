@@ -47,7 +47,9 @@ int validate_date_string(const char* date_str) {
     if (day < 1 || day > get_days_in_month(month, year)) return -2;
 
     time_t t = time(NULL);
-    struct tm *now = localtime(&t);
+    struct tm tm_buf;
+    struct tm *now = localtime_r(&t, &tm_buf);
+    if (!now) return -1;
     int current_year = now->tm_year + 1900;
     int current_month = now->tm_mon + 1;
     int current_day = now->tm_mday;
