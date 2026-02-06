@@ -95,6 +95,7 @@ int sign_with_private_key(const char *data_path, const char *key_path, const cha
     }
 
     sig_file = fopen(sig_path, "wb");
+    if (!sig_file) goto cleanup;
     fwrite(sig, 1, sig_len, sig_file);
 
     ret = 0;
