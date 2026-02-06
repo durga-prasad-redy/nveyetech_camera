@@ -1,0 +1,3 @@
+first execute below cmd:
+1. tar -xzvf certs.tar.gz
+2. make the bins in camera-side and web-side folder.
