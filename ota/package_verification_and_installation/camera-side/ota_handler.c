@@ -17,8 +17,15 @@
 
 void log_msg(const char *msg) {
     time_t now = time(NULL);
+    struct tm tm_info;
+
     char buf[32];
-    strftime(buf, sizeof(buf), "%F %T", localtime(&now));
+    if (localtime_r(&now, &tm_info) != NULL) {
+        strftime(buf, sizeof(buf), "%F %T", &tm_info);
+    } else {
+        snprintf(buf, sizeof(buf), "unknown-time");
+    }
+
     printf("[%s] %s\n", buf, msg);
 }
 
@@ -80,8 +87,11 @@ int backup_files_from_list() {
     }
 
     char path[e_SIZE_512];
+    size_t len = 0;
     while (fgets(path, sizeof(path), fp)) {
-        path[strcspn(path, "\n")] = 0;
+        len = strcspn(path, "\n");
+        if (len < e_SIZE_512)
+            path[len] = 0;
         if (strlen(path) == 0) continue;
 
         char src[e_SIZE_512], dst[e_SIZE_512], mkdir_cmd[e_SIZE_512];
@@ -128,8 +138,11 @@ int rollback_partial() {
     }
 
     char path[e_SIZE_512];
+    size_t len = 0;
     while (fgets(path, sizeof(path), fp)) {
-        path[strcspn(path, "\n")] = 0;
+        len = strcspn(path, "\n");
+        if (len< e_SIZE_512)
+            path[len] = 0;
         if (strlen(path) == 0) continue;
 
         char src[e_SIZE_512], dst[e_SIZE_512];
@@ -212,8 +225,10 @@ int set_config_file_var(const char *var, const char *val) {
     }
     fclose(fp);
 
+    size_t len = strcspn(read_back, "\n");
+    if (len< VALUE_SIZE)
     // Remove trailing newline if present
-    read_back[strcspn(read_back, "\n")] = 0;
+        read_back[len] = 0;
 
     if (strcmp(read_back, val) != 0) {
         fprintf(stderr, "Verification failed: Expected '%s', Got '%s'\n", val, read_back);
@@ -278,7 +293,8 @@ int verify_and_extract_ota_archive() {
         return e_OTA_ERR_FILE_NOT_FOUND;
     }
     pclose(fp);
-    strtok(full_path, "\n");  // Remove newline
+    char *saveptr = NULL;
+    strtok_r(full_path, "\n", &saveptr);  // Remove newline
 
     // Step 2: Extract hash from filename
     char *dot = strrchr(full_path, '.');
