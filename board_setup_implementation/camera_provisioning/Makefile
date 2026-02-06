@@ -25,9 +25,6 @@ BINARIES := device_setup
 all: $(BINARIES)
 
 # Build set_mac_uboot
-set_mac_uboot: set_mac_uboot.c
-	$(CC) $(CFLAGS) -o $@ $<
-
 device_setup: device_setup.c
 	$(CC) $(CFLAGS) -o $@ $<
 
