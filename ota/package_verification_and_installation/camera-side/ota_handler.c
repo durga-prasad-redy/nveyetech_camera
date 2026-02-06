@@ -319,7 +319,7 @@ int verify_and_extract_ota_archive() {
         return e_OTA_ERR_HASH_FAILED;
     }
     pclose(fp);
-    strtok(computed_hash, " ");  // Remove trailing content
+    strtok_r(computed_hash, " ", &saveptr);  // Remove trailing content
 
     // Step 5: Compare
     if (strncmp(hash_from_filename, computed_hash, 64) != 0) {
