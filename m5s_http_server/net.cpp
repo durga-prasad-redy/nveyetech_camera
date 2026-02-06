@@ -65,19 +65,7 @@ static SessionManager *g_session_manager = NULL;
 class WebServer;
 static WebServer *g_web_server = NULL;
 
-int ui_event_next(int no, struct ui_event *e)
-{
-    if (no < 0 || no >= MAX_EVENTS_NO)
-        return 0;
 
-    srand((unsigned)no);
-    e->type = (uint8_t)rand() % 4;
-    e->prio = (uint8_t)rand() % 3;
-    e->timestamp = (unsigned long)(time(NULL) - 86400 + no * 300 + (rand() % 300));
-
-    snprintf(e->text, MAX_EVENT_TEXT_SIZE, "event#%d", no);
-    return no + 1;
-}
 
 static std::string read_file_content(const std::string &path)
 {
@@ -336,7 +324,8 @@ static int handle_login(struct mg_connection *conn, const struct mg_request_info
     uint8_t byteArray[256];
     int byteArrayLen = 0;
 
-    char *token = strtok(post_data, " ");
+    char *saveptr;
+    char *token = strtok_r(post_data, " ", &saveptr);
     while (token != NULL && byteArrayLen < 256)
     {
         if (strncmp(token, "0x", 2) == 0 || strncmp(token, "0X", 2) == 0)
@@ -344,7 +333,7 @@ static int handle_login(struct mg_connection *conn, const struct mg_request_info
             uint8_t value = (uint8_t)strtol(token, NULL, 16);
             byteArray[byteArrayLen++] = value;
         }
-        token = strtok(NULL, " ");
+        token = strtok_r(NULL, " ", &saveptr);
     }
 
     uint8_t *res_bytes = nullptr;
@@ -458,7 +447,8 @@ static int handle_force_logout_others(struct mg_connection *conn, const struct m
     uint8_t byteArray[256];
     int byteArrayLen = 0;
 
-    char *token = strtok(post_data, " ");
+    char *saveptr;
+    char *token = strtok_r(post_data, " ", &saveptr);
     while (token != NULL && byteArrayLen < 256)
     {
         if (strncmp(token, "0x", 2) == 0 || strncmp(token, "0X", 2) == 0)
@@ -466,7 +456,7 @@ static int handle_force_logout_others(struct mg_connection *conn, const struct m
             uint8_t value = (uint8_t)strtol(token, NULL, 16);
             byteArray[byteArrayLen++] = value;
         }
-        token = strtok(NULL, " ");
+        token = strtok_r(NULL, " ", &saveptr);
     }
 
     if (byteArrayLen == 0)
@@ -547,7 +537,8 @@ static int handle_motocam_api(struct mg_connection *conn, const struct mg_reques
     uint8_t byteArray[256];
     int byteArrayLen = 0;
 
-    char *token = strtok(post_data, " ");
+    char *saveptr;
+    char *token = strtok_r(post_data, " ", &saveptr);
     while (token != NULL && byteArrayLen < 256)
     {
         if (strncmp(token, "0x", 2) == 0 || strncmp(token, "0X", 2) == 0)
@@ -555,7 +546,7 @@ static int handle_motocam_api(struct mg_connection *conn, const struct mg_reques
             uint8_t value = (uint8_t)strtol(token, NULL, 16);
             byteArray[byteArrayLen++] = value;
         }
-        token = strtok(NULL, " ");
+        token = strtok_r(NULL, " ", &saveptr);
     }
 
     uint8_t *res_bytes = nullptr;
@@ -603,7 +594,8 @@ static int handle_reset_pin(struct mg_connection *conn, const struct mg_request_
     uint8_t byteArray[256];
     int byteArrayLen = 0;
 
-    char *token = strtok(post_data, " ");
+    char *saveptr;
+    char *token = strtok_r(post_data, " ", &saveptr);
     while (token != NULL && byteArrayLen < 256)
     {
         if (strncmp(token, "0x", 2) == 0 || strncmp(token, "0X", 2) == 0)
@@ -611,7 +603,7 @@ static int handle_reset_pin(struct mg_connection *conn, const struct mg_request_
             uint8_t value = (uint8_t)strtol(token, NULL, 16);
             byteArray[byteArrayLen++] = value;
         }
-        token = strtok(NULL, " ");
+        token = strtok_r(NULL, " ", &saveptr);
     }
     uint8_t prefix[] = {1, 6, 2};
     if(!response_body_prefix_check(byteArray, byteArrayLen, prefix, 3))
@@ -663,7 +655,8 @@ static int handle_firmware_version(struct mg_connection *conn, const struct mg_r
     uint8_t byteArray[256];
     int byteArrayLen = 0;
 
-    char *token = strtok(post_data, " ");
+    char *saveptr;
+    char *token = strtok_r(post_data, " ", &saveptr);
     while (token != NULL && byteArrayLen < 256)
     {
         if (strncmp(token, "0x", 2) == 0 || strncmp(token, "0X", 2) == 0)
@@ -671,7 +664,7 @@ static int handle_firmware_version(struct mg_connection *conn, const struct mg_r
             uint8_t value = (uint8_t)strtol(token, NULL, 16);
             byteArray[byteArrayLen++] = value;
         }
-        token = strtok(NULL, " ");
+        token = strtok_r(NULL, " ", &saveptr);
     }
     uint8_t prefix[] = {2, 6, 2};
     if(!response_body_prefix_check(byteArray, byteArrayLen, prefix, 3))
