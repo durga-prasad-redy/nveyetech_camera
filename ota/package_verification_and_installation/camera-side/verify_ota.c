@@ -152,7 +152,7 @@ int is_version_upgrade_valid(const char *new_version, const char *current_versio
 
 unsigned char* base64_decode(const char *b64_input, size_t *out_len) {
     BIO *b64 = BIO_new(BIO_f_base64());
-    BIO *bmem = BIO_new_mem_buf((void*)b64_input, -1);
+    BIO *bmem = BIO_new_mem_buf((const void*)b64_input, -1);
     bmem = BIO_push(b64, bmem);
     BIO_set_flags(bmem, BIO_FLAGS_BASE64_NO_NL);
     size_t buf_size = strlen(b64_input);
@@ -244,6 +244,13 @@ int main() {
     if (!fp) { perror("manifest"); return 1; }
     fseek(fp, 0, SEEK_END);
     long len = ftell(fp);
+    if (len <= 0) {   // catches -1 AND 0
+
+        fprintf(stderr, "Manifest file is empty or unreadable\n");
+        fclose(fp);
+        return 1;
+    }
+
     rewind(fp);
     char *json = malloc(len + 1);
     if (!json) { perror("malloc"); fclose(fp); return 1; }
