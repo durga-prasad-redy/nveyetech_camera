@@ -181,8 +181,11 @@ static uint8_t get_gpio_value(int gpio_pin)
     }
     fclose(fp);
 
-    // Remove newline if present
-    value[strcspn(value, "\n")] = '\0';
+    size_t len = strcspn(value, "\n");
+    if ( len < sizeof(value)) {
+        // Remove newline if present
+        value[len] = '\0';
+    }
 
     if (strcmp(value, "1") == 0) {
         return 1;
@@ -231,8 +234,11 @@ static int read_ota_status(char *buf, size_t len)
         fclose(fp);
         return -1;
     }
+    size_t buf_len = strcspn(buf, "\n");
 
-    buf[strcspn(buf, "\n")] = '\0';
+    if (buf_len < len)
+        buf[buf_len] = '\0';
+
     fclose(fp);
     return 0;
 }

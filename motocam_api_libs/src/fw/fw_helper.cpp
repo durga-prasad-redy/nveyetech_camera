@@ -22,10 +22,10 @@ const TempSensorData tempSensorTable[] = {
 const size_t tempSensorTableSize =
     sizeof(tempSensorTable) / sizeof(tempSensorTable[0]);
 
-uint16_t get_sysfs_read_val(const char *module)
+uint16_t get_sysfs_read_val(const char *module_name)
 {
   int val = 0;
-  FILE *file = fopen(module, "r");
+  FILE *file = fopen(module_name, "r");
 
   if (file == NULL)
   {
