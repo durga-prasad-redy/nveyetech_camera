@@ -190,7 +190,12 @@ int update_hotspot_ssid(const char *mac) {
     }
     fclose(fp);
 
-    base_ssid[strcspn(base_ssid, "\n")] = '\0';  // Strip newline
+    size_t idx = strcspn(base_ssid, "\n");
+    if (idx < sizeof(base_ssid)) {
+	    base_ssid[idx] = '\0';
+    } else {
+	    base_ssid[sizeof(base_ssid) - 1] = '\0';
+    }
 
     char mac_clean[32];
     int j = 0;
