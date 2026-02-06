@@ -47,49 +47,72 @@ int sha256sum(const char *filename, char *out_hex) {
 
 // Signs a file using RSA and writes binary signature
 int sign_with_private_key(const char *data_path, const char *key_path, const char *sig_path) {
-    FILE *key_file = fopen(key_path, "r");
-    if (!key_file) return -1;
 
-    EVP_PKEY *pkey = PEM_read_PrivateKey(key_file, NULL, NULL, NULL);
-    fclose(key_file);
-    if (!pkey) return -1;
+    FILE *key_file = NULL;
 
-    FILE *data_file = fopen(data_path, "rb");
-    if (!data_file) return -1;
+    FILE *data_file = NULL;
 
-    EVP_MD_CTX *md_ctx = EVP_MD_CTX_new();
+    FILE *sig_file = NULL;
+
+    EVP_PKEY *pkey = NULL;
+
+    EVP_MD_CTX *md_ctx = NULL;
+
+    unsigned char *sig = NULL;
+
+    int ret = -1;
+    
+    key_file = fopen(key_path, "r");
+    if (!key_file) goto cleanup;
+
+    pkey = PEM_read_PrivateKey(key_file, NULL, NULL, NULL);
+    if (!pkey) goto cleanup;
+
+    data_file = fopen(data_path, "rb");
+    if (!data_file) goto cleanup;
+
+    md_ctx = EVP_MD_CTX_new();
     if (!md_ctx) {
-        fclose(data_file);
-        return -1;
+        goto cleanup;
     }
 
     if (EVP_DigestSignInit(md_ctx, NULL, EVP_sha256(), NULL, pkey) != 1) {
-        free(md_ctx);
-        fclose(data_file);
-        return -1;
+        goto cleanup;
     }
 
     unsigned char buffer[8192];
     size_t len;
     while ((len = fread(buffer, 1, sizeof(buffer), data_file)) > 0) {
-        if (EVP_DigestSignUpdate(md_ctx, buffer, len) != 1) return -1;
+        if (EVP_DigestSignUpdate(md_ctx, buffer, len) != 1) goto cleanup;
     }
-    fclose(data_file);
 
     size_t sig_len;
     EVP_DigestSignFinal(md_ctx, NULL, &sig_len);
-    unsigned char *sig = malloc(sig_len);
+    sig = malloc(sig_len);
 
-    if (EVP_DigestSignFinal(md_ctx, sig, &sig_len) != 1) return -1;
+    if (EVP_DigestSignFinal(md_ctx, sig, &sig_len) != 1) {
+        goto cleanup;
+    }
 
-    FILE *sig_file = fopen(sig_path, "wb");
+    sig_file = fopen(sig_path, "wb");
     fwrite(sig, 1, sig_len, sig_file);
-    fclose(sig_file);
 
-    EVP_MD_CTX_free(md_ctx);
-    EVP_PKEY_free(pkey);
-    free(sig);
-    return 0;
+    ret = 0;
+cleanup:
+
+    if (sig_file) fclose(sig_file);
+
+    if (data_file) fclose(data_file);
+
+    if (key_file) fclose(key_file);
+
+    if (md_ctx) EVP_MD_CTX_free(md_ctx);
+
+    if (pkey) EVP_PKEY_free(pkey);
+
+    if (sig) free(sig);
+
+    return ret;
 }
 
 // Base64 encodes a binary file
