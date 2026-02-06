@@ -210,7 +210,9 @@ int version_check(char *json) {
         return 1;
     }
     fclose(vf);
-    cur_version[strcspn(cur_version, "\r\n")] = 0;
+    char *newline = strpbrk(cur_version, "\r\n");
+    if (newline)
+	    *newline = '\0';
 
     printf("[*] Current Version : %s\n", cur_version);
     printf("[*] OTA Version     : %s\n", new_version);
