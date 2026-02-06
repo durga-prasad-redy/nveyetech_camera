@@ -52,7 +52,17 @@ static void move_to_head(LRUCache *cache, CacheNode *node)
 
 static CacheNode *pop_tail(LRUCache *cache)
 {
+    if (!cache || !cache->tail)
+        return nullptr;
+    
     CacheNode *last_node = cache->tail->prev;
+    if (!last_node || last_node == cache->head)
+        return nullptr;
+    
+    // Ensure the node has valid prev/next pointers before removing
+    if (!last_node->prev || !last_node->next)
+        return nullptr;
+    
     remove_node(last_node);
     return last_node;
 }
@@ -205,10 +215,13 @@ void lru_put(LRUCache *cache, const std::string &key, SessionContext *value)
         if (cache->size == cache->capacity)
         {
             CacheNode *tail = pop_tail(cache);
-            add_to_eviction_queue(cache, tail->key, tail->value,CAPACITY_LIMIT);
-            hash_remove(cache, tail->key);
-            free_cache_node(tail);
-            cache->size--;
+            if (tail)
+            {
+                add_to_eviction_queue(cache, tail->key, tail->value,CAPACITY_LIMIT);
+                hash_remove(cache, tail->key);
+                free_cache_node(tail);
+                cache->size--;
+            }
         }
 
         add_to_head(cache, new_node);
@@ -237,6 +250,8 @@ void lru_evict_all(LRUCache *cache, const std::string &key, SessionContext *valu
         while (cache->size > 1)
         {
             CacheNode *tail = pop_tail(cache);
+            if (!tail)
+                break;
             add_to_eviction_queue(cache, tail->key, tail->value,CRITICAL_ACTION);
             printf("evicting key:%s\n", tail->key.c_str());
             hash_remove(cache, tail->key);

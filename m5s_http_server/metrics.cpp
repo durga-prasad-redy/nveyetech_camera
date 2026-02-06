@@ -264,7 +264,11 @@ static bool is_process_running(const char *name)
             char comm[128];
             if (fgets(comm, sizeof(comm), f))
             {
-                comm[strcspn(comm, "\n")] = 0;
+                size_t len = strcspn(comm, "\n");
+                if (len < sizeof(comm))
+                {
+                    comm[len] = 0;
+                }
                 // Check exact match
                 if (strcmp(comm, name) == 0)
                 {
