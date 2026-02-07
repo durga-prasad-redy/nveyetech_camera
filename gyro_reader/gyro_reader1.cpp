@@ -111,6 +111,7 @@ int main(int argc __attribute__((unused)), char* argv[] __attribute__((unused)))
 
     if(init_output_scm(GYRO_BUFFER_PIN)<0) {
         printf("init gyro_reader failed!\n");
+        //printf("init gyro_reader failed!\n");
         exit(0);
     }
 
