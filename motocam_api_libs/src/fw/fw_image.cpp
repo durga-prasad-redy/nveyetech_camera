@@ -76,9 +76,8 @@ static void send_ir_event(uint8_t old_ir, uint8_t new_ir)
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, IR_SOCK_PATH,
-            sizeof(addr.sun_path) - 1);
 
+snprintf(addr.sun_path, sizeof(addr.sun_path),"%s", IR_SOCK_PATH);
     ir_event_t evt;
     evt.old_ir = old_ir;
     evt.new_ir = new_ir;
@@ -684,9 +683,9 @@ static void send_misc_event(uint8_t old_misc, uint8_t new_misc)
   struct sockaddr_un addr;
   memset(&addr, 0, sizeof(addr));
   addr.sun_family = AF_UNIX;
-  strncpy(addr.sun_path, MISC_SOCK_PATH,
-          sizeof(addr.sun_path) - 1);
 
+snprintf(addr.sun_path, sizeof(addr.sun_path),
+         "%s", MISC_SOCK_PATH);
   misc_event_t evt;
   evt.old_misc = old_misc;
   evt.new_misc = new_misc;

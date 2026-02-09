@@ -226,7 +226,7 @@ int8_t get_camera_name(char *camera_name)
   {
     output.pop_back();
   }
-  strcpy(camera_name, output.c_str());
+  snprintf(camera_name, 32, "%s", output.c_str());
   pthread_mutex_unlock(&lock);
   return 0;
 }
@@ -234,7 +234,8 @@ int8_t get_firmware_version(char *firmware_version)
 {
   pthread_mutex_lock(&lock);
   std::string output = exec(GET_FIRMWARE_VERSION);
-  strcpy(firmware_version, output.c_str());
+  snprintf(firmware_version, 32, "%s", output.c_str());
+  
   printf("firmware-version %s\n", firmware_version);
   pthread_mutex_unlock(&lock);
   return 0;
@@ -243,7 +244,8 @@ int8_t get_mac_address(char *mac_address)
 {
   pthread_mutex_lock(&lock);
   std::string output = exec(GET_MAC_ADDRESS);
-  strcpy(mac_address, output.c_str());
+  snprintf(mac_address, 18, "%s", output.c_str());
+  
   printf("mac-address %s\n", mac_address);
 
   pthread_mutex_unlock(&lock);
@@ -253,7 +255,8 @@ int8_t get_ota_update_status(char *ota_status)
 {
   pthread_mutex_lock(&lock);
   std::string output = exec(GET_OTA_STATUS);
-  strcpy(ota_status, output.c_str());
+  snprintf(ota_status, 32, "%s", output.c_str());
+  
   printf("ota_status %s\n", ota_status);
 
   pthread_mutex_unlock(&lock);
@@ -263,7 +266,8 @@ int8_t get_factory_reset_status(char *factory_reset_status)
 {
   pthread_mutex_lock(&lock);
   std::string output = exec(GET_FACTORY_RESET_STATUS);
-  strcpy(factory_reset_status, output.c_str());
+  snprintf(factory_reset_status, 32, "%s", output.c_str());
+  
   printf("factory_reset_status %s\n", factory_reset_status);
 
   pthread_mutex_unlock(&lock);
@@ -277,7 +281,7 @@ int8_t get_login_pin(char *loginPin)
   {
     output.pop_back();
   }
-  strcpy(loginPin, output.c_str());
+  snprintf(loginPin, 32, "%s", output.c_str());
 
   pthread_mutex_unlock(&lock);
   return 0;
