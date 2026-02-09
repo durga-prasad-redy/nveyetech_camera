@@ -9,17 +9,14 @@ int8_t set_streaming_command(const uint8_t sub_command, const uint8_t data_lengt
     switch (sub_command)
     {
     case START_STREAMING:
-        set_streaming_start(data_length, data);
-        break;
+        return set_streaming_start(data_length, data);
     case STOP_STREAMING:
-        set_streaming_stop(data_length, data);
-        break;
+        return set_streaming_stop(data_length, data);
+        
     case START_WEBRTC_STREAMING:
         return start_webrtc_streaming_l1(data_length, data);
-        break;
     case STOP_WEBRTC_STREAMING:
         return stop_webrtc_streaming_l1(data_length, data);
-        break;
     default:
         printf("invalid sub command\n");
         return -4;

@@ -64,18 +64,22 @@ int exec_return(const char *cmd)
 
 int is_running(const char *process_name)
 {
-    DIR *proc = opendir("/proc");
-    if (!proc)
-        return 0;
-
+    DIR *proc;
     struct dirent *ent;
     char path[256];
     char comm[256];
 
+    if (!process_name || *process_name == '\0')
+        return 0;
+
+    proc = opendir("/proc");
+    if (!proc)
+        return 0;
+
     while ((ent = readdir(proc)) != NULL)
     {
-        // Only numeric directories (PIDs)
-        if (!isdigit(ent->d_name[0]))
+        /* Only numeric directory names = PIDs */
+        if (!isdigit((unsigned char)ent->d_name[0]))
             continue;
 
         snprintf(path, sizeof(path), "/proc/%s/comm", ent->d_name);
@@ -86,14 +90,16 @@ int is_running(const char *process_name)
 
         if (fgets(comm, sizeof(comm), fp))
         {
-            // Remove trailing newline
-            comm[strcspn(comm, "\n")] = '\0';
+            /* Remove trailing newline safely */
+            char *nl = strchr(comm, '\n');
+            if (nl)
+                *nl = '\0';
 
             if (strcmp(comm, process_name) == 0)
             {
                 fclose(fp);
                 closedir(proc);
-                return 1;  // found
+                return 1;   /* found */
             }
         }
 
@@ -101,9 +107,8 @@ int is_running(const char *process_name)
     }
 
     closedir(proc);
-    return 0;  // not found
+    return 0;   /* not found */
 }
-
 
 int8_t get_mode()
 {
