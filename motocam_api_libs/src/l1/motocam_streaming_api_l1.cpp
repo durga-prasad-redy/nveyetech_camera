@@ -24,7 +24,6 @@ int8_t set_streaming_command(const uint8_t sub_command, const uint8_t data_lengt
         printf("invalid sub command\n");
         return -4;
     }
-    return 0;
 }
 
 int8_t get_streaming_command(const uint8_t sub_command, const uint8_t data_length, const uint8_t *data,
@@ -41,7 +40,6 @@ int8_t get_streaming_command(const uint8_t sub_command, const uint8_t data_lengt
         printf("invalid sub command\n");
         return -4;
     }
-    return 0;
 }
 int8_t set_streaming_start(const uint8_t data_length, const uint8_t *data)
 {

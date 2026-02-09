@@ -392,7 +392,6 @@ int8_t login_with_pin_l2(const uint8_t pinLength, const uint8_t *loginPin,
     return -3;
   }
 
-  return -3;
 }
 
 static bool is_leap_year(int year) {

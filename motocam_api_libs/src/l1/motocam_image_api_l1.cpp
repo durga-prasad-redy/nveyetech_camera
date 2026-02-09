@@ -49,7 +49,6 @@
         printf("invalid sub command\n");
         return -4;
     }
-    return 0;
 }
 
 int8_t set_image_zoom_l1(const uint8_t data_length, const uint8_t *data)
@@ -318,7 +317,6 @@ int8_t get_image_command(const uint8_t sub_command, const uint8_t data_length, c
         printf("invalid sub command\n");
         return -4;
     }
-    return 0;
 }
 
 int8_t get_image_zoom_l1(const uint8_t data_length, const uint8_t *data, uint8_t **res_data_bytes, uint8_t *res_data_bytes_size)

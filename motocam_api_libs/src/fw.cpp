@@ -2,6 +2,7 @@
 // Created by sr on 05/06/22.
 //
 #include "fw.h"
+#include <dirent.h>
 
 pthread_mutex_t lock;
 
@@ -61,27 +62,48 @@ int exec_return(const char *cmd)
 
 
 
-
 int is_running(const char *process_name)
 {
-  char cmd[128], buf[512];
-  FILE *fp;
+    DIR *proc = opendir("/proc");
+    if (!proc)
+        return 0;
 
-  snprintf(cmd, sizeof(cmd), "ps -e | grep -w %s | grep -v grep", process_name);
-  fp = popen(cmd, "r");
-  if (fp == NULL)
-    return 0;
+    struct dirent *ent;
+    char path[256];
+    char comm[256];
 
-  while (fgets(buf, sizeof(buf), fp) != NULL)
-  {
-    // Found matching process
-    pclose(fp);
-    return 1;
-  }
+    while ((ent = readdir(proc)) != NULL)
+    {
+        // Only numeric directories (PIDs)
+        if (!isdigit(ent->d_name[0]))
+            continue;
 
-  pclose(fp);
-  return 0;
+        snprintf(path, sizeof(path), "/proc/%s/comm", ent->d_name);
+
+        FILE *fp = fopen(path, "r");
+        if (!fp)
+            continue;
+
+        if (fgets(comm, sizeof(comm), fp))
+        {
+            // Remove trailing newline
+            comm[strcspn(comm, "\n")] = '\0';
+
+            if (strcmp(comm, process_name) == 0)
+            {
+                fclose(fp);
+                closedir(proc);
+                return 1;  // found
+            }
+        }
+
+        fclose(fp);
+    }
+
+    closedir(proc);
+    return 0;  // not found
 }
+
 
 int8_t get_mode()
 {

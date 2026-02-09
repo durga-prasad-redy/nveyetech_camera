@@ -32,7 +32,6 @@ int8_t set_network_command(const uint8_t sub_command, const uint8_t data_length,
         printf("invalid sub command\n");
         return -4;
     }
-    return 0;
 }
 
 /*int8_t set_network_IPAddressSubnetMask(const uint8_t data_length, const uint8_t *data) {
@@ -151,7 +150,6 @@ int8_t get_network_command(const uint8_t sub_command, const uint8_t data_length,
         printf("invalid sub command\n");
         return -4;
     }
-    return 0;
 }
 // asdfasdfasdf /
 /*int8_t get_network_IPAddressSubnetMask(const uint8_t data_length, const uint8_t *data, uint8_t **res_data_bytes, uint8_t *res_data_bytes_size) {

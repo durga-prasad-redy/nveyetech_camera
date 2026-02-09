@@ -61,7 +61,6 @@ int8_t set_command(const uint8_t command, const uint8_t sub_command, const uint8
         printf("invalid command\n");
         return -3;
     }
-    return 0;
 }
 
 int8_t get_command(const uint8_t command, const uint8_t sub_command, const uint8_t data_length, const uint8_t *data,
@@ -85,5 +84,4 @@ int8_t get_command(const uint8_t command, const uint8_t sub_command, const uint8
         printf("invalid command\n");
         return -3;
     }
-    return 0;
 }

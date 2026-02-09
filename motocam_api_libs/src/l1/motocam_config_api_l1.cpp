@@ -26,7 +26,6 @@ int8_t set_config_command(const uint8_t sub_command, const uint8_t data_length, 
         printf("invalid sub command\n");
         return -4;
     }
-    return 0;
 }
 
 
@@ -117,7 +116,6 @@ int8_t get_config_command(const uint8_t sub_command, const uint8_t data_length, 
         printf("invalid sub command\n");
         return -4;
     }
-    return 0;
 }
 
 int8_t get_config_factory(const uint8_t data_length, const uint8_t *data, uint8_t **res_data_bytes, uint8_t *res_data_bytes_size)
