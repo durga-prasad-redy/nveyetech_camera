@@ -44,13 +44,11 @@ int8_t get_wifi_hotspot_config(char *ssid, uint8_t *encryption_type,
   std::string output_ip_address = exec(GET_WIFI_HOTSPOT_IPADDRESS);
   std::string output_subnetmask = exec(GET_WIFI_HOTSPOT_SUBNETMASK);
 
-  strcpy(ssid, output_ssid.c_str());
-  *encryption_type = (uint8_t)atoi(output_encryption_type.c_str());
-  strcpy(encryption_key, output_encryption_key.c_str());
-  strcpy(ip_address, output_ip_address.c_str());
-  strcpy(subnetmask, output_subnetmask.c_str());
-
-  printf("------------------ipaddress %s\n", output_ip_address.c_str());
+  snprintf(ssid, 32, "%s", output_ssid.c_str());
+  snprintf((char *)encryption_type, sizeof(uint8_t), "%d", atoi(output_encryption_type.c_str()));
+  snprintf(encryption_key, 32, "%s", output_encryption_key.c_str());
+  snprintf(ip_address, 16, "%s", output_ip_address.c_str());
+  snprintf(subnetmask, 16, "%s", output_subnetmask.c_str());
 
   pthread_mutex_unlock(&lock);
   return 0;
