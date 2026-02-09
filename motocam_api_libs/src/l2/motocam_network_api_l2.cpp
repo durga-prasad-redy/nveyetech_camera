@@ -227,10 +227,14 @@ int8_t get_WifiHotspot_l2(uint8_t **wifiHotspot, uint8_t *length) {
                                        ipaddress, subnetmask);
   if (ret < 0)
     return -1;
-
+  ssid[31]='\0';
   uint8_t ssid_len = (uint8_t)strlen(ssid);
+  encryption_key[31]='\0';
   uint8_t encryption_key_len = (uint8_t)strlen(encryption_key);
+  
+  ipaddress[16]='\0';
   uint8_t ipaddress_len = (uint8_t)strlen(ipaddress);
+  subnetmask[16]='\0';
   uint8_t subnetmask_len = (uint8_t)strlen(subnetmask);
 
   *length = (uint8_t)(1 + ssid_len + 1 + 1 + encryption_key_len + 1 +
