@@ -487,23 +487,26 @@ int8_t get_system_user_dob_l2(uint8_t **dob, uint8_t *length) {
     return -1;
 }
 
-int8_t set_system_time_l2(const uint8_t epoch_time_length, const uint8_t *epoch_time) {
-  printf("set_system_time_l2\n");
-  if (epoch_time_length > 32) {
-    return -1; // Epoch time too long
-  }
+int8_t set_system_time_l2(uint8_t epoch_time_length,
+                          const uint8_t *epoch_time)
+{
+    if (!epoch_time || epoch_time_length == 0 || epoch_time_length > 32)
+        return -1;
 
-  char epoch_str[33]; // 32 characters + null terminator
-  for (uint8_t i = 0; i < epoch_time_length; i++) {
-    epoch_str[i] = epoch_time[i];
-  }
-  epoch_str[epoch_time_length] = '\0'; // Null-terminate the string
+    char epoch_str[33];
 
-  if (set_system_time(epoch_str) < 0) {
-    return -1; // Error setting time
-  }
+    for (uint8_t i = 0; i < epoch_time_length; i++) {
+        if (epoch_time[i] > 9) {
+            return -1;  // Not a digit
+        }
+        epoch_str[i] = (char)(epoch_time[i] + '0');
+    }
 
-  return 0;
+    epoch_str[epoch_time_length] = '\0';
+
+    printf("epoch_str = %s\n", epoch_str);
+
+    return set_system_time(epoch_str) < 0 ? -1 : 0;
 }
 
 int8_t set_system_haptic_motor_l2() {
