@@ -72,11 +72,11 @@ struct settings
 static const struct settings s_settings = {true, 1, 57, {0}, {0}, {0}, {0}};
 
 // Global session manager and web server (owned)
-static std::shared_ptr<SessionManager> g_session_manager;
+const static std::shared_ptr<SessionManager> g_session_manager;
 
 // Forward declaration of WebServer to use in global context
 class WebServer;
-static std::unique_ptr<WebServer> g_web_server;
+const static std::unique_ptr<WebServer> g_web_server;
 
 
 
@@ -393,7 +393,7 @@ static int handle_login(struct mg_connection *conn, const struct mg_request_info
                             "Cache-Control: no-cache\r\n"
                             "Content-Length: %zu\r\n\r\n%s",
                       cookie_header, strlen(body), body);
-            free(cookie_header);
+            // free(cookie_header);
         }
         else
         {
@@ -457,7 +457,7 @@ static int handle_logout(struct mg_connection *conn, const struct mg_request_inf
                     "Cache-Control: no-cache\r\n"
                     "Content-Length: %zu\r\n\r\n%s",
               cookie_header, strlen(body), body);
-    free(cookie_header);
+    // free(cookie_header);
 
     return 1;
 }
@@ -1096,20 +1096,23 @@ int upload_handler(struct mg_connection *conn, const struct mg_request_info *req
         return 400;
     }
     // Send success response
-    const char *response = "<!DOCTYPE html>"
-                           "<html><body>"
-                           "<h2>File Upload</h2>"
-                           "<p>%d fields processed. Upload successful!</p>"
-                           "<a href=\"/\">Back to upload form</a>"
-                           "</body></html>";
-    int response_len = snprintf(nullptr, 0, response, ret) + 1;
-    char *buffer = (char *)malloc(response_len);
-    snprintf(buffer, response_len, response, ret);
-    int sent = mg_send_http_ok(conn, "text/html", response_len - 1);
+    std::string response =
+    "<!DOCTYPE html>"
+    "<html><body>"
+    "<h2>File Upload</h2>"
+    "<p>" + std::to_string(ret) +
+    " fields processed. Upload successful!</p>"
+    "<a href=\"/\">Back to upload form</a>"
+    "</body></html>";
+
+    size_t response_len = response.size();
+
+    int sent = mg_send_http_ok(conn, "text/html", response_len);
     printf("mg_send_http_ok returned: %d\n", sent);
-    sent = mg_write(conn, buffer, response_len - 1);
+
+    sent = mg_write(conn, response.c_str(), response_len);
     printf("mg_write sent %d bytes for upload response\n", sent);
-    free(buffer);
+
     return 200;
 }
 
@@ -1334,7 +1337,7 @@ void WebServer::remove_client(const struct mg_connection *conn)
 {
     std::lock_guard<std::mutex> lock(clients_mutex);
     // Cast const away for search/removal (safe because we are just removing the pointer from set)
-    clients.erase((struct mg_connection*)conn);
+    clients.erase(conn);
 }
 
 void WebServer::broadcast_loop()

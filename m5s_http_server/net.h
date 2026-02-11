@@ -73,7 +73,7 @@ private:
     
     // WebSocket thread safety
     std::mutex clients_mutex;
-    std::set<struct mg_connection*> clients;
+    std::set<const struct mg_connection*> clients;
     std::thread broadcast_thread;
     std::atomic<bool> stop_broadcast;
     

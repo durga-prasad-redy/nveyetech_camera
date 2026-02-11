@@ -4,6 +4,7 @@
 #include <ctime>
 #include <cstdio>
 #include <vector>
+#include <memory>
 #include <openssl/rand.h>
 
 static const size_t SESSION_TOKEN_LENGTH = 32;  // 256-bit session tokens
@@ -32,18 +33,16 @@ bool generate_session_token(char* buffer, size_t length) {
 SessionManager* session_manager_create(const SessionConfig* config) {
     if (!config || config->max_sessions == 0) return nullptr;
     
-    SessionManager* manager = new SessionManager;
-    if (!manager) return nullptr;
-    
+    auto manager = std::make_unique<SessionManager>();
     memcpy(&manager->config, config, sizeof(SessionConfig));
     
-    manager->sessions_cache = lru_create(config->max_sessions, config->eviction_queue_size);
+    manager->sessions_cache = lru_create(static_cast<int>(config->max_sessions),
+                                         static_cast<int>(config->eviction_queue_size));
     if (!manager->sessions_cache) {
-        delete manager;
         return nullptr;
     }
     
-    return manager;
+    return manager.release();
 }
 
 void session_manager_destroy(SessionManager* manager) {
@@ -53,7 +52,7 @@ void session_manager_destroy(SessionManager* manager) {
         lru_free(manager->sessions_cache);
     }
     
-    delete manager;
+    std::default_delete<SessionManager>{}(manager);
 }
 
 bool session_create(SessionManager* manager, const SessionContext* context, 
@@ -64,25 +63,19 @@ bool session_create(SessionManager* manager, const SessionContext* context,
     
     generate_session_token(session_token_out, token_buf_size);
     
-    SessionContext* cached_context = new SessionContext(*context);
-    if (!cached_context) return false;
+    auto cached_context = std::make_unique<SessionContext>(*context);
     
-    // memcpy(cached_context, context, sizeof(SessionContext));
-    
-    // if (context->username) {
-    //     cached_context->username = strdup(context->username);
-    //     if (!cached_context->username) {
-    //         delete cached_context;
-    //         return false;
-    //     }
-    // }
+
     
     time_t now = time(nullptr);
     printf("time now: %ld\n", now);
     cached_context->created_at = now;
     cached_context->last_accessed = now;
     
-    lru_put(manager->sessions_cache, session_token_out, cached_context);
+    SessionContext* raw_context = cached_context.get();
+    lru_put(manager->sessions_cache, session_token_out, raw_context);
+    // Intentionally release ownership; lifetime is managed via LRU/invalidation
+    cached_context.release();
     
     return true;
 }
@@ -159,9 +152,8 @@ const std::string& ref = str;
 
     if (lru_get(manager->sessions_cache, ref, context_value)) {
         // SessionContext* context = &context_value;
-        // if (!context_value->username.empty()) delete[] context_value->username;
-        // if (context_value->custom_data) delete[] context_value->custom_data;
-        // delete context_value;
+        // if (!context_value->username.empty()) { /* cleanup username storage if needed */ }
+        // if (context_value->custom_data) { /* cleanup custom_data storage if owned here */ }
     }
     
     hash_remove(manager->sessions_cache, session_token);
@@ -201,7 +193,7 @@ char* session_generate_cookie_header(const SessionManager* manager,
     }
     header_size += strlen(session_token);
     
-    char* header = new char[header_size];
+    char* header = static_cast<char*>(std::malloc(header_size));
     if (!header) return nullptr;
     
     snprintf(header, header_size, 
@@ -227,7 +219,7 @@ char* session_generate_invalidation_cookie_header(const SessionManager* manager)
         header_size += strlen(manager->config.cookie_path);
     }
     
-    char* header = new char[header_size];
+    char* header = static_cast<char*>(std::malloc(header_size));
     if (!header) return nullptr;
     
     snprintf(header, header_size, 
