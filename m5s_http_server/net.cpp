@@ -69,12 +69,14 @@ struct settings
     char wifi_client_ipaddress[50];
 };
 
-const static struct settings s_settings = {true, 1, 57, {0}, {0}, {0}, {0}};
-static std::unique_ptr<SessionManager, void(*)(SessionManager*)> g_session_manager(nullptr, session_manager_destroy);
+static const struct settings s_settings = {true, 1, 57, {0}, {0}, {0}, {0}};
+
+// Global session manager and web server (owned)
+static std::shared_ptr<SessionManager> g_session_manager;
 
 // Forward declaration of WebServer to use in global context
 class WebServer;
-const static std::unique_ptr<WebServer> g_web_server;
+static std::unique_ptr<WebServer> g_web_server;
 
 
 
@@ -128,8 +130,14 @@ static bool is_authenticated(struct mg_connection *conn, const struct mg_request
         return false;
     }
 
+    auto manager = g_session_manager;  // keep shared ownership during this call
+    if (!manager)
+    {
+        return false;
+    }
+
     SessionContext *ctx = nullptr;
-    session_validate(g_session_manager.get(), session_token.c_str(), &ctx);
+    session_validate(manager.get(), session_token.c_str(), &ctx);
 
     return ctx != nullptr;
 }
@@ -360,13 +368,24 @@ static int handle_login(struct mg_connection *conn, const struct mg_request_info
 
     if (res_bytes[4] == 0)
     {
+        auto manager = g_session_manager;
+        if (!manager)
+        {
+            const char *body = "{\"error\": \"Session manager unavailable\"}\n";
+            mg_printf(conn, "HTTP/1.1 500 Internal Server Error\r\n"
+                            "Content-Type: application/json\r\n"
+                            "Content-Length: %zu\r\n\r\n%s",
+                      strlen(body), body);
+            return 1;
+        }
+
         SessionContext ctx;
         ctx.username = "user";
         ctx.custom_data = nullptr;
         char session_token[65];
-        if (session_create(g_session_manager.get(), &ctx, session_token, sizeof(session_token)))
+        if (session_create(manager.get(), &ctx, session_token, sizeof(session_token)))
         {
-            char *cookie_header = session_generate_cookie_header(g_session_manager.get(), session_token);
+            char *cookie_header = session_generate_cookie_header(manager.get(), session_token);
             const char *body = "{\"message\": \"Login successful\"}\n";
             mg_printf(conn, "HTTP/1.1 200 OK\r\n"
                             "Set-Cookie: %s\r\n"
@@ -413,13 +432,24 @@ static int handle_login(struct mg_connection *conn, const struct mg_request_info
 static int handle_logout(struct mg_connection *conn, const struct mg_request_info *ri)
 {
     (void)ri;
+    auto manager = g_session_manager;
+    if (!manager)
+    {
+        const char *body = "{\"error\": \"Session manager unavailable\"}\n";
+        mg_printf(conn, "HTTP/1.1 500 Internal Server Error\r\n"
+                        "Content-Type: application/json\r\n"
+                        "Content-Length: %zu\r\n\r\n%s",
+                  strlen(body), body);
+        return 1;
+    }
+
     std::string session_token = get_session_token(conn);
     if (!session_token.empty())
     {
-        session_invalidate(g_session_manager.get(), session_token.c_str());
+        session_invalidate(manager.get(), session_token.c_str());
     }
 
-    char *cookie_header = session_generate_invalidation_cookie_header(g_session_manager.get());
+    char *cookie_header = session_generate_invalidation_cookie_header(manager.get());
     const char *body = "{\"message\": \"Logged out successfully\"}\n";
     mg_printf(conn, "HTTP/1.1 200 OK\r\n"
                     "Set-Cookie: %s\r\n"
@@ -494,17 +524,28 @@ static int handle_force_logout_others(struct mg_connection *conn, const struct m
     // Check if do_processing responded positively (res_bytes[4] == 0 indicates success)
     if (res_bytes_size > 4 && res_bytes[4] == 0)
     {
+        auto manager = g_session_manager;
+        if (!manager)
+        {
+            const char *body = "{\"error\": \"Session manager unavailable\"}\n";
+            mg_printf(conn, "HTTP/1.1 500 Internal Server Error\r\n"
+                            "Content-Type: application/json\r\n"
+                            "Content-Length: %zu\r\n\r\n%s",
+                      strlen(body), body);
+            return 1;
+        }
+
         // Get optional session token from request (if provided, we'll keep that user logged in)
         std::string session_token = get_session_token(conn);
         
         // Logout all other users (if session_token is empty, logout everyone)
         if (session_token.empty())
         {
-            session_logout_all_others(g_session_manager.get(), nullptr);
+            session_logout_all_others(manager.get(), nullptr);
         }
         else
         {
-            session_logout_all_others(g_session_manager.get(), session_token.c_str());
+            session_logout_all_others(manager.get(), session_token.c_str());
         }
 
         const char *body = "{\"message\": \"Force logged out others successful\"}\n";
@@ -1101,7 +1142,8 @@ static int request_handler(struct mg_connection *conn)
     {
         std::string session_token = get_session_token(conn);
         int reason = -1;
-        if (!session_token.empty() && session_check_evicted(g_session_manager.get(), session_token.c_str(), &reason))
+        auto manager = g_session_manager;
+        if (manager && !session_token.empty() && session_check_evicted(manager.get(), session_token.c_str(), &reason))
         {
              const char* reason_str = "UNKNOWN";
              switch(reason) {
@@ -1534,13 +1576,15 @@ bool web_init()
         true   // http_only_cookies
     };
 
-    SessionManager *raw_manager = session_manager_create(&cfg);
-    if (!raw_manager)
+    std::shared_ptr<SessionManager> manager(
+        session_manager_create(&cfg),
+        session_manager_destroy);
+    if (!manager)
     {
         printf("Failed to create session manager\n");
         return false;
     }
-    g_session_manager.reset(raw_manager);
+    g_session_manager = std::move(manager);
 
     // Initialize web server
     g_web_server = std::make_unique<WebServer>();
