@@ -30,17 +30,17 @@ bool generate_session_token(char* buffer, size_t length) {
 } // anonymous namespace
 
 SessionManager* session_manager_create(const SessionConfig* config) {
-    if (!config || config->max_sessions == 0) return NULL;
+    if (!config || config->max_sessions == 0) return nullptr;
     
     SessionManager* manager = new SessionManager;
-    if (!manager) return NULL;
+    if (!manager) return nullptr;
     
     memcpy(&manager->config, config, sizeof(SessionConfig));
     
     manager->sessions_cache = lru_create(config->max_sessions, config->eviction_queue_size);
     if (!manager->sessions_cache) {
         delete manager;
-        return NULL;
+        return nullptr;
     }
     
     return manager;
@@ -77,7 +77,7 @@ bool session_create(SessionManager* manager, const SessionContext* context,
     //     }
     // }
     
-    time_t now = time(NULL);
+    time_t now = time(nullptr);
     printf("time now: %ld\n", now);
     cached_context->created_at = now;
     cached_context->last_accessed = now;
@@ -105,7 +105,7 @@ bool session_force_logout(SessionManager* manager,const char* session_token)
 //   *context=context_value;
 
    if (manager->config.session_timeout > 0) {
-        time_t now = time(NULL);
+        time_t now = time(nullptr);
         if (difftime(now, context_value->last_accessed) > manager->config.session_timeout) {
             session_invalidate(manager, session_token);
             // *context = NULL;
@@ -137,10 +137,10 @@ bool session_validate(SessionManager* manager, const char* session_token,
     *context_out = context_value;
 
     if (manager->config.session_timeout > 0) {
-        time_t now = time(NULL);
+        time_t now = time(nullptr);
         if (difftime(now, context_value->last_accessed) > manager->config.session_timeout) {
             session_invalidate(manager, session_token);
-            *context_out = NULL;
+            *context_out = nullptr;
             return false;
         }
         context_value->last_accessed = now;
@@ -171,7 +171,7 @@ const std::string& ref = str;
 void session_cleanup_expired(SessionManager* manager) {
     if (!manager || manager->config.session_timeout == 0) return;
     
-    time_t now = time(NULL);
+    time_t now = time(nullptr);
     
     for (int i = 0; i < HASH_TABLE_SIZE; i++) {
         HashEntry* entry = manager->sessions_cache->hash_table[i];
@@ -190,7 +190,7 @@ void session_cleanup_expired(SessionManager* manager) {
 
 char* session_generate_cookie_header(const SessionManager* manager, 
                                    const char* session_token) {
-    if (!manager || !session_token) return NULL;
+    if (!manager || !session_token) return nullptr;
     
     size_t header_size = 100;
     if (manager->config.cookie_domain) {
@@ -202,7 +202,7 @@ char* session_generate_cookie_header(const SessionManager* manager,
     header_size += strlen(session_token);
     
     char* header = new char[header_size];
-    if (!header) return NULL;
+    if (!header) return nullptr;
     
     snprintf(header, header_size, 
              "session=%s; Path=%s; SameSite=Strict%s%s%s%s",
@@ -217,7 +217,7 @@ char* session_generate_cookie_header(const SessionManager* manager,
 }
 
 char* session_generate_invalidation_cookie_header(const SessionManager* manager) {
-    if (!manager) return NULL;
+    if (!manager) return nullptr;
     
     size_t header_size = 100;
     if (manager->config.cookie_domain) {
@@ -228,7 +228,7 @@ char* session_generate_invalidation_cookie_header(const SessionManager* manager)
     }
     
     char* header = new char[header_size];
-    if (!header) return NULL;
+    if (!header) return nullptr;
     
     snprintf(header, header_size, 
              "session=; Path=%s; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict%s%s%s%s",

@@ -50,10 +50,11 @@ constexpr char IR_SOCK_PATH[] = "/tmp/ir_change.sock";
 
 } // anonymous namespace
 
-char current_login_pin[18] = {0};
-const char *valid_pin = current_login_pin;
+const char current_login_pin[18] = {0};
 
-static const char *s_unauthorized_response =
+// constexpr char valid_pin[] = current_login_pin;
+
+constexpr char s_unauthorized_response[] =
     "{\"error\": \"Unauthorized\", \"message\": \"Missing or invalid session\"}\n";
 
 // Settings
@@ -68,12 +69,12 @@ struct settings
     char wifi_client_ipaddress[50];
 };
 
-static struct settings s_settings = {true, 1, 57, {0}, {0}, {0}, {0}};
+const static struct settings s_settings = {true, 1, 57, {0}, {0}, {0}, {0}};
 static std::unique_ptr<SessionManager, void(*)(SessionManager*)> g_session_manager(nullptr, session_manager_destroy);
 
 // Forward declaration of WebServer to use in global context
 class WebServer;
-static std::unique_ptr<WebServer> g_web_server;
+const static std::unique_ptr<WebServer> g_web_server;
 
 
 
@@ -127,10 +128,10 @@ static bool is_authenticated(struct mg_connection *conn, const struct mg_request
         return false;
     }
 
-    SessionContext *ctx = NULL;
+    SessionContext *ctx = nullptr;
     session_validate(g_session_manager.get(), session_token.c_str(), &ctx);
 
-    return ctx != NULL;
+    return ctx != nullptr;
 }
 
 // Proxy request handler using CivetWeb client connection
@@ -336,14 +337,14 @@ static int handle_login(struct mg_connection *conn, const struct mg_request_info
 
     char *saveptr;
     char *token = strtok_r(post_data, " ", &saveptr);
-    while (token != NULL && byteArrayLen < 256)
+    while (token != nullptr && byteArrayLen < 256)
     {
         if (strncmp(token, "0x", 2) == 0 || strncmp(token, "0X", 2) == 0)
         {
-            uint8_t value = (uint8_t)strtol(token, NULL, 16);
+            uint8_t value = (uint8_t)strtol(token, nullptr, 16);
             byteArray[byteArrayLen++] = value;
         }
-        token = strtok_r(NULL, " ", &saveptr);
+        token = strtok_r(nullptr, " ", &saveptr);
     }
 
     uint8_t *res_bytes = nullptr;
@@ -361,7 +362,7 @@ static int handle_login(struct mg_connection *conn, const struct mg_request_info
     {
         SessionContext ctx;
         ctx.username = "user";
-        ctx.custom_data = NULL;
+        ctx.custom_data = nullptr;
         char session_token[65];
         if (session_create(g_session_manager.get(), &ctx, session_token, sizeof(session_token)))
         {
@@ -459,14 +460,14 @@ static int handle_force_logout_others(struct mg_connection *conn, const struct m
 
     char *saveptr;
     char *token = strtok_r(post_data, " ", &saveptr);
-    while (token != NULL && byteArrayLen < 256)
+    while (token != nullptr && byteArrayLen < 256)
     {
         if (strncmp(token, "0x", 2) == 0 || strncmp(token, "0X", 2) == 0)
         {
-            uint8_t value = (uint8_t)strtol(token, NULL, 16);
+            uint8_t value = (uint8_t)strtol(token, nullptr, 16);
             byteArray[byteArrayLen++] = value;
         }
-        token = strtok_r(NULL, " ", &saveptr);
+        token = strtok_r(nullptr, " ", &saveptr);
     }
 
     if (byteArrayLen == 0)
@@ -549,14 +550,14 @@ static int handle_motocam_api(struct mg_connection *conn, const struct mg_reques
 
     char *saveptr;
     char *token = strtok_r(post_data, " ", &saveptr);
-    while (token != NULL && byteArrayLen < 256)
+    while (token != nullptr && byteArrayLen < 256)
     {
         if (strncmp(token, "0x", 2) == 0 || strncmp(token, "0X", 2) == 0)
         {
-            uint8_t value = (uint8_t)strtol(token, NULL, 16);
+            uint8_t value = (uint8_t)strtol(token, nullptr, 16);
             byteArray[byteArrayLen++] = value;
         }
-        token = strtok_r(NULL, " ", &saveptr);
+        token = strtok_r(nullptr, " ", &saveptr);
     }
 
     uint8_t *res_bytes = nullptr;
@@ -606,14 +607,14 @@ static int handle_reset_pin(struct mg_connection *conn, const struct mg_request_
 
     char *saveptr;
     char *token = strtok_r(post_data, " ", &saveptr);
-    while (token != NULL && byteArrayLen < 256)
+    while (token != nullptr && byteArrayLen < 256)
     {
         if (strncmp(token, "0x", 2) == 0 || strncmp(token, "0X", 2) == 0)
         {
-            uint8_t value = (uint8_t)strtol(token, NULL, 16);
+            uint8_t value = (uint8_t)strtol(token, nullptr, 16);
             byteArray[byteArrayLen++] = value;
         }
-        token = strtok_r(NULL, " ", &saveptr);
+        token = strtok_r(nullptr, " ", &saveptr);
     }
     uint8_t prefix[] = {1, 6, 2};
     if(!response_body_prefix_check(byteArray, byteArrayLen, prefix, 3))
@@ -667,14 +668,14 @@ static int handle_firmware_version(struct mg_connection *conn, const struct mg_r
 
     char *saveptr;
     char *token = strtok_r(post_data, " ", &saveptr);
-    while (token != NULL && byteArrayLen < 256)
+    while (token != nullptr && byteArrayLen < 256)
     {
         if (strncmp(token, "0x", 2) == 0 || strncmp(token, "0X", 2) == 0)
         {
-            uint8_t value = (uint8_t)strtol(token, NULL, 16);
+            uint8_t value = (uint8_t)strtol(token, nullptr, 16);
             byteArray[byteArrayLen++] = value;
         }
-        token = strtok_r(NULL, " ", &saveptr);
+        token = strtok_r(nullptr, " ", &saveptr);
     }
     uint8_t prefix[] = {2, 6, 2};
     if(!response_body_prefix_check(byteArray, byteArrayLen, prefix, 3))
@@ -993,7 +994,7 @@ int upload_handler(struct mg_connection *conn, const struct mg_request_info *req
     const char *content_length_str = mg_get_header(conn, "Content-Length");
     if (content_length_str)
     {
-        long long content_length = strtoll(content_length_str, NULL, 10);
+        long long content_length = strtoll(content_length_str, nullptr, 10);
         if (content_length > MAX_FILE_SIZE_BYTES)
         {
             printf("Request too large: Content-Length %lld exceeds limit %lld\n",
@@ -1060,7 +1061,7 @@ int upload_handler(struct mg_connection *conn, const struct mg_request_info *req
                            "<p>%d fields processed. Upload successful!</p>"
                            "<a href=\"/\">Back to upload form</a>"
                            "</body></html>";
-    int response_len = snprintf(NULL, 0, response, ret) + 1;
+    int response_len = snprintf(nullptr, 0, response, ret) + 1;
     char *buffer = (char *)malloc(response_len);
     snprintf(buffer, response_len, response, ret);
     int sent = mg_send_http_ok(conn, "text/html", response_len - 1);
@@ -1211,7 +1212,7 @@ static int request_handler(struct mg_connection *conn)
 // Define websocket sub-protocols.
 static const char subprotocol_bin[] = "Company.ProtoName.bin";
 static const char subprotocol_json[] = "Company.ProtoName.json";
-static const char *subprotocols[] = {subprotocol_bin, subprotocol_json, NULL};
+static const char *subprotocols[] = {subprotocol_bin, subprotocol_json, nullptr};
 static struct mg_websocket_subprotocols wsprot = {2, subprotocols};
 
 /* MUST match sender structure exactly */
@@ -1385,7 +1386,7 @@ bool WebServer::init()
         "num_threads", "10",
         "request_timeout_ms", "60000",
         "enable_directory_listing", "no",
-        NULL};
+        nullptr};
 
     printf("Starting server with document_root: %s\n", document_root.c_str());
     printf("Ports: %s \n", HTTP_PORT);
@@ -1527,7 +1528,7 @@ bool web_init()
         5,     // max_sessions
         10,    // eviction_queue_size
         0,     // session_timeout
-        NULL,  // cookie_domain
+        nullptr,  // cookie_domain
         "/",   // cookie_path
         false, // secure_cookies
         true   // http_only_cookies
