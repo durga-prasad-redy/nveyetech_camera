@@ -1257,7 +1257,7 @@ static int request_handler(struct mg_connection *conn)
 // Define websocket sub-protocols.
 static const char subprotocol_bin[] = "Company.ProtoName.bin";
 static const char subprotocol_json[] = "Company.ProtoName.json";
-static const char *subprotocols[] = {subprotocol_bin, subprotocol_json, nullptr};
+const static  char *subprotocols[] = {subprotocol_bin, subprotocol_json, nullptr};
 static struct mg_websocket_subprotocols wsprot = {2, subprotocols};
 
 /* MUST match sender structure exactly */

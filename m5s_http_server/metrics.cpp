@@ -558,7 +558,7 @@ int handle_metrics_api(struct mg_connection *conn, const struct mg_request_info 
         "syslogd",
         "klogd"
     };
-    int num_processes = sizeof(processes) / sizeof(processes[0]);
+    auto num_processes = std::size(processes);
     for (int i = 0; i < num_processes; i++)
     {
         bool running = is_process_running(processes[i]);
