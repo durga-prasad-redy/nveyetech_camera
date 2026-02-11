@@ -2,6 +2,7 @@
 #include <iostream>
 #include <functional>
 #include <cstring>
+#include <memory>
 
 // --- Internal utility functions ---
 static unsigned int hash_function(const std::string &key)
@@ -10,24 +11,20 @@ static unsigned int hash_function(const std::string &key)
     return hasher(key) % HASH_TABLE_SIZE;
 }
 
-static CacheNode *create_cache_node(const std::string &key, SessionContext *value)
+static CacheNode *create_cache_node(LRUCache *cache, const std::string &key, SessionContext *value)
 {
-    CacheNode *node = new (std::nothrow) CacheNode();
-    if (!node)
+    if (!cache)
         return nullptr;
+
+    cache->nodes_storage.emplace_back(std::make_unique<CacheNode>());
+    auto it = --cache->nodes_storage.end();
+    CacheNode *node = it->get();
+    cache->nodes_index[node] = it;
 
     node->key = key;
     node->value = value;
     node->prev = node->next = nullptr;
     return node;
-}
-
-static void free_cache_node(CacheNode *node)
-{
-    if (node)
-    {
-        delete node;
-    }
 }
 
 static void add_to_head(LRUCache *cache, CacheNode *node)
@@ -69,9 +66,13 @@ static CacheNode *pop_tail(LRUCache *cache)
 
 static void add_to_eviction_queue(LRUCache *cache, const std::string &key, SessionContext *value,EvictionReason reason)
 {
-    EvictedItem *item = new (std::nothrow) EvictedItem();
-    if (!item)
+    if (!cache || !value)
         return;
+
+    cache->evicted_storage.emplace_back(std::make_unique<EvictedItem>());
+    auto it = --cache->evicted_storage.end();
+    EvictedItem *item = it->get();
+    cache->evicted_index[item] = it;
 
     item->key = key;
     item->value = *value;
@@ -89,13 +90,20 @@ static void add_to_eviction_queue(LRUCache *cache, const std::string &key, Sessi
     cache->eviction_tail = item;
     cache->eviction_count++;
 
-    if (cache->eviction_count > cache->eviction_queue_size)
+    if (cache->eviction_count > cache->eviction_queue_size && cache->eviction_head)
     {
         EvictedItem *old = cache->eviction_head;
         cache->eviction_head = old->next;
         if (!cache->eviction_head)
             cache->eviction_tail = nullptr;
-        delete old;
+
+        auto idxIt = cache->evicted_index.find(old);
+        if (idxIt != cache->evicted_index.end())
+        {
+            cache->evicted_storage.erase(idxIt->second);
+            cache->evicted_index.erase(idxIt);
+        }
+
         cache->eviction_count--;
     }
 }
@@ -103,9 +111,10 @@ static void add_to_eviction_queue(LRUCache *cache, const std::string &key, Sessi
 static void hash_put(LRUCache *cache, const std::string &key, CacheNode *node)
 {
     unsigned int index = hash_function(key);
-    HashEntry *entry = new (std::nothrow) HashEntry();
-    if (!entry)
-        return;
+    cache->hashentry_storage.emplace_back(std::make_unique<HashEntry>());
+    auto it = --cache->hashentry_storage.end();
+    HashEntry *entry = it->get();
+    cache->hashentry_index[entry] = it;
 
     entry->node = node;
     entry->next = cache->hash_table[index];
@@ -145,7 +154,13 @@ void hash_remove(LRUCache *cache, const std::string &key)
             {
                 cache->hash_table[index] = entry->next;
             }
-            delete entry;
+
+            auto it = cache->hashentry_index.find(entry);
+            if (it != cache->hashentry_index.end())
+            {
+                cache->hashentry_storage.erase(it->second);
+                cache->hashentry_index.erase(it);
+            }
             return;
         }
         prev = entry;
@@ -159,9 +174,7 @@ LRUCache *lru_create(int capacity, int eviction_queue_size)
     if (capacity <= 0 || eviction_queue_size < 0)
         return nullptr;
 
-    LRUCache *cache = new (std::nothrow) LRUCache();
-    if (!cache)
-        return nullptr;
+    auto cache = std::make_unique<LRUCache>();
 
     cache->capacity = capacity;
     cache->size = 0;
@@ -175,14 +188,11 @@ LRUCache *lru_create(int capacity, int eviction_queue_size)
         cache->hash_table[i] = nullptr;
     }
 
-    cache->head = new (std::nothrow) CacheNode();
-    cache->tail = new (std::nothrow) CacheNode();
+    cache->head = create_cache_node(cache.get(), std::string(), nullptr);
+    cache->tail = create_cache_node(cache.get(), std::string(), nullptr);
 
     if (!cache->head || !cache->tail)
     {
-        delete cache->head;
-        delete cache->tail;
-        delete cache;
         return nullptr;
     }
 
@@ -191,7 +201,7 @@ LRUCache *lru_create(int capacity, int eviction_queue_size)
     cache->head->prev = nullptr;
     cache->tail->next = nullptr;
 
-    return cache;
+    return cache.release();
 }
 
 void lru_put(LRUCache *cache, const std::string &key, SessionContext *value)
@@ -208,7 +218,7 @@ void lru_put(LRUCache *cache, const std::string &key, SessionContext *value)
     }
     else
     {
-        CacheNode *new_node = create_cache_node(key, value);
+        CacheNode *new_node = create_cache_node(cache, key, value);
         if (!new_node)
             return;
 
@@ -219,7 +229,12 @@ void lru_put(LRUCache *cache, const std::string &key, SessionContext *value)
             {
                 add_to_eviction_queue(cache, tail->key, tail->value,CAPACITY_LIMIT);
                 hash_remove(cache, tail->key);
-                free_cache_node(tail);
+                auto it = cache->nodes_index.find(tail);
+                if (it != cache->nodes_index.end())
+                {
+                    cache->nodes_storage.erase(it->second);
+                    cache->nodes_index.erase(it);
+                }
                 cache->size--;
             }
         }
@@ -255,7 +270,12 @@ void lru_evict_all(LRUCache *cache, const std::string &key, SessionContext *valu
             add_to_eviction_queue(cache, tail->key, tail->value,CRITICAL_ACTION);
             printf("evicting key:%s\n", tail->key.c_str());
             hash_remove(cache, tail->key);
-            free_cache_node(tail);
+            auto it = cache->nodes_index.find(tail);
+            if (it != cache->nodes_index.end())
+            {
+                cache->nodes_storage.erase(it->second);
+                cache->nodes_index.erase(it);
+            }
             cache->size--;
         }
     }
@@ -306,36 +326,5 @@ void lru_free(LRUCache *cache)
 {
     if (!cache)
         return;
-
-    CacheNode *current = cache->head->next;
-    while (current != cache->tail)
-    {
-        CacheNode *next = current->next;
-        free_cache_node(current);
-        current = next;
-    }
-
-    delete cache->head;
-    delete cache->tail;
-
-    for (int i = 0; i < HASH_TABLE_SIZE; ++i)
-    {
-        HashEntry *entry = cache->hash_table[i];
-        while (entry)
-        {
-            HashEntry *next = entry->next;
-            delete entry;
-            entry = next;
-        }
-    }
-
-    EvictedItem *evicted = cache->eviction_head;
-    while (evicted)
-    {
-        EvictedItem *next = evicted->next;
-        delete evicted;
-        evicted = next;
-    }
-
-    delete cache;
+    std::default_delete<LRUCache>{}(cache);
 }

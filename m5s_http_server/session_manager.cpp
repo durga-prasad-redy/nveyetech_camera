@@ -6,8 +6,8 @@
 #include <vector>
 #include <openssl/rand.h>
 
-#define SESSION_TOKEN_LENGTH 32  // 256-bit session tokens
-#define HEX_CHARS "0123456789ABCDEF"
+static const size_t SESSION_TOKEN_LENGTH = 32;  // 256-bit session tokens
+static const char HEX_CHARS[] = "0123456789ABCDEF";
 
 namespace {
 

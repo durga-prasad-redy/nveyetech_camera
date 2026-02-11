@@ -23,13 +23,8 @@
 #include <memory>
 #include <string>
 
-#if !defined(HTTP_PORT)
-#define HTTP_PORT "80"
-#endif
-
-// #if !defined(HTTPS_PORT)
-#define HTTPS_PORT "443"
-// #endif
+static const char HTTP_PORT[] = "80";
+static const char HTTPS_PORT[] = "443";
 
 // Event type enum for misc events
 enum class MiscEventType {
@@ -37,10 +32,10 @@ enum class MiscEventType {
     CHANGING_MISC
 };
 
-#define MAX_DEVICE_NAME 40
-#define MAX_EVENTS_NO 400
-#define MAX_EVENT_TEXT_SIZE 10
-#define EVENTS_PER_PAGE 20
+static const int MAX_DEVICE_NAME = 40;
+static const int MAX_EVENTS_NO = 400;
+static const int MAX_EVENT_TEXT_SIZE = 10;
+static const int EVENTS_PER_PAGE = 20;
 
 struct proxy_data {
   struct mg_connection

@@ -4,8 +4,11 @@
 #include <cstdint>
 #include <ctime>
 #include <string>
+#include <memory>
+#include <list>
+#include <unordered_map>
 
-#define HASH_TABLE_SIZE 1009
+static const int HASH_TABLE_SIZE = 1009;
 
 // Session context containing user information
 struct SessionContext {
@@ -71,6 +74,16 @@ struct LRUCache {
     int eviction_count;
     EvictedItem* eviction_head;
     EvictedItem* eviction_tail;
+
+    // Internal ownership for dynamically allocated nodes and metadata
+    std::list<std::unique_ptr<CacheNode>> nodes_storage;
+    std::unordered_map<CacheNode*, std::list<std::unique_ptr<CacheNode>>::iterator> nodes_index;
+
+    std::list<std::unique_ptr<HashEntry>> hashentry_storage;
+    std::unordered_map<HashEntry*, std::list<std::unique_ptr<HashEntry>>::iterator> hashentry_index;
+
+    std::list<std::unique_ptr<EvictedItem>> evicted_storage;
+    std::unordered_map<EvictedItem*, std::list<std::unique_ptr<EvictedItem>>::iterator> evicted_index;
     
     LRUCache() : capacity(0), size(0), head(nullptr), tail(nullptr),
                  eviction_queue_size(0), eviction_count(0), 

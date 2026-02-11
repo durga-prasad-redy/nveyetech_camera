@@ -24,21 +24,31 @@
 #include <cstdio>
 #include <cstring>
 #include <errno.h>
+#include <memory>
+#include <memory>
 #include "include/fw.h"
 #include "include/motocam_api_l1.h"
 
 // CivetWeb Header (Ensure this path is correct for your project structure)
 #include "civetweb.h" 
 
-#define MAX_TOKEN_SIZE 64
-#define MAX_FILE_SIZE_MB 2.2
-#define MAX_FILE_SIZE_BYTES (long long)(MAX_FILE_SIZE_MB * 1024 * 1024) // 2.2 MB in bytes
-
 extern "C"
 {
     int8_t do_processing(const uint8_t *req_bytes, const uint8_t req_bytes_size,
                          uint8_t **res_bytes, uint8_t *res_bytes_size);
 }
+
+namespace {
+
+constexpr size_t MAX_TOKEN_SIZE = 64;
+constexpr double MAX_FILE_SIZE_MB = 2.2;
+constexpr long long MAX_FILE_SIZE_BYTES =
+    static_cast<long long>(MAX_FILE_SIZE_MB * 1024 * 1024); // 2.2 MB in bytes
+
+constexpr char MISC_SOCK_PATH[] = "/tmp/misc_change.sock";
+constexpr char IR_SOCK_PATH[] = "/tmp/ir_change.sock";
+
+} // anonymous namespace
 
 char current_login_pin[18] = {0};
 const char *valid_pin = current_login_pin;
@@ -59,11 +69,11 @@ struct settings
 };
 
 static struct settings s_settings = {true, 1, 57, {0}, {0}, {0}, {0}};
-static SessionManager *g_session_manager = NULL;
+static std::unique_ptr<SessionManager, void(*)(SessionManager*)> g_session_manager(nullptr, session_manager_destroy);
 
 // Forward declaration of WebServer to use in global context
 class WebServer;
-static WebServer *g_web_server = NULL;
+static std::unique_ptr<WebServer> g_web_server;
 
 
 
@@ -118,7 +128,7 @@ static bool is_authenticated(struct mg_connection *conn, const struct mg_request
     }
 
     SessionContext *ctx = NULL;
-    session_validate(g_session_manager, session_token.c_str(), &ctx);
+    session_validate(g_session_manager.get(), session_token.c_str(), &ctx);
 
     return ctx != NULL;
 }
@@ -353,9 +363,9 @@ static int handle_login(struct mg_connection *conn, const struct mg_request_info
         ctx.username = "user";
         ctx.custom_data = NULL;
         char session_token[65];
-        if (session_create(g_session_manager, &ctx, session_token, sizeof(session_token)))
+        if (session_create(g_session_manager.get(), &ctx, session_token, sizeof(session_token)))
         {
-            char *cookie_header = session_generate_cookie_header(g_session_manager, session_token);
+            char *cookie_header = session_generate_cookie_header(g_session_manager.get(), session_token);
             const char *body = "{\"message\": \"Login successful\"}\n";
             mg_printf(conn, "HTTP/1.1 200 OK\r\n"
                             "Set-Cookie: %s\r\n"
@@ -405,10 +415,10 @@ static int handle_logout(struct mg_connection *conn, const struct mg_request_inf
     std::string session_token = get_session_token(conn);
     if (!session_token.empty())
     {
-        session_invalidate(g_session_manager, session_token.c_str());
+        session_invalidate(g_session_manager.get(), session_token.c_str());
     }
 
-    char *cookie_header = session_generate_invalidation_cookie_header(g_session_manager);
+    char *cookie_header = session_generate_invalidation_cookie_header(g_session_manager.get());
     const char *body = "{\"message\": \"Logged out successfully\"}\n";
     mg_printf(conn, "HTTP/1.1 200 OK\r\n"
                     "Set-Cookie: %s\r\n"
@@ -489,11 +499,11 @@ static int handle_force_logout_others(struct mg_connection *conn, const struct m
         // Logout all other users (if session_token is empty, logout everyone)
         if (session_token.empty())
         {
-            session_logout_all_others(g_session_manager, nullptr);
+            session_logout_all_others(g_session_manager.get(), nullptr);
         }
         else
         {
-            session_logout_all_others(g_session_manager, session_token.c_str());
+            session_logout_all_others(g_session_manager.get(), session_token.c_str());
         }
 
         const char *body = "{\"message\": \"Force logged out others successful\"}\n";
@@ -1090,7 +1100,7 @@ static int request_handler(struct mg_connection *conn)
     {
         std::string session_token = get_session_token(conn);
         int reason = -1;
-        if (!session_token.empty() && session_check_evicted(g_session_manager, session_token.c_str(), &reason))
+        if (!session_token.empty() && session_check_evicted(g_session_manager.get(), session_token.c_str(), &reason))
         {
              const char* reason_str = "UNKNOWN";
              switch(reason) {
@@ -1203,11 +1213,6 @@ static const char subprotocol_bin[] = "Company.ProtoName.bin";
 static const char subprotocol_json[] = "Company.ProtoName.json";
 static const char *subprotocols[] = {subprotocol_bin, subprotocol_json, NULL};
 static struct mg_websocket_subprotocols wsprot = {2, subprotocols};
-
-// Unix socket path for misc events
-#define MISC_SOCK_PATH "/tmp/misc_change.sock"
-// Unix socket path for IR brightness events
-#define IR_SOCK_PATH "/tmp/ir_change.sock"
 
 /* MUST match sender structure exactly */
 typedef struct {
@@ -1528,20 +1533,20 @@ bool web_init()
         true   // http_only_cookies
     };
 
-    g_session_manager = session_manager_create(&cfg);
-    if (!g_session_manager)
+    SessionManager *raw_manager = session_manager_create(&cfg);
+    if (!raw_manager)
     {
         printf("Failed to create session manager\n");
         return false;
     }
+    g_session_manager.reset(raw_manager);
 
     // Initialize web server
-    g_web_server = new WebServer();
+    g_web_server = std::make_unique<WebServer>();
     if (!g_web_server->init())
     {
         printf("Failed to start web server\n");
-        delete g_web_server;
-        g_web_server = nullptr;
+        g_web_server.reset();
         return false;
     }
 
@@ -1553,13 +1558,11 @@ void web_cleanup()
 {
     if (g_web_server)
     {
-        delete g_web_server;
-        g_web_server = nullptr;
+        g_web_server.reset();
     }
 
     if (g_session_manager)
     {
-        session_manager_destroy(g_session_manager);
-        g_session_manager = nullptr;
+        g_session_manager.reset();
     }
 }

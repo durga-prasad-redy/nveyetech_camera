@@ -12,11 +12,15 @@
 #include <unistd.h>
 #include <cctype>
 
-#define CONFIG_DIR "/mnt/flash/vienna/m5s_config"
-#define SNAPSHOT_FILE "/mnt/flash/vienna/default_snapshot.txt"
-#define FACTORY_BACKUP_DIR "/mnt/flash/vienna/factory_backup"
-#define FACTORY_RESET_STATUS_FILE "/mnt/flash/vienna/m5s_config/factory_reset_status"
-#define VERSION_FILE "/mnt/flash/jffs2_version"
+namespace {
+
+static const char CONFIG_DIR[] = "/mnt/flash/vienna/m5s_config";
+static const char SNAPSHOT_FILE[] = "/mnt/flash/vienna/default_snapshot.txt";
+static const char FACTORY_BACKUP_DIR[] = "/mnt/flash/vienna/factory_backup";
+static const char FACTORY_RESET_STATUS_FILE[] = "/mnt/flash/vienna/m5s_config/factory_reset_status";
+static const char VERSION_FILE[] = "/mnt/flash/jffs2_version";
+
+} // anonymous namespace
 
 // Helper function to read file content
 static std::string read_file_content(const std::string &path)
