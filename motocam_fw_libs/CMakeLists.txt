@@ -66,7 +66,6 @@ SET(SRC_LIST
     src/gpio.cpp
     src/fw.cpp
     
-    src/fw/fw_audio.cpp
     src/fw/fw_config.cpp
     src/fw/fw_helper.cpp
     src/fw/fw_image.cpp
