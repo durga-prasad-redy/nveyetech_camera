@@ -1,0 +1,94 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
+PROJECT(VTCS_LIB_APP)
+
+# DEBUG, RELEASE, MINSIZEREL, RELWITHDEBINFO
+# We can use -DCMAKE_BUILD_TYPE=Debug or -DCMAKE_BUILD_TYPE=RelWithDebInfo to define something
+IF(CMAKE_BUILD_TYPE STREQUAL "Debug")
+	MESSAGE("====== Debug mode ======")
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wall -Wextra -pthread -g -fasynchronous-unwind-tables")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -pthread -g -fasynchronous-unwind-tables")
+	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -rdynamic")
+	SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -rdynamic")
+	SET(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -rdynamic")
+	ADD_DEFINITIONS("-DDEBUG")
+	SET(DEBUG_ENABLE true)
+ELSE(CMAKE_BUILD_TYPE STREQUAL "Debug")
+	IF(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+		MESSAGE("====== RelWithDebInfo mode ======")
+		SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -O3 -Wall -Wextra -pthread")
+		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -Wall -Wextra -pthread")
+		ADD_DEFINITIONS("-DDEBUG")
+		SET(DEBUG_ENABLE true)
+	ELSE(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+		MESSAGE("====== Release mode ======")
+		SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -O3 -Wall -Wextra -pthread")
+		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -Wall -Wextra -pthread")
+		ADD_DEFINITIONS("-DNDEBUG")
+		SET(DEBUG_ENABLE false)
+	ENDIF(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+ENDIF(CMAKE_BUILD_TYPE STREQUAL "Debug")
+
+SET(VIENNA_PLATFORM true CACHE BOOL "target to Vienna platform")
+SET(PLATFORM_DIR vienna)
+# SET(CMAKE_CROSSCOMPILING TRUE)
+SET(CMAKE_MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake)
+
+SET(MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../modules")
+SET(MODULE_LIB "${MODULE_PATH}/libs/${PLATFORM_DIR}")
+SET(MODULE_OPEN_SRC_3RD_INSTALL_DIR "${MODULE_PATH}/install_temp_open_src_3rd")
+
+SET(VTCS_SW_DEV_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../vtcs_root_${PLATFORM_DIR}/")
+SET(VTCS_TOOLKIT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../toolkit")
+SET(VTCS_APP_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+
+IF(CMAKE_CROSSCOMPILING)
+	SET(HOST_CONFIG --host=arm-linux)	
+	if(${CMAKE_VERSION} VERSION_GREATER 2.8.11)
+		GET_FILENAME_COMPONENT(MY_TOOLCHAIN_DIR ${CMAKE_C_COMPILER} DIRECTORY) # This is for CMake > 2.8.11
+	ELSE()
+		GET_FILENAME_COMPONENT(MY_TOOLCHAIN_DIR ${CMAKE_C_COMPILER} PATH) # This is for CMake <= 2.8.11
+	ENDIF()	
+	SET(ADDITIONAL_ENV_CONFIG CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} LD=${CMAKE_LINKER} NM=${CMAKE_NM} AR=${CMAKE_AR} RANLIB=${CMAKE_RANLIB} STRIP=${CMAKE_STRIP} OBJDUMP=${CMAKE_OBJDUMP} PKG_CONFIG=${MY_TOOLCHAIN_DIR}/pkg-config)
+ENDIF(CMAKE_CROSSCOMPILING)
+
+INCLUDE_DIRECTORIES(${MODULE_PATH} ${MODULE_OPEN_SRC_3RD_INSTALL_DIR}/include ${VTCS_SW_DEV_ROOT}/include ${VTCS_SW_DEV_ROOT}/include/vmf ${VTCS_TOOLKIT_ROOT})
+LINK_DIRECTORIES(${MODULE_LIB} ${MODULE_OPEN_SRC_3RD_INSTALL_DIR}/lib ${VTCS_SW_DEV_ROOT}/lib)
+
+SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin/${PLATFORM_DIR})
+
+INCLUDE(${CMAKE_MODULE_DIR}/ConditionalAddSubDir.cmake)
+
+#
+# m5s_mw_server
+#
+
+SET(SRC_LIST
+    src/gpio.cpp
+    src/fw.cpp
+    
+    src/fw/fw_audio.cpp
+    src/fw/fw_config.cpp
+    src/fw/fw_helper.cpp
+    src/fw/fw_image.cpp
+    src/fw/fw_network.cpp
+    src/fw/fw_streaming.cpp
+    src/fw/fw_system.cpp
+)
+# SET(LINK_LIST vmf membroker msgbroker syncringbuffer)
+
+INCLUDE_DIRECTORIES(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+#ADD_DEFINITIONS("-DDEBUG")
+# INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR} ${VMF_PATH})
+LINK_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+MESSAGE("${INCLUDE_DIRECTORIES}")
+SET(LIBRARY_NAME motocam_fw)
+ADD_LIBRARY(${LIBRARY_NAME} STATIC ${SRC_LIST})
+# TARGET_LINK_LIBRARIES(${LIBRARY_NAME} ${LINK_LIST})
+
+
+# # Add executable for the DOB test examples
+# add_executable(dob_test_examples DOB_TEST_EXAMPLES.c)
+# target_link_libraries(dob_test_examples PRIVATE motocam_apis)
