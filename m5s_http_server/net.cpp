@@ -744,16 +744,65 @@ static int handle_firmware_version(struct mg_connection *conn, const struct mg_r
     return 1;
 }
 
+// Send JSON response with given HTTP status (reduces repetition in provision handler)
+static void send_provision_json_response(struct mg_connection *conn, int code, const char *reason,
+                                         const char *body)
+{
+    mg_printf(conn, "HTTP/1.1 %d %s\r\nContent-Type: application/json\r\n"
+                    "Content-Length: %zu\r\n\r\n%s",
+              code, reason, strlen(body), body);
+}
+
+// Extract a quoted string value for key "\"key\":\"...\"" from post data
+static std::string extract_json_string_field(const char *post_data, const char *key)
+{
+    std::string pattern = std::string("\"") + key + "\":";
+    const char *start = strstr(post_data, pattern.c_str());
+    if (!start)
+        return std::string();
+    start += pattern.size();
+    while (*start == ' ' || *start == '\t')
+        start++;
+    if (*start != '"')
+        return std::string();
+    start++;
+    const char *end = strchr(start, '"');
+    if (!end)
+        return std::string();
+    return std::string(start, end - start);
+}
+
+// Validate MAC format XX:XX:XX:XX:XX:XX
+static bool is_valid_mac_address(const std::string &mac)
+{
+    if (mac.length() != 17)
+        return false;
+    for (int i = 0; i < 17; i++)
+    {
+        if (i % 3 == 2 && mac[i] != ':')
+            return false;
+        if (i % 3 != 2 && !isxdigit(static_cast<unsigned char>(mac[i])))
+            return false;
+    }
+    return true;
+}
+
+// Validate manufacture date YYYY-MM-DD (year in 2000..2030)
+static bool is_valid_manufacture_date(const std::string &date)
+{
+    if (date.length() != 10 || date[4] != '-' || date[7] != '-')
+        return false;
+    int year = atoi(date.substr(0, 4).c_str());
+    return (year >= 2000 && year <= 2030);
+}
+
 // Provisioning API handler
 static int handle_provision_device(struct mg_connection *conn, const struct mg_request_info *ri)
 {
     if (strcmp(ri->request_method, "POST") != 0)
     {
-        const char *body = "{\"error\": \"Method not allowed\"}\n";
-        mg_printf(conn, "HTTP/1.1 405 Method Not Allowed\r\n"
-                        "Content-Type: application/json\r\n"
-                        "Content-Length: %zu\r\n\r\n%s",
-                  strlen(body), body);
+        send_provision_json_response(conn, 405, "Method Not Allowed",
+                                     "{\"error\": \"Method not allowed\"}\n");
         return 1;
     }
 
@@ -761,178 +810,46 @@ static int handle_provision_device(struct mg_connection *conn, const struct mg_r
     int data_len = mg_read(conn, post_data, sizeof(post_data) - 1);
     if (data_len <= 0)
     {
-        const char *body = "{\"error\": \"No data received\"}\n";
-        mg_printf(conn, "HTTP/1.1 400 Bad Request\r\n"
-                        "Content-Type: application/json\r\n"
-                        "Content-Length: %zu\r\n\r\n%s",
-                  strlen(body), body);
+        send_provision_json_response(conn, 400, "Bad Request", "{\"error\": \"No data received\"}\n");
         return 1;
     }
     post_data[data_len] = '\0';
-
     printf("Received provisioning data (length: %d): %s\n", data_len, post_data);
 
-    // Parse JSON data (simple parsing for the required fields)
-    std::string mac_address, serial_number, manufacture_date;
+    std::string mac_address = extract_json_string_field(post_data, "mac_address");
+    std::string serial_number = extract_json_string_field(post_data, "serial_number");
+    std::string manufacture_date = extract_json_string_field(post_data, "manufacture_date");
 
-    // Extract MAC address
-    char *mac_start = strstr(post_data, "\"mac_address\":");
-    if (mac_start)
-    {
-        mac_start += 15; // Length of "\"mac_address\":"
-        while (*mac_start == ' ' || *mac_start == '\t')
-            mac_start++;
-        if (*mac_start == '"')
-        {
-            mac_start++;
-            char *mac_end = strchr(mac_start, '"');
-            if (mac_end)
-            {
-                mac_address = std::string(mac_start, mac_end - mac_start);
-            }
-        }
-    }
-
-    // Extract serial number
-    char *sn_start = strstr(post_data, "\"serial_number\":");
-    if (sn_start)
-    {
-        sn_start += 17; // Length of "\"serial_number\":"
-        while (*sn_start == ' ' || *sn_start == '\t')
-            sn_start++;
-        if (*sn_start == '"')
-        {
-            sn_start++;
-            char *sn_end = strchr(sn_start, '"');
-            if (sn_end)
-            {
-                serial_number = std::string(sn_start, sn_end - sn_start);
-            }
-        }
-    }
-
-    // Extract manufacture date
-    char *date_start = strstr(post_data, "\"manufacture_date\":");
-    if (date_start)
-    {
-        date_start += 20; // Length of "\"manufacture_date\":"
-        while (*date_start == ' ' || *date_start == '\t')
-            date_start++;
-        if (*date_start == '"')
-        {
-            date_start++;
-            char *date_end = strchr(date_start, '"');
-            if (date_end)
-            {
-                manufacture_date = std::string(date_start, date_end - date_start);
-            }
-        }
-    }
-
-    // Validate required fields
     if (mac_address.empty() || serial_number.empty() || manufacture_date.empty())
     {
-        const char *body = "{\"status\": \"error\", \"message\": \"Missing required fields\"}\n";
-        mg_printf(conn, "HTTP/1.1 400 Bad Request\r\n"
-                        "Content-Type: application/json\r\n"
-                        "Content-Length: %zu\r\n\r\n%s",
-                  strlen(body), body);
+        send_provision_json_response(conn, 400, "Bad Request",
+                                     "{\"status\": \"error\", \"message\": \"Missing required fields\"}\n");
         return 1;
     }
-
-    // Validate MAC address format (XX:XX:XX:XX:XX:XX)
-    bool valid_mac = true;
-    if (mac_address.length() != 17)
+    if (!is_valid_mac_address(mac_address))
     {
-        valid_mac = false;
-    }
-    else
-    {
-        for (int i = 0; i < 17; i++)
-        {
-            if (i % 3 == 2)
-            {
-                if (mac_address[i] != ':')
-                    valid_mac = false;
-            }
-            else
-            {
-                if (!isxdigit(mac_address[i]))
-                    valid_mac = false;
-            }
-        }
-    }
-
-    if (!valid_mac)
-    {
-        const char *body = "{\"status\": \"error\", \"message\": \"Invalid MAC address format\"}\n";
-        mg_printf(conn, "HTTP/1.1 400 Bad Request\r\n"
-                        "Content-Type: application/json\r\n"
-                        "Content-Length: %zu\r\n\r\n%s",
-                  strlen(body), body);
+        send_provision_json_response(conn, 400, "Bad Request",
+                                     "{\"status\": \"error\", \"message\": \"Invalid MAC address format\"}\n");
         return 1;
     }
-
-    // Validate date format (YYYY-MM-DD)
-    bool valid_date = true;
-    if (manufacture_date.length() != 10)
+    if (!is_valid_manufacture_date(manufacture_date))
     {
-        valid_date = false;
-    }
-    else
-    {
-        if (manufacture_date[4] != '-' || manufacture_date[7] != '-')
-        {
-            valid_date = false;
-        }
-        else
-        {
-            // Basic year validation (reasonable range)
-            int year = atoi(manufacture_date.substr(0, 4).c_str());
-            if (year < 2000 || year > 2030)
-                valid_date = false;
-        }
-    }
-
-    if (!valid_date)
-    {
-        const char *body = "{\"status\": \"error\", \"message\": \"Invalid manufacture date format\"}\n";
-        mg_printf(conn, "HTTP/1.1 400 Bad Request\r\n"
-                        "Content-Type: application/json\r\n"
-                        "Content-Length: %zu\r\n\r\n%s",
-                  strlen(body), body);
+        send_provision_json_response(conn, 400, "Bad Request",
+                                     "{\"status\": \"error\", \"message\": \"Invalid manufacture date format\"}\n");
         return 1;
     }
 
     int8_t result = provisioning_mode(mac_address.c_str(), serial_number.c_str(), manufacture_date.c_str());
 
     if (result > 0)
-    {
-        // Success
-        const char *body = "{\"status\": \"success\", \"message\": \"Provisioning completed successfully\"}\n";
-        mg_printf(conn, "HTTP/1.1 200 OK\r\n"
-                        "Content-Type: application/json\r\n"
-                        "Content-Length: %zu\r\n\r\n%s",
-                  strlen(body), body);
-    }
+        send_provision_json_response(conn, 200, "OK",
+                                     "{\"status\": \"success\", \"message\": \"Provisioning completed successfully\"}\n");
     else if (result == 0)
-    {
-        // Error executing the binary
-        const char *body = "{\"status\": \"error\", \"message\": \"Mac address is already Provisioned\"}\n";
-        mg_printf(conn, "HTTP/1.1 500 Internal Server Error\r\n"
-                        "Content-Type: application/json\r\n"
-                        "Content-Length: %zu\r\n\r\n%s",
-                  strlen(body), body);
-    }
+        send_provision_json_response(conn, 500, "Internal Server Error",
+                                     "{\"status\": \"error\", \"message\": \"Mac address is already Provisioned\"}\n");
     else
-    {
-        // Error executing the binary
-        const char *body = "{\"status\": \"error\", \"message\": \"Failed to execute provisioning command\"}\n";
-        mg_printf(conn, "HTTP/1.1 500 Internal Server Error\r\n"
-                        "Content-Type: application/json\r\n"
-                        "Content-Length: %zu\r\n\r\n%s",
-                  strlen(body), body);
-    }
+        send_provision_json_response(conn, 500, "Internal Server Error",
+                                     "{\"status\": \"error\", \"message\": \"Failed to execute provisioning command\"}\n");
 
     return 1;
 }

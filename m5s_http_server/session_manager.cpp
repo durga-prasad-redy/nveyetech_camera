@@ -298,13 +298,10 @@ void session_logout_all_others(SessionManager* manager, const char* exclude_toke
     for (int i = 0; i < HASH_TABLE_SIZE; ++i) {
         HashEntry* entry = manager->sessions_cache->hash_table[i];
         while (entry) {
-            if (entry->node && !entry->node->key.empty()) {
-                std::string token = entry->node->key;
-                // If exclude_token is provided, skip it; otherwise logout all
-                if (!exclude_token || token != exclude_token) {
-                    session_tokens.push_back(token);
-                }
-            }
+            // Single condition: valid key and not excluded (short-circuit avoids null deref)
+            if (entry->node && !entry->node->key.empty() &&
+                (!exclude_token || entry->node->key != exclude_token))
+                session_tokens.push_back(entry->node->key);
             entry = entry->next;
         }
     }
