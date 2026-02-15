@@ -56,10 +56,6 @@ bool session_validate(SessionManager* manager, const char* session_token,
 bool session_invalidate(SessionManager* manager, const char* session_token);
 void session_cleanup_expired(SessionManager* manager);
 
-char* session_generate_cookie_header(const SessionManager* manager,
-                                   const char* session_token);
-
-char* session_generate_invalidation_cookie_header(const SessionManager* manager);
 bool session_force_logout(SessionManager* manager,const char* session_token);
 void session_logout_all_others(SessionManager* manager, const char* exclude_token);
 bool session_check_evicted(SessionManager* manager, const char* session_token, int* reason_out);
@@ -67,5 +63,11 @@ bool session_check_evicted(SessionManager* manager, const char* session_token, i
 #ifdef __cplusplus
 }
 #endif
+
+// C++ only: cookie functions return std::string for automatic memory management
+std::string session_generate_cookie_header(const SessionManager* manager,
+                                           const char* session_token);
+
+std::string session_generate_invalidation_cookie_header(const SessionManager* manager);
 
 #endif // SESSION_MANAGER_H

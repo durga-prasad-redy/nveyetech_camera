@@ -31,7 +31,10 @@ bool generate_session_token(char* buffer, size_t length) {
 } // anonymous namespace
 
 SessionManager* session_manager_create(const SessionConfig* config) {
-    if (!config || config->max_sessions == 0) return nullptr;
+    if (!config || config->max_sessions == 0) 
+    {
+        return nullptr;
+    }
     
     auto manager = std::make_unique<SessionManager>();
     memcpy(&manager->config, config, sizeof(SessionConfig));
@@ -180,65 +183,13 @@ void session_cleanup_expired(SessionManager* manager) {
     }
 }
 
-char* session_generate_cookie_header(const SessionManager* manager,
+std::string session_generate_cookie_header(const SessionManager* manager,
     const char* session_token)
 {
-if (!manager || !session_token)
-return nullptr;
-
-const char* path =
-manager->config.cookie_path ? manager->config.cookie_path : "/";
-
-const char* domain =
-manager->config.cookie_domain ? manager->config.cookie_domain : "";
-
-const char* secure =
-manager->config.secure_cookies ? "; Secure" : "";
-
-const char* http_only =
-manager->config.http_only_cookies ? "; HttpOnly" : "";
-
-const char* domain_prefix =
-manager->config.cookie_domain ? "; Domain=" : "";
-
-// First pass: compute required size
-int size = std::snprintf(
-nullptr,
-0,
-"session=%s; Path=%s; SameSite=Strict%s%s%s%s",
-session_token,
-path,
-secure,
-http_only,
-domain_prefix,
-domain
-);
-
-if (size <= 0)
-return nullptr;
-
-// Allocate exact memory (+1 for null terminator)
-char* header = new char[size + 1];
-
-std::snprintf(
-header,
-size + 1,
-"session=%s; Path=%s; SameSite=Strict%s%s%s%s",
-session_token,
-path,
-secure,
-http_only,
-domain_prefix,
-domain
-);
-
-return header;  // Caller must delete[] this
-}
-
-char* session_generate_invalidation_cookie_header(const SessionManager* manager)
-{
-    if (!manager)
-        return nullptr;
+    if (!manager || !session_token)
+    {        
+        return {};
+    }
 
     const char* path =
         manager->config.cookie_path ? manager->config.cookie_path : "/";
@@ -257,34 +208,66 @@ char* session_generate_invalidation_cookie_header(const SessionManager* manager)
 
     // First pass: compute required size
     int size = std::snprintf(
-        nullptr,
-        0,
-        "session=; Path=%s; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict%s%s%s%s",
-        path,
-        secure,
-        http_only,
-        domain_prefix,
-        domain
+        nullptr, 0,
+        "session=%s; Path=%s; SameSite=Strict%s%s%s%s",
+        session_token, path, secure, http_only, domain_prefix, domain
     );
 
     if (size <= 0)
-        return nullptr;
+        return {};
 
-    // Allocate exact size (+1 for null terminator)
-    char* header = new char[size + 1];
+    // Allocate via std::string (automatic memory management)
+    std::string header(static_cast<size_t>(size), '\0');
 
     std::snprintf(
-        header,
-        size + 1,
-        "session=; Path=%s; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict%s%s%s%s",
-        path,
-        secure,
-        http_only,
-        domain_prefix,
-        domain
+        &header[0], static_cast<size_t>(size) + 1,
+        "session=%s; Path=%s; SameSite=Strict%s%s%s%s",
+        session_token, path, secure, http_only, domain_prefix, domain
     );
 
-    return header;  // Caller must delete[] this
+    return header;
+}
+
+std::string session_generate_invalidation_cookie_header(const SessionManager* manager)
+{
+    if (!manager)
+        return {};
+
+    const char* path =
+        manager->config.cookie_path ? manager->config.cookie_path : "/";
+
+    const char* domain =
+        manager->config.cookie_domain ? manager->config.cookie_domain : "";
+
+    const char* secure =
+        manager->config.secure_cookies ? "; Secure" : "";
+
+    const char* http_only =
+        manager->config.http_only_cookies ? "; HttpOnly" : "";
+
+    const char* domain_prefix =
+        manager->config.cookie_domain ? "; Domain=" : "";
+
+    // First pass: compute required size
+    int size = std::snprintf(
+        nullptr, 0,
+        "session=; Path=%s; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict%s%s%s%s",
+        path, secure, http_only, domain_prefix, domain
+    );
+
+    if (size <= 0)
+        return {};
+
+    // Allocate via std::string (automatic memory management)
+    std::string header(static_cast<size_t>(size), '\0');
+
+    std::snprintf(
+        &header[0], static_cast<size_t>(size) + 1,
+        "session=; Path=%s; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict%s%s%s%s",
+        path, secure, http_only, domain_prefix, domain
+    );
+
+    return header;
 }
 
 

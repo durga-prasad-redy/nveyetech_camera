@@ -77,6 +77,11 @@ private:
     std::thread broadcast_thread;
     std::atomic<bool> stop_broadcast;
     
+    // Broadcast helpers (reduce nesting in broadcast_loop)
+    void broadcast_message(const char *json_msg);
+    void handle_misc_event();
+    void handle_ir_event();
+
     // Unix socket for misc events
     int misc_socket_fd;
     // Unix socket for IR brightness events

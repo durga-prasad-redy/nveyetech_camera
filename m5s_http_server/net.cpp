@@ -385,15 +385,14 @@ static int handle_login(struct mg_connection *conn, const struct mg_request_info
         char session_token[65];
         if (session_create(manager.get(), &ctx, session_token, sizeof(session_token)))
         {
-            char *cookie_header = session_generate_cookie_header(manager.get(), session_token);
+            std::string cookie_header = session_generate_cookie_header(manager.get(), session_token);
             const char *body = "{\"message\": \"Login successful\"}\n";
             mg_printf(conn, "HTTP/1.1 200 OK\r\n"
                             "Set-Cookie: %s\r\n"
                             "Content-Type: application/json\r\n"
                             "Cache-Control: no-cache\r\n"
                             "Content-Length: %zu\r\n\r\n%s",
-                      cookie_header, strlen(body), body);
-            // free(cookie_header);
+                      cookie_header.c_str(), strlen(body), body);
         }
         else
         {
@@ -449,15 +448,14 @@ static int handle_logout(struct mg_connection *conn, const struct mg_request_inf
         session_invalidate(manager.get(), session_token.c_str());
     }
 
-    char *cookie_header = session_generate_invalidation_cookie_header(manager.get());
+    std::string cookie_header = session_generate_invalidation_cookie_header(manager.get());
     const char *body = "{\"message\": \"Logged out successfully\"}\n";
     mg_printf(conn, "HTTP/1.1 200 OK\r\n"
                     "Set-Cookie: %s\r\n"
                     "Content-Type: application/json\r\n"
                     "Cache-Control: no-cache\r\n"
                     "Content-Length: %zu\r\n\r\n%s",
-              cookie_header, strlen(body), body);
-    // free(cookie_header);
+              cookie_header.c_str(), strlen(body), body);
 
     return 1;
 }
@@ -1255,70 +1253,76 @@ void WebServer::remove_client(const struct mg_connection *conn)
     clients.erase(conn);
 }
 
+void WebServer::broadcast_message(const char *json_msg)
+{
+    std::lock_guard<std::mutex> lock(clients_mutex);
+    for (auto conn : clients)
+    {
+        mg_websocket_write(conn, MG_WEBSOCKET_OPCODE_TEXT, json_msg, strlen(json_msg));
+    }
+}
+
+void WebServer::handle_misc_event()
+{
+    if (misc_socket_fd < 0)
+        return;
+
+    misc_event_t evt;
+    ssize_t n = recv(misc_socket_fd, &evt, sizeof(evt), MSG_DONTWAIT);
+
+    if (n == static_cast<ssize_t>(sizeof(evt)))
+    {
+        LOG_DEBUG("Misc event received: old_misc=%u, new_misc=%u", evt.old_misc, evt.new_misc);
+
+        MiscEventType event_type = (evt.old_misc == 0 || evt.new_misc == 0)
+            ? MiscEventType::STARTED_STREAMING
+            : MiscEventType::CHANGING_MISC;
+
+        char json_msg[256];
+        snprintf(json_msg, sizeof(json_msg),
+                 "{\"old_misc\":%u,\"new_misc\":%u,\"event_type\":\"%s\"}",
+                 evt.old_misc, evt.new_misc, misc_event_type_to_string(event_type));
+
+        broadcast_message(json_msg);
+    }
+    else if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+    {
+        perror("recv from misc socket");
+    }
+}
+
+void WebServer::handle_ir_event()
+{
+    if (ir_socket_fd < 0)
+        return;
+
+    ir_event_t evt;
+    ssize_t n = recv(ir_socket_fd, &evt, sizeof(evt), MSG_DONTWAIT);
+
+    if (n == static_cast<ssize_t>(sizeof(evt)))
+    {
+        LOG_DEBUG("IR brightness event received: old_ir_brightness=%u, new_ir_brightness=%u",
+                  evt.old_ir_brightness, evt.new_ir_brightness);
+
+        char json_msg[256];
+        snprintf(json_msg, sizeof(json_msg),
+                 "{\"old_ir_brightness\":%u,\"new_ir_brightness\":%u,\"event_type\":\"ir brightness changed\"}",
+                 evt.old_ir_brightness, evt.new_ir_brightness);
+
+        broadcast_message(json_msg);
+    }
+    else if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+    {
+        perror("recv from ir socket");
+    }
+}
+
 void WebServer::broadcast_loop()
 {
     while (!stop_broadcast)
     {
-        // Read from Unix socket if available
-        if (misc_socket_fd >= 0) {
-            misc_event_t evt;
-            ssize_t n = recv(misc_socket_fd, &evt, sizeof(evt), MSG_DONTWAIT);
-            
-            if (n == sizeof(evt)) {
-                LOG_DEBUG("Misc event received: old_misc=%u, new_misc=%u", evt.old_misc, evt.new_misc);
-                // Determine event type based on conditions
-                MiscEventType event_type;
-                if (evt.old_misc == 0 || evt.new_misc == 0) {
-                    event_type = MiscEventType::STARTED_STREAMING;
-                } else {
-                    event_type = MiscEventType::CHANGING_MISC;
-                }
-                
-                // Format as JSON
-                char json_msg[256];
-                snprintf(json_msg, sizeof(json_msg), "{\"old_misc\":%u,\"new_misc\":%u,\"event_type\":\"%s\"}", 
-                         evt.old_misc, evt.new_misc, misc_event_type_to_string(event_type));
-                
-                // Broadcast to all connected clients
-                std::lock_guard<std::mutex> lock(clients_mutex);
-                if (!clients.empty()) {
-                    for (auto conn : clients) {
-                        // Check if connection is still valid/writeable is handled by mg_websocket_write internally usually,
-                        // but we must ensure we don't write to a closed connection if possible.
-                        // Note: CivetWeb is thread safe, but we must be careful not to write after mg_stop is called.
-                        mg_websocket_write(conn, MG_WEBSOCKET_OPCODE_TEXT, json_msg, strlen(json_msg));
-                    }
-                }
-            } else if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
-                // Error reading from socket (but not just "no data available")
-                perror("recv from misc socket");
-            }
-        }
-
-        // Read from IR brightness socket if available
-        if (ir_socket_fd >= 0) {
-            ir_event_t evt;
-            ssize_t n = recv(ir_socket_fd, &evt, sizeof(evt), MSG_DONTWAIT);
-
-            if (n == sizeof(evt)) {
-                LOG_DEBUG("IR brightness event received: old_ir_brightness=%u, new_ir_brightness=%u", evt.old_ir_brightness, evt.new_ir_brightness);
-
-                char json_msg[256];
-                snprintf(json_msg, sizeof(json_msg), "{\"old_ir_brightness\":%u,\"new_ir_brightness\":%u,\"event_type\":\"ir brightness changed\"}",
-                         evt.old_ir_brightness, evt.new_ir_brightness);
-
-                std::lock_guard<std::mutex> lock(clients_mutex);
-                if (!clients.empty()) {
-                    for (auto conn : clients) {
-                        mg_websocket_write(conn, MG_WEBSOCKET_OPCODE_TEXT, json_msg, strlen(json_msg));
-                    }
-                }
-            } else if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
-                perror("recv from ir socket");
-            }
-        }
-
-        // Sleep for a short time to avoid busy waiting
+        handle_misc_event();
+        handle_ir_event();
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 }
