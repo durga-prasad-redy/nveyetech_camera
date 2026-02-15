@@ -1,7 +1,7 @@
 #include "session_manager.h"
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
-#include <ctime>
 #include <cstdio>
 #include <vector>
 #include <memory>
@@ -70,8 +70,8 @@ bool session_create(SessionManager* manager, const SessionContext* context,
     
 
     
-    time_t now = time(nullptr);
-    printf("time now: %ld\n", now);
+    auto now = std::chrono::system_clock::now();
+    printf("time now: %ld\n", std::chrono::system_clock::to_time_t(now));
     cached_context->created_at = now;
     cached_context->last_accessed = now;
     
@@ -100,13 +100,13 @@ bool session_force_logout(SessionManager* manager,const char* session_token)
 
 
    if (manager->config.session_timeout > 0) {
-        time_t now = time(nullptr);
-        if (difftime(now, context_value->last_accessed) > manager->config.session_timeout) {
+        auto now = std::chrono::system_clock::now();
+        if ((now - context_value->last_accessed) > std::chrono::seconds(manager->config.session_timeout)) {
             session_invalidate(manager, session_token);
             return false;
         }
         context_value->last_accessed = now;
-        printf("time now: %lu\n", context_value->last_accessed);
+        printf("time now: %ld\n", std::chrono::system_clock::to_time_t(context_value->last_accessed));
     }
 
 
@@ -131,14 +131,14 @@ bool session_validate(SessionManager* manager, const char* session_token,
     *context_out = context_value;
 
     if (manager->config.session_timeout > 0) {
-        time_t now = time(nullptr);
-        if (difftime(now, context_value->last_accessed) > manager->config.session_timeout) {
+        auto now = std::chrono::system_clock::now();
+        if ((now - context_value->last_accessed) > std::chrono::seconds(manager->config.session_timeout)) {
             session_invalidate(manager, session_token);
             *context_out = nullptr;
             return false;
         }
         context_value->last_accessed = now;
-        printf("time now: %lu\n", context_value->last_accessed);
+        printf("time now: %ld\n", std::chrono::system_clock::to_time_t(context_value->last_accessed));
     }
 
     return true;
@@ -164,13 +164,13 @@ const std::string& ref = str;
 void session_cleanup_expired(SessionManager* manager) {
     if (!manager || manager->config.session_timeout == 0) return;
     
-    time_t now = time(nullptr);
+    auto now = std::chrono::system_clock::now();
     
     for (int i = 0; i < HASH_TABLE_SIZE; i++) {
         HashEntry* entry = manager->sessions_cache->hash_table[i];
         while (entry) {
             auto* context = static_cast<SessionContext*>(entry->node->value);
-            if (difftime(now, context->last_accessed) > manager->config.session_timeout) {
+            if ((now - context->last_accessed) > std::chrono::seconds(manager->config.session_timeout)) {
                 const std::string& key_to_remove = entry->node->key;
                 entry = entry->next;
                 session_invalidate(manager, key_to_remove.c_str());

@@ -63,13 +63,13 @@ struct settings
     bool log_enabled;
     int log_level;
     long brightness;
-    char device_name[50];
-    char eth_ipaddress[50];
-    char wifi_hotspot_ipaddress[50];
-    char wifi_client_ipaddress[50];
+    std::string device_name;
+    std::string eth_ipaddress;
+    std::string wifi_hotspot_ipaddress;
+    std::string wifi_client_ipaddress;
 };
 
-static const struct settings s_settings = {true, 1, 57, {0}, {0}, {0}, {0}};
+static const struct settings s_settings = {true, 1, 57, {}, {}, {}, {}};
 
 // Global session manager and web server (owned)
 const static std::shared_ptr<SessionManager> g_session_manager;
@@ -1066,14 +1066,13 @@ static int request_handler(struct mg_connection *conn)
                  case 2: reason_str = "CRITICAL_ACTION"; break;
                  case 3: reason_str = "MANUAL"; break;
              }
-             char body[256];
-             snprintf(body, sizeof(body), "{\"error\": \"Unauthorized\", \"message\": \"Session evicted\", \"reason\": \"%s\"}\n", reason_str);
+             std::string body = std::string("{\"error\": \"Unauthorized\", \"message\": \"Session evicted\", \"reason\": \"") + reason_str + "\"}\n";
              
              mg_printf(conn, "HTTP/1.1 401 Unauthorized\r\n"
                             "Content-Type: application/json\r\n"
                             "Cache-Control: no-cache\r\n"
                             "Content-Length: %zu\r\n\r\n%s",
-                      strlen(body), body);
+                      body.size(), body.c_str());
              return 1;
         }
 
@@ -1274,12 +1273,11 @@ void WebServer::handle_misc_event()
             ? MiscEventType::STARTED_STREAMING
             : MiscEventType::CHANGING_MISC;
 
-        char json_msg[256];
-        snprintf(json_msg, sizeof(json_msg),
-                 "{\"old_misc\":%u,\"new_misc\":%u,\"event_type\":\"%s\"}",
-                 evt.old_misc, evt.new_misc, misc_event_type_to_string(event_type));
+        std::string json_msg = "{\"old_misc\":" + std::to_string(evt.old_misc) +
+                 ",\"new_misc\":" + std::to_string(evt.new_misc) +
+                 ",\"event_type\":\"" + misc_event_type_to_string(event_type) + "\"}";
 
-        broadcast_message(json_msg);
+        broadcast_message(json_msg.c_str());
     }
     else if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
     {
@@ -1300,12 +1298,11 @@ void WebServer::handle_ir_event()
         LOG_DEBUG("IR brightness event received: old_ir_brightness=%u, new_ir_brightness=%u",
                   evt.old_ir_brightness, evt.new_ir_brightness);
 
-        char json_msg[256];
-        snprintf(json_msg, sizeof(json_msg),
-                 "{\"old_ir_brightness\":%u,\"new_ir_brightness\":%u,\"event_type\":\"ir brightness changed\"}",
-                 evt.old_ir_brightness, evt.new_ir_brightness);
+        std::string json_msg = "{\"old_ir_brightness\":" + std::to_string(evt.old_ir_brightness) +
+                 ",\"new_ir_brightness\":" + std::to_string(evt.new_ir_brightness) +
+                 ",\"event_type\":\"ir brightness changed\"}";
 
-        broadcast_message(json_msg);
+        broadcast_message(json_msg.c_str());
     }
     else if (n < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
     {

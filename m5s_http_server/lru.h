@@ -1,6 +1,7 @@
 #ifndef LEAST_RECENTLY_USED_H
 #define LEAST_RECENTLY_USED_H
 
+#include <chrono>
 #include <cstdint>
 #include <ctime>
 #include <string>
@@ -13,14 +14,16 @@ static const int HASH_TABLE_SIZE = 1009;
 // Session context containing user information
 struct SessionContext {
     std::uint32_t user_id;     // Unique user identifier
-    std::time_t created_at;    // Session creation timestamp
-    std::time_t last_accessed; // Last access timestamp
+    std::chrono::system_clock::time_point created_at;    // Session creation timestamp
+    std::chrono::system_clock::time_point last_accessed; // Last access timestamp
     std::string username;      // Username (using std::string instead of char*)
     void* custom_data;         // Optional custom session data
     
-    SessionContext() : user_id(0), created_at(0), last_accessed(0), custom_data(nullptr) {}
+    SessionContext() : user_id(0), created_at{}, last_accessed{}, custom_data(nullptr) {}
     
-    SessionContext(std::uint32_t uid, std::time_t created, std::time_t accessed, 
+    SessionContext(std::uint32_t uid,
+                   std::chrono::system_clock::time_point created,
+                   std::chrono::system_clock::time_point accessed, 
                    const std::string& uname = "", void* data = nullptr)
         : user_id(uid), created_at(created), last_accessed(accessed), 
           username(uname), custom_data(data) {}
