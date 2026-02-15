@@ -42,7 +42,7 @@ namespace {
 
 constexpr size_t MAX_TOKEN_SIZE = 64;
 constexpr double MAX_FILE_SIZE_MB = 2.2;
-constexpr long long MAX_FILE_SIZE_BYTES =
+constexpr auto MAX_FILE_SIZE_BYTES =
     static_cast<long long>(MAX_FILE_SIZE_MB * 1024 * 1024); // 2.2 MB in bytes
 
 constexpr char MISC_SOCK_PATH[] = "/tmp/misc_change.sock";
@@ -300,7 +300,6 @@ static void handle_proxy_request(struct mg_connection *conn, const struct mg_req
 }
 
 
-// Login handler using nlohmann::json
 static int handle_login(struct mg_connection *conn, const struct mg_request_info *ri)
 {
     printf("Login request received\n");
@@ -349,7 +348,7 @@ static int handle_login(struct mg_connection *conn, const struct mg_request_info
     {
         if (strncmp(token, "0x", 2) == 0 || strncmp(token, "0X", 2) == 0)
         {
-            uint8_t value = (uint8_t)strtol(token, nullptr, 16);
+            auto value = (uint8_t)strtol(token, nullptr, 16);
             byteArray[byteArrayLen++] = value;
         }
         token = strtok_r(nullptr, " ", &saveptr);
@@ -492,7 +491,7 @@ static int handle_force_logout_others(struct mg_connection *conn, const struct m
     {
         if (strncmp(token, "0x", 2) == 0 || strncmp(token, "0X", 2) == 0)
         {
-            uint8_t value = (uint8_t)strtol(token, nullptr, 16);
+            auto value = (uint8_t)strtol(token, nullptr, 16);
             byteArray[byteArrayLen++] = value;
         }
         token = strtok_r(nullptr, " ", &saveptr);
@@ -593,7 +592,7 @@ static int handle_motocam_api(struct mg_connection *conn, const struct mg_reques
     {
         if (strncmp(token, "0x", 2) == 0 || strncmp(token, "0X", 2) == 0)
         {
-            uint8_t value = (uint8_t)strtol(token, nullptr, 16);
+            auto value = (uint8_t)strtol(token, nullptr, 16);
             byteArray[byteArrayLen++] = value;
         }
         token = strtok_r(nullptr, " ", &saveptr);
@@ -601,9 +600,7 @@ static int handle_motocam_api(struct mg_connection *conn, const struct mg_reques
 
     uint8_t *res_bytes = nullptr;
     uint8_t res_bytes_size = 0;
-    //int8_t ret = do_processing(byteArray, byteArrayLen, &res_bytes, &res_bytes_size);
     do_processing(byteArray, byteArrayLen, &res_bytes, &res_bytes_size);
-    // int8_t ret =12;
 
     std::string formatted;
     for (int i = 0; i < res_bytes_size; ++i)
@@ -650,7 +647,7 @@ static int handle_reset_pin(struct mg_connection *conn, const struct mg_request_
     {
         if (strncmp(token, "0x", 2) == 0 || strncmp(token, "0X", 2) == 0)
         {
-            uint8_t value = (uint8_t)strtol(token, nullptr, 16);
+            auto value = (uint8_t)strtol(token, nullptr, 16);
             byteArray[byteArrayLen++] = value;
         }
         token = strtok_r(nullptr, " ", &saveptr);
@@ -711,7 +708,7 @@ static int handle_firmware_version(struct mg_connection *conn, const struct mg_r
     {
         if (strncmp(token, "0x", 2) == 0 || strncmp(token, "0X", 2) == 0)
         {
-            uint8_t value = (uint8_t)strtol(token, nullptr, 16);
+            auto value = (uint8_t)strtol(token, nullptr, 16);
             byteArray[byteArrayLen++] = value;
         }
         token = strtok_r(nullptr, " ", &saveptr);
@@ -869,7 +866,7 @@ int field_found_with_size_check(const char *key,
         {
             printf("ERROR: Filename does not start with ota.tar.gz, rejecting upload.\n");
             // Send HTTP error response if possible
-            struct mg_connection *conn = (struct mg_connection *)user_data;
+            auto *conn = (struct mg_connection *)user_data;
             if (conn)
             {
                 const char *body = "{\"error\":\"Invalid file name. Must start with ota.tar.gz\"}\n";
@@ -1051,8 +1048,7 @@ static int request_handler(struct mg_connection *conn)
                        strncmp(ri->local_uri, "/api/getsignalserver", 20) == 0 ||
                        strncmp(ri->local_uri, "/api/upload", 11) == 0 ||
                        strncmp(ri->local_uri, "/api/motocam_api", 16) == 0
-                       //    strncmp(ri->local_uri, "/api/provision_device", 22) == 0
-                       //    strncmp(ri->local_uri, "/api/force_logout", 17) == 0  // Removed - no auth required
+                     
 
     );
 
@@ -1211,7 +1207,7 @@ static int ws_connect_handler(const struct mg_connection *conn, void *user_data)
 
 static void ws_ready_handler(struct mg_connection *conn, void *user_data)
 {
-    WebServer *server = (WebServer *)user_data;
+    auto *server = (WebServer *)user_data;
     server->add_client(conn);
 
     printf("Client ready and added to broadcast list\n");
@@ -1226,7 +1222,7 @@ static int ws_data_handler(struct mg_connection *conn, int opcode, char *data, s
 
 static void ws_close_handler(const struct mg_connection *conn, void *user_data)
 {
-    WebServer *server = (WebServer *)user_data;
+    auto *server = (WebServer *)user_data;
     server->remove_client(conn);
     printf("Client closed connection\n");
 }

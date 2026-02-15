@@ -98,13 +98,11 @@ bool session_force_logout(SessionManager* manager,const char* session_token)
     return false;
   }
 
-//   *context=context_value;
 
    if (manager->config.session_timeout > 0) {
         time_t now = time(nullptr);
         if (difftime(now, context_value->last_accessed) > manager->config.session_timeout) {
             session_invalidate(manager, session_token);
-            // *context = NULL;
             return false;
         }
         context_value->last_accessed = now;
@@ -171,7 +169,7 @@ void session_cleanup_expired(SessionManager* manager) {
     for (int i = 0; i < HASH_TABLE_SIZE; i++) {
         HashEntry* entry = manager->sessions_cache->hash_table[i];
         while (entry) {
-            SessionContext* context = static_cast<SessionContext*>(entry->node->value);
+            auto* context = static_cast<SessionContext*>(entry->node->value);
             if (difftime(now, context->last_accessed) > manager->config.session_timeout) {
                 const std::string& key_to_remove = entry->node->key;
                 entry = entry->next;

@@ -339,9 +339,9 @@ static std::string format_uptime(double seconds)
     if (seconds < 0)
         return "N/A";
     
-    int days = (int)(seconds / 86400);
-    int hours = (int)((seconds - days * 86400) / 3600);
-    int minutes = (int)((seconds - days * 86400 - hours * 3600) / 60);
+    auto days = (int)(seconds / 86400);
+    auto hours = (int)((seconds - days * 86400) / 3600);
+    auto minutes = (int)((seconds - days * 86400 - hours * 3600) / 60);
     
     std::ostringstream oss;
     if (days > 0)
@@ -529,7 +529,7 @@ static void append_system_processes(std::ostringstream &json)
         "m5s_mw_server", "m5s_http_server", "onvif_netlink_monitor", "multionvifserver",
         "rtsps", "streamer", "violet", "daemon_gyro", "wpa_supplicant", "xinetd", "syslogd", "klogd"
     };
-    const size_t num_processes = sizeof(processes) / sizeof(processes[0]);
+    const size_t num_processes = std::size(processes);
     json << "    \"processes\": {\n";
     for (size_t i = 0; i < num_processes; i++)
     {
