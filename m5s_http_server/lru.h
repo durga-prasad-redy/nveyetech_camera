@@ -29,11 +29,11 @@ struct SessionContext {
 // Cache node representing each key-value pair
 struct CacheNode {
     std::string key;
-    SessionContext* value;
-    CacheNode* prev;
-    CacheNode* next;
-    
-    CacheNode() : value(nullptr), prev(nullptr), next(nullptr) {}
+    SessionContext* value = nullptr;
+    CacheNode* prev = nullptr;
+    CacheNode* next = nullptr;
+
+    CacheNode() = default;
 };
 
 struct HashEntry {

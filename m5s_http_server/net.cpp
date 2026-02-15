@@ -1201,9 +1201,7 @@ static int request_handler(struct mg_connection *conn)
     }
     else if (strcmp(ri->local_uri, "/api/upload") == 0)
     {
-        // return handle_upload(conn, ri);
         return upload_handler(conn, ri);
-        return 1;
     }
     else if(strcmp(ri->local_uri, "/api/force_logout") == 0)
     {
@@ -1417,15 +1415,6 @@ bool WebServer::init()
     const char *options[] = {
         // "run_as_user","root"
         "listening_ports", "80", // HTTP and WS on same port
-        // "ssl_protocol_version", "4",
-        // "ssl_cipher_list", "ECDH+AESGCM+AES256:!aNULL:!MD5:!DSS"
-        // "strict_transport_security_max_age", "15552000",
-
-        // "authentication_domain", "ip_camera",
-        // "ssl_certificate", "server.pem",
-        // "enable_auth_domain_check", "no",
-        // "ssl_protocol_version", "4"
-        // "ssl_private_key", "server.key",
         "document_root", document_root.c_str(),
 
         "num_threads", "10",

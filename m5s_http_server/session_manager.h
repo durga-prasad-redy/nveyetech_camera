@@ -33,13 +33,7 @@ typedef struct SessionConfig {
     bool http_only_cookies;
 } SessionConfig;
 
-// // Session context structure
-// typedef struct SessionContext {
-//     const char* username;
-//     void* custom_data;       // Application-specific data
-//     time_t created_at;
-//     time_t last_accessed;
-// } SessionContext;
+
 
 // Session manager structure
 typedef struct SessionManager {
@@ -47,14 +41,7 @@ typedef struct SessionManager {
     LRUCache* sessions_cache;
 } SessionManager;
 
-// LRU Cache functions (implementation elsewhere)
-// LRUCache* lru_create(size_t max_size, size_t eviction_queue_size);
-// void lru_free(LRUCache* cache);
-// bool lru_put(LRUCache* cache, const char* key, void* value);
-// bool lru_get(LRUCache* cache, const char* key, void** value_out);
 
-// Hash table functions (implementation elsewhere)
-// bool hash_remove(LRUCache* cache, const char* key);
 
 // Session management API
 SessionManager* session_manager_create(const SessionConfig* config);

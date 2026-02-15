@@ -14,11 +14,11 @@
 
 namespace {
 
-static const char CONFIG_DIR[] = "/mnt/flash/vienna/m5s_config";
-static const char SNAPSHOT_FILE[] = "/mnt/flash/vienna/default_snapshot.txt";
-static const char FACTORY_BACKUP_DIR[] = "/mnt/flash/vienna/factory_backup";
-static const char FACTORY_RESET_STATUS_FILE[] = "/mnt/flash/vienna/m5s_config/factory_reset_status";
-static const char VERSION_FILE[] = "/mnt/flash/jffs2_version";
+static const std::string CONFIG_DIR = "/mnt/flash/vienna/m5s_config";
+static const std::string SNAPSHOT_FILE = "/mnt/flash/vienna/default_snapshot.txt";
+static const std::string FACTORY_BACKUP_DIR = "/mnt/flash/vienna/factory_backup";
+static const std::string FACTORY_RESET_STATUS_FILE = "/mnt/flash/vienna/m5s_config/factory_reset_status";
+static const std::string VERSION_FILE = "/mnt/flash/jffs2_version";
 
 } // anonymous namespace
 
@@ -47,16 +47,16 @@ static std::string read_file_content(const std::string &path)
 }
 
 // Helper function to check if file exists
-static bool file_exists(const char *path)
+static bool file_exists(const std::string &path)
 {
     struct stat st;
-    return (stat(path, &st) == 0 && S_ISREG(st.st_mode));
+    return (stat(path.c_str(), &st) == 0 && S_ISREG(st.st_mode));
 }
 
 // Helper function to check if directory exists
-static bool dir_exists(const char *path)
+static bool dir_exists(const std::string &path)
 {
-    DIR *dir = opendir(path);
+    DIR *dir = opendir(path.c_str());
     if (dir)
     {
         closedir(dir);
@@ -66,26 +66,26 @@ static bool dir_exists(const char *path)
 }
 
 // Helper function to get file size
-static long long get_file_size(const char *path)
+static long long get_file_size(const std::string &path)
 {
     struct stat st;
-    if (stat(path, &st) == 0)
+    if (stat(path.c_str(), &st) == 0)
         return st.st_size;
     return -1;
 }
 
 // Helper function to execute command and get output
-static std::string exec_command(const char *cmd)
+static std::string exec_command(const std::string &cmd)
 {
-    FILE *pipe = popen(cmd, "r");
+    FILE *pipe = popen(cmd.c_str(), "r");
     if (!pipe)
         return "";
     
-    char buffer[128];
-    std::string result = "";
-    while (fgets(buffer, sizeof(buffer), pipe) != nullptr)
+    std::string buffer(128, '\0');
+    std::string result;
+    while (fgets(&buffer[0], static_cast<int>(buffer.size()), pipe) != nullptr)
     {
-        result += buffer;
+        result += buffer.c_str();
     }
     pclose(pipe);
     
@@ -97,10 +97,10 @@ static std::string exec_command(const char *cmd)
 }
 
 // Helper function to get disk space info
-static void get_disk_space(const char *path, long long *total, long long *available, long long *used)
+static void get_disk_space(const std::string &path, long long *total, long long *available, long long *used)
 {
     struct statvfs st;
-    if (statvfs(path, &st) == 0)
+    if (statvfs(path.c_str(), &st) == 0)
     {
         *total = (long long)st.f_blocks * st.f_frsize;
         *available = (long long)st.f_bavail * st.f_frsize;
@@ -132,8 +132,9 @@ static std::string json_escape(const std::string &str)
             default:
                 if (c < 0x20 || c > 0x7E)
                 {
-                    char buf[7];
-                    snprintf(buf, sizeof(buf), "\\u%04x", (unsigned char)c);
+                    std::string buf(7, '\0');
+                    snprintf(&buf[0], buf.size(), "\\u%04x", (unsigned char)c);
+                    buf.resize(6);
                     escaped += buf;
                 }
                 else
@@ -147,9 +148,9 @@ static std::string json_escape(const std::string &str)
 }
 
 // Count files in directory
-static int count_files_in_dir(const char *path)
+static int count_files_in_dir(const std::string &path)
 {
-    DIR *dir = opendir(path);
+    DIR *dir = opendir(path.c_str());
     if (!dir)
         return -1;
     
@@ -170,7 +171,7 @@ static int count_files_in_dir(const char *path)
 static int get_cpu_usage()
 {
     FILE *f;
-    char buf[256];
+    std::string buf(256, '\0');
     unsigned long u1, n1, s1, i1, uw1, irq1, si1, st1;
     unsigned long u2, n2, s2, i2, uw2, irq2, si2, st2;
 
@@ -178,8 +179,8 @@ static int get_cpu_usage()
     if (!f)
         return -1;
     
-    fgets(buf, sizeof(buf), f);
-    sscanf(buf, "cpu %lu %lu %lu %lu %lu %lu %lu %lu",
+    fgets(&buf[0], static_cast<int>(buf.size()), f);
+    sscanf(buf.c_str(), "cpu %lu %lu %lu %lu %lu %lu %lu %lu",
            &u1, &n1, &s1, &i1, &uw1, &irq1, &si1, &st1);
     fclose(f);
     
@@ -189,8 +190,8 @@ static int get_cpu_usage()
     if (!f)
         return -1;
     
-    fgets(buf, sizeof(buf), f);
-    sscanf(buf, "cpu %lu %lu %lu %lu %lu %lu %lu %lu",
+    fgets(&buf[0], static_cast<int>(buf.size()), f);
+    sscanf(buf.c_str(), "cpu %lu %lu %lu %lu %lu %lu %lu %lu",
            &u2, &n2, &s2, &i2, &uw2, &irq2, &si2, &st2);
     fclose(f);
 
@@ -240,14 +241,14 @@ static std::string get_firmware_version()
 }
 
 // Extract basename from path
-static const char* get_basename(const char* path)
+static std::string get_basename(const std::string &path)
 {
-    const char* basename = strrchr(path, '/');
-    return basename ? basename + 1 : path;
+    std::string::size_type pos = path.rfind('/');
+    return (pos != std::string::npos) ? path.substr(pos + 1) : path;
 }
 
 // Check if process is running
-static bool is_process_running(const char *name)
+static bool is_process_running(const std::string &name)
 {
     DIR *dp = opendir("/proc");
     if (!dp)
@@ -256,32 +257,34 @@ static bool is_process_running(const char *name)
     struct dirent *e;
     while ((e = readdir(dp)) != nullptr)
     {
-        if (!isdigit(e->d_name[0]))
+        if (!isdigit(static_cast<unsigned char>(e->d_name[0])))
             continue;
 
         // First try /proc/<pid>/comm (may be truncated to 15 chars)
-        char path[256];
-        snprintf(path, sizeof(path), "/proc/%s/comm", e->d_name);
-        FILE *f = fopen(path, "r");
+        std::string path(256, '\0');
+        int n = snprintf(&path[0], path.size(), "/proc/%s/comm", e->d_name);
+        if (n > 0)
+            path.resize(n);
+        FILE *f = fopen(path.c_str(), "r");
         if (f)
         {
-            char comm[128];
-            if (fgets(comm, sizeof(comm), f))
+            std::string comm(128, '\0');
+            if (fgets(&comm[0], static_cast<int>(comm.size()), f))
             {
-                size_t len = strcspn(comm, "\n");
-                if (len < sizeof(comm))
-                {
-                    comm[len] = 0;
-                }
+                size_t len = strcspn(comm.c_str(), "\n");
+                if (len < comm.size())
+                    comm.resize(len);
+                else
+                    comm.resize(strlen(comm.c_str()));
                 // Check exact match
-                if (strcmp(comm, name) == 0)
+                if (comm == name)
                 {
                     fclose(f);
                     closedir(dp);
                     return true;
                 }
                 // Check if comm matches the beginning of name (for truncated names)
-                if (strlen(comm) == 15 && strncmp(name, comm, 15) == 0)
+                if (comm.size() == 15 && name.size() >= 15 && name.compare(0, 15, comm) == 0)
                 {
                     fclose(f);
                     closedir(dp);
@@ -292,27 +295,30 @@ static bool is_process_running(const char *name)
         }
 
         // Also check /proc/<pid>/cmdline for full command line
-        snprintf(path, sizeof(path), "/proc/%s/cmdline", e->d_name);
-        f = fopen(path, "r");
+        path.assign(256, '\0');
+        n = snprintf(&path[0], path.size(), "/proc/%s/cmdline", e->d_name);
+        if (n > 0)
+            path.resize(n);
+        f = fopen(path.c_str(), "r");
         if (f)
         {
-            char cmdline[512];
-            size_t len = fread(cmdline, 1, sizeof(cmdline) - 1, f);
+            std::string cmdline(512, '\0');
+            size_t len = fread(&cmdline[0], 1, cmdline.size() - 1, f);
             fclose(f);
             
             if (len > 0)
             {
-                cmdline[len] = '\0';
+                cmdline.resize(len);
                 // Extract basename from cmdline (first argument is the executable path)
-                const char* basename = get_basename(cmdline);
+                std::string basename = get_basename(cmdline);
                 // Check if name matches basename
-                if (strcmp(basename, name) == 0)
+                if (basename == name)
                 {
                     closedir(dp);
                     return true;
                 }
                 // Also check if name appears anywhere in cmdline (for full path matches)
-                if (strstr(cmdline, name) != nullptr)
+                if (cmdline.find(name) != std::string::npos)
                 {
                     closedir(dp);
                     return true;
@@ -334,21 +340,14 @@ static std::string format_uptime(double seconds)
     int hours = (int)((seconds - days * 86400) / 3600);
     int minutes = (int)((seconds - days * 86400 - hours * 3600) / 60);
     
-    char buf[128];
+    std::ostringstream oss;
     if (days > 0)
-    {
-        snprintf(buf, sizeof(buf), "%d days, %d hours, %d minutes", days, hours, minutes);
-    }
+        oss << days << " days, " << hours << " hours, " << minutes << " minutes";
     else if (hours > 0)
-    {
-        snprintf(buf, sizeof(buf), "%d hours, %d minutes", hours, minutes);
-    }
+        oss << hours << " hours, " << minutes << " minutes";
     else
-    {
-        snprintf(buf, sizeof(buf), "%d minutes", minutes);
-    }
-    
-    return std::string(buf);
+        oss << minutes << " minutes";
+    return oss.str();
 }
 
 // Handler for /api/metrics endpoint
@@ -395,18 +394,18 @@ int handle_metrics_api(struct mg_connection *conn, const struct mg_request_info 
         json << ",\n    \"backup_files_count\": " << count_files_in_dir(FACTORY_BACKUP_DIR);
         
         // Check for specific backup files
-        std::string vienna_tar = std::string(FACTORY_BACKUP_DIR) + "/vienna.tar";
-        std::string etc_tar = std::string(FACTORY_BACKUP_DIR) + "/etc.tar";
-        json << ",\n    \"vienna_tar_exists\": " << (file_exists(vienna_tar.c_str()) ? "true" : "false");
-        json << ",\n    \"etc_tar_exists\": " << (file_exists(etc_tar.c_str()) ? "true" : "false");
+        std::string vienna_tar = FACTORY_BACKUP_DIR + "/vienna.tar";
+        std::string etc_tar = FACTORY_BACKUP_DIR + "/etc.tar";
+        json << ",\n    \"vienna_tar_exists\": " << (file_exists(vienna_tar) ? "true" : "false");
+        json << ",\n    \"etc_tar_exists\": " << (file_exists(etc_tar) ? "true" : "false");
         
-        if (file_exists(vienna_tar.c_str()))
+        if (file_exists(vienna_tar))
         {
-            json << ",\n    \"vienna_tar_size\": " << get_file_size(vienna_tar.c_str());
+            json << ",\n    \"vienna_tar_size\": " << get_file_size(vienna_tar);
         }
-        if (file_exists(etc_tar.c_str()))
+        if (file_exists(etc_tar))
         {
-            json << ",\n    \"etc_tar_size\": " << get_file_size(etc_tar.c_str());
+            json << ",\n    \"etc_tar_size\": " << get_file_size(etc_tar);
         }
     }
     json << "\n  },\n";
@@ -544,7 +543,7 @@ int handle_metrics_api(struct mg_connection *conn, const struct mg_request_info 
     
     // Process status
     json << "    \"processes\": {\n";
-    const char* processes[] = {
+    const std::string processes[] = {
         "m5s_mw_server",
         "m5s_http_server",
         "onvif_netlink_monitor",
@@ -558,8 +557,8 @@ int handle_metrics_api(struct mg_connection *conn, const struct mg_request_info 
         "syslogd",
         "klogd"
     };
-    auto num_processes = std::size(processes);
-    for (int i = 0; i < num_processes; i++)
+    const size_t num_processes = sizeof(processes) / sizeof(processes[0]);
+    for (size_t i = 0; i < num_processes; i++)
     {
         bool running = is_process_running(processes[i]);
         json << "      \"" << processes[i] << "\": " << (running ? "true" : "false");
