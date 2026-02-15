@@ -350,242 +350,227 @@ static std::string format_uptime(double seconds)
     return oss.str();
 }
 
-// Handler for /api/metrics endpoint
-int handle_metrics_api(struct mg_connection *conn, const struct mg_request_info *ri)
+static void append_factory_reset(std::ostringstream &json)
 {
-    (void)ri; // Unused parameter
-    
-    // Build JSON response
-    std::ostringstream json;
-    json << "{\n";
-    
-    // Factory reset status
-    json << "  \"factory_reset\": {\n";
     std::string reset_status = read_file_content(FACTORY_RESET_STATUS_FILE);
     if (reset_status.empty())
         reset_status = "unknown";
+    json << "  \"factory_reset\": {\n";
     json << "    \"status\": \"" << json_escape(reset_status) << "\",\n";
     json << "    \"status_file_exists\": " << (file_exists(FACTORY_RESET_STATUS_FILE) ? "true" : "false") << "\n";
     json << "  },\n";
-    
-    // Configuration directory
+}
+
+static void append_configuration(std::ostringstream &json)
+{
     json << "  \"configuration\": {\n";
     json << "    \"config_dir\": \"" << CONFIG_DIR << "\",\n";
     json << "    \"config_dir_exists\": " << (dir_exists(CONFIG_DIR) ? "true" : "false") << ",\n";
     if (dir_exists(CONFIG_DIR))
-    {
         json << "    \"config_files_count\": " << count_files_in_dir(CONFIG_DIR) << ",\n";
-    }
     json << "    \"snapshot_file\": \"" << SNAPSHOT_FILE << "\",\n";
     json << "    \"snapshot_file_exists\": " << (file_exists(SNAPSHOT_FILE) ? "true" : "false");
     if (file_exists(SNAPSHOT_FILE))
-    {
-        long long snapshot_size = get_file_size(SNAPSHOT_FILE);
-        json << ",\n    \"snapshot_file_size\": " << snapshot_size;
-    }
+        json << ",\n    \"snapshot_file_size\": " << get_file_size(SNAPSHOT_FILE);
     json << "\n  },\n";
-    
-    // Factory backup
+}
+
+static void append_factory_backup(std::ostringstream &json)
+{
     json << "  \"factory_backup\": {\n";
     json << "    \"backup_dir\": \"" << FACTORY_BACKUP_DIR << "\",\n";
     json << "    \"backup_dir_exists\": " << (dir_exists(FACTORY_BACKUP_DIR) ? "true" : "false");
-    if (dir_exists(FACTORY_BACKUP_DIR))
+    if (!dir_exists(FACTORY_BACKUP_DIR))
     {
-        json << ",\n    \"backup_files_count\": " << count_files_in_dir(FACTORY_BACKUP_DIR);
-        
-        // Check for specific backup files
-        std::string vienna_tar = FACTORY_BACKUP_DIR + "/vienna.tar";
-        std::string etc_tar = FACTORY_BACKUP_DIR + "/etc.tar";
-        json << ",\n    \"vienna_tar_exists\": " << (file_exists(vienna_tar) ? "true" : "false");
-        json << ",\n    \"etc_tar_exists\": " << (file_exists(etc_tar) ? "true" : "false");
-        
-        if (file_exists(vienna_tar))
-        {
-            json << ",\n    \"vienna_tar_size\": " << get_file_size(vienna_tar);
-        }
-        if (file_exists(etc_tar))
-        {
-            json << ",\n    \"etc_tar_size\": " << get_file_size(etc_tar);
-        }
+        json << "\n  },\n";
+        return;
     }
+    std::string vienna_tar = FACTORY_BACKUP_DIR + "/vienna.tar";
+    std::string etc_tar = FACTORY_BACKUP_DIR + "/etc.tar";
+    json << ",\n    \"backup_files_count\": " << count_files_in_dir(FACTORY_BACKUP_DIR);
+    json << ",\n    \"vienna_tar_exists\": " << (file_exists(vienna_tar) ? "true" : "false");
+    json << ",\n    \"etc_tar_exists\": " << (file_exists(etc_tar) ? "true" : "false");
+    if (file_exists(vienna_tar))
+        json << ",\n    \"vienna_tar_size\": " << get_file_size(vienna_tar);
+    if (file_exists(etc_tar))
+        json << ",\n    \"etc_tar_size\": " << get_file_size(etc_tar);
     json << "\n  },\n";
-    
-    // System information
-    json << "  \"system\": {\n";
-    
-    // Uptime
+}
+
+static void append_system_uptime(std::ostringstream &json)
+{
     std::string uptime_str = exec_command("cat /proc/uptime 2>/dev/null | awk '{print $1}'");
-    double uptime_seconds = -1;
-    if (!uptime_str.empty())
-    {
-        uptime_seconds = atof(uptime_str.c_str());
-        json << "    \"uptime_seconds\": " << uptime_seconds << ",\n";
-        json << "    \"uptime_formatted\": \"" << json_escape(format_uptime(uptime_seconds)) << "\",\n";
-    }
-    
-    // CPU usage
+    if (uptime_str.empty())
+        return;
+    double uptime_seconds = atof(uptime_str.c_str());
+    json << "    \"uptime_seconds\": " << uptime_seconds << ",\n";
+    json << "    \"uptime_formatted\": \"" << json_escape(format_uptime(uptime_seconds)) << "\",\n";
+}
+
+static void append_system_cpu_temp_firmware(std::ostringstream &json)
+{
     int cpu_usage = get_cpu_usage();
     if (cpu_usage >= 0)
-    {
         json << "    \"cpu_usage_percent\": " << cpu_usage << ",\n";
-    }
-    
-    // Temperature
     int temperature = get_temperature();
     if (temperature >= 0)
-    {
         json << "    \"temperature_celsius\": " << temperature << ",\n";
-    }
-    
-    // Firmware version
-    std::string firmware_version = get_firmware_version();
-    json << "    \"firmware_version\": \"" << json_escape(firmware_version) << "\",\n";
-    
-    // Memory info
-    std::string meminfo = read_file_content("/proc/meminfo");
-    if (!meminfo.empty())
+    json << "    \"firmware_version\": \"" << json_escape(get_firmware_version()) << "\",\n";
+}
+
+struct MemInfo
+{
+    long long total_kb = -1;
+    long long available_kb = -1;
+    long long free_kb = -1;
+};
+
+static MemInfo parse_meminfo(const std::string &meminfo)
+{
+    MemInfo out;
+    std::istringstream iss(meminfo);
+    std::string line;
+    while (std::getline(iss, line))
     {
-        // Parse meminfo for total and available memory
-        std::istringstream iss(meminfo);
-        std::string line;
-        long long mem_total = -1, mem_available = -1, mem_free = -1;
-        
-        while (std::getline(iss, line))
-        {
-            if (line.find("MemTotal:") == 0)
-            {
-                sscanf(line.c_str(), "MemTotal: %lld kB", &mem_total);
-            }
-            else if (line.find("MemAvailable:") == 0)
-            {
-                sscanf(line.c_str(), "MemAvailable: %lld kB", &mem_available);
-            }
-            else if (line.find("MemFree:") == 0)
-            {
-                sscanf(line.c_str(), "MemFree: %lld kB", &mem_free);
-            }
-        }
-        
-        if (mem_total > 0)
-        {
-            json << "    \"memory\": {\n";
-            json << "      \"total_kb\": " << mem_total << ",\n";
-            json << "      \"total_mb\": " << (mem_total / 1024) << ",\n";
-            if (mem_available > 0)
-            {
-                json << "      \"available_kb\": " << mem_available << ",\n";
-                json << "      \"available_mb\": " << (mem_available / 1024) << ",\n";
-                json << "      \"used_kb\": " << (mem_total - mem_available) << ",\n";
-                json << "      \"used_mb\": " << ((mem_total - mem_available) / 1024) << ",\n";
-                json << "      \"usage_percent\": " << (100.0 * (mem_total - mem_available) / mem_total) << ",\n";
-            }
-            if (mem_free > 0)
-            {
-                json << "      \"free_kb\": " << mem_free << ",\n";
-                json << "      \"free_mb\": " << (mem_free / 1024);
-            }
-            json << "\n    },\n";
-        }
+        if (line.find("MemTotal:") == 0)
+            sscanf(line.c_str(), "MemTotal: %lld kB", &out.total_kb);
+        else if (line.find("MemAvailable:") == 0)
+            sscanf(line.c_str(), "MemAvailable: %lld kB", &out.available_kb);
+        else if (line.find("MemFree:") == 0)
+            sscanf(line.c_str(), "MemFree: %lld kB", &out.free_kb);
     }
-    
-    // Disk space for /mnt/flash
+    return out;
+}
+
+static void append_system_memory(std::ostringstream &json, const MemInfo &mem)
+{
+    if (mem.total_kb <= 0)
+        return;
+    json << "    \"memory\": {\n";
+    json << "      \"total_kb\": " << mem.total_kb << ",\n";
+    json << "      \"total_mb\": " << (mem.total_kb / 1024) << ",\n";
+    if (mem.available_kb > 0)
+    {
+        json << "      \"available_kb\": " << mem.available_kb << ",\n";
+        json << "      \"available_mb\": " << (mem.available_kb / 1024) << ",\n";
+        json << "      \"used_kb\": " << (mem.total_kb - mem.available_kb) << ",\n";
+        json << "      \"used_mb\": " << ((mem.total_kb - mem.available_kb) / 1024) << ",\n";
+        json << "      \"usage_percent\": " << (100.0 * (mem.total_kb - mem.available_kb) / mem.total_kb) << ",\n";
+    }
+    if (mem.free_kb > 0)
+    {
+        json << "      \"free_kb\": " << mem.free_kb << ",\n";
+        json << "      \"free_mb\": " << (mem.free_kb / 1024);
+    }
+    json << "\n    },\n";
+}
+
+static void append_system_disk(std::ostringstream &json)
+{
     long long disk_total = -1, disk_available = -1, disk_used = -1;
     get_disk_space("/mnt/flash", &disk_total, &disk_available, &disk_used);
-    if (disk_total > 0)
-    {
-        json << "    \"disk\": {\n";
-        json << "      \"mount_point\": \"/mnt/flash\",\n";
-        json << "      \"total_bytes\": " << disk_total << ",\n";
-        json << "      \"total_mb\": " << (disk_total / (1024 * 1024)) << ",\n";
-        json << "      \"total_gb\": " << (disk_total / (1024 * 1024 * 1024)) << ",\n";
-        json << "      \"available_bytes\": " << disk_available << ",\n";
-        json << "      \"available_mb\": " << (disk_available / (1024 * 1024)) << ",\n";
-        json << "      \"available_gb\": " << (disk_available / (1024 * 1024 * 1024)) << ",\n";
-        json << "      \"used_bytes\": " << disk_used << ",\n";
-        json << "      \"used_mb\": " << (disk_used / (1024 * 1024)) << ",\n";
-        json << "      \"used_gb\": " << (disk_used / (1024 * 1024 * 1024)) << ",\n";
-        json << "      \"usage_percent\": " << (100.0 * disk_used / disk_total) << "\n";
-        json << "    },\n";
-    }
-    
-    // Load average
+    if (disk_total <= 0)
+        return;
+    json << "    \"disk\": {\n";
+    json << "      \"mount_point\": \"/mnt/flash\",\n";
+    json << "      \"total_bytes\": " << disk_total << ",\n";
+    json << "      \"total_mb\": " << (disk_total / (1024 * 1024)) << ",\n";
+    json << "      \"total_gb\": " << (disk_total / (1024 * 1024 * 1024)) << ",\n";
+    json << "      \"available_bytes\": " << disk_available << ",\n";
+    json << "      \"available_mb\": " << (disk_available / (1024 * 1024)) << ",\n";
+    json << "      \"available_gb\": " << (disk_available / (1024 * 1024 * 1024)) << ",\n";
+    json << "      \"used_bytes\": " << disk_used << ",\n";
+    json << "      \"used_mb\": " << (disk_used / (1024 * 1024)) << ",\n";
+    json << "      \"used_gb\": " << (disk_used / (1024 * 1024 * 1024)) << ",\n";
+    json << "      \"usage_percent\": " << (100.0 * disk_used / disk_total) << "\n";
+    json << "    },\n";
+}
+
+static void append_system_loadavg(std::ostringstream &json)
+{
     std::string loadavg = read_file_content("/proc/loadavg");
-    if (!loadavg.empty())
+    double load1, load5, load15;
+    if (loadavg.empty() || sscanf(loadavg.c_str(), "%lf %lf %lf", &load1, &load5, &load15) != 3)
+        return;
+    json << "    \"load_average\": {\n";
+    json << "      \"1min\": " << load1 << ",\n";
+    json << "      \"5min\": " << load5 << ",\n";
+    json << "      \"15min\": " << load15 << "\n";
+    json << "    },\n";
+}
+
+static int count_cpu_from_cpuinfo(const std::string &cpuinfo)
+{
+    int cpu_count = 0;
+    std::istringstream iss(cpuinfo);
+    std::string line;
+    while (std::getline(iss, line))
     {
-        double load1, load5, load15;
-        if (sscanf(loadavg.c_str(), "%lf %lf %lf", &load1, &load5, &load15) == 3)
-        {
-            json << "    \"load_average\": {\n";
-            json << "      \"1min\": " << load1 << ",\n";
-            json << "      \"5min\": " << load5 << ",\n";
-            json << "      \"15min\": " << load15 << "\n";
-            json << "    },\n";
-        }
+        if (line.find("processor") == 0)
+            cpu_count++;
     }
-    
-    // CPU info
+    return cpu_count;
+}
+
+static void append_system_cpu_count(std::ostringstream &json)
+{
     std::string cpuinfo = read_file_content("/proc/cpuinfo");
-    if (!cpuinfo.empty())
-    {
-        int cpu_count = 0;
-        std::istringstream iss(cpuinfo);
-        std::string line;
-        while (std::getline(iss, line))
-        {
-            if (line.find("processor") == 0)
-                cpu_count++;
-        }
-        if (cpu_count > 0)
-        {
-            json << "    \"cpu_count\": " << cpu_count << ",\n";
-        }
-    }
-    
-    // Process status
-    json << "    \"processes\": {\n";
-    const std::string processes[] = {
-        "m5s_mw_server",
-        "m5s_http_server",
-        "onvif_netlink_monitor",
-        "multionvifserver",
-        "rtsps",
-        "streamer",
-        "violet",
-        "daemon_gyro",
-        "wpa_supplicant",
-        "xinetd",
-        "syslogd",
-        "klogd"
+    int cpu_count = count_cpu_from_cpuinfo(cpuinfo);
+    if (cpu_count > 0)
+        json << "    \"cpu_count\": " << cpu_count << ",\n";
+}
+
+static void append_system_processes(std::ostringstream &json)
+{
+    static const std::string processes[] = {
+        "m5s_mw_server", "m5s_http_server", "onvif_netlink_monitor", "multionvifserver",
+        "rtsps", "streamer", "violet", "daemon_gyro", "wpa_supplicant", "xinetd", "syslogd", "klogd"
     };
     const size_t num_processes = sizeof(processes) / sizeof(processes[0]);
+    json << "    \"processes\": {\n";
     for (size_t i = 0; i < num_processes; i++)
     {
-        bool running = is_process_running(processes[i]);
-        json << "      \"" << processes[i] << "\": " << (running ? "true" : "false");
+        json << "      \"" << processes[i] << "\": " << (is_process_running(processes[i]) ? "true" : "false");
         if (i < num_processes - 1)
             json << ",";
         json << "\n";
     }
     json << "    },\n";
-    
-    // Remove trailing comma and newline from system section
+}
+
+static std::string build_metrics_json()
+{
+    std::ostringstream json;
+    json << "{\n";
+    append_factory_reset(json);
+    append_configuration(json);
+    append_factory_backup(json);
+    json << "  \"system\": {\n";
+    append_system_uptime(json);
+    append_system_cpu_temp_firmware(json);
+    MemInfo mem = parse_meminfo(read_file_content("/proc/meminfo"));
+    append_system_memory(json, mem);
+    append_system_disk(json);
+    append_system_loadavg(json);
+    append_system_cpu_count(json);
+    append_system_processes(json);
     std::string json_str = json.str();
-    // Find last non-whitespace character
     size_t last_non_ws = json_str.find_last_not_of(" \t\n\r");
     if (last_non_ws != std::string::npos && json_str[last_non_ws] == ',')
-    {
         json_str.erase(last_non_ws, 1);
-    }
-    json_str += "\n  }\n";
-    
-    json_str += "}\n";
-    
-    // Send response
+    json_str += "\n  }\n}\n";
+    return json_str;
+}
+
+// Handler for /api/metrics endpoint
+int handle_metrics_api(struct mg_connection *conn, const struct mg_request_info *ri)
+{
+    (void)ri;
+    std::string json_str = build_metrics_json();
     mg_printf(conn, "HTTP/1.1 200 OK\r\n"
                     "Content-Type: application/json\r\n"
                     "Access-Control-Allow-Origin: *\r\n"
                     "Content-Length: %zu\r\n\r\n%s",
               json_str.length(), json_str.c_str());
-    
     return 1;
 }
