@@ -247,6 +247,69 @@ static std::string get_basename(const std::string &path)
     return (pos != std::string::npos) ? path.substr(pos + 1) : path;
 }
 
+// Check if /proc/<pid>/comm matches the target process name
+static bool match_proc_comm(const char *pid_dir, const std::string &name)
+{
+    char path[280];
+    snprintf(path, sizeof(path), "/proc/%s/comm", pid_dir);
+
+    FILE *f = fopen(path, "r");
+    if (!f)
+        return false;
+
+    char buf[128];
+    if (!fgets(buf, sizeof(buf), f))
+    {
+        fclose(f);
+        return false;
+    }
+    fclose(f);
+
+    // Strip trailing newline
+    size_t len = strcspn(buf, "\n");
+    std::string comm(buf, len);
+
+    // Check exact match
+    if (comm == name)
+        return true;
+
+    // comm is truncated to 15 chars by the kernel; check prefix match
+    if (comm.size() == 15 && name.size() >= 15 && name.compare(0, 15, comm) == 0)
+        return true;
+
+    return false;
+}
+
+// Check if /proc/<pid>/cmdline matches the target process name
+static bool match_proc_cmdline(const char *pid_dir, const std::string &name)
+{
+    char path[280];
+    snprintf(path, sizeof(path), "/proc/%s/cmdline", pid_dir);
+
+    FILE *f = fopen(path, "r");
+    if (!f)
+        return false;
+
+    char buf[512];
+    size_t len = fread(buf, 1, sizeof(buf) - 1, f);
+    fclose(f);
+
+    if (len == 0)
+        return false;
+
+    std::string cmdline(buf, len);
+
+    // Check if basename of the executable matches
+    if (get_basename(cmdline) == name)
+        return true;
+
+    // Check if name appears anywhere in cmdline (for full path matches)
+    if (cmdline.find(name) != std::string::npos)
+        return true;
+
+    return false;
+}
+
 // Check if process is running
 static bool is_process_running(const std::string &name)
 {
@@ -260,70 +323,10 @@ static bool is_process_running(const std::string &name)
         if (!isdigit(static_cast<unsigned char>(e->d_name[0])))
             continue;
 
-        // First try /proc/<pid>/comm (may be truncated to 15 chars)
-        std::string path(256, '\0');
-        int n = snprintf(&path[0], path.size(), "/proc/%s/comm", e->d_name);
-        if (n > 0)
-            path.resize(n);
-        FILE *f = fopen(path.c_str(), "r");
-        if (f)
+        if (match_proc_comm(e->d_name, name) || match_proc_cmdline(e->d_name, name))
         {
-            std::string comm(128, '\0');
-            if (fgets(&comm[0], static_cast<int>(comm.size()), f))
-            {
-                size_t len = strcspn(comm.c_str(), "\n");
-                if (len < comm.size())
-                    comm.resize(len);
-                else
-                    comm.resize(strlen(comm.c_str()));
-                // Check exact match
-                if (comm == name)
-                {
-                    fclose(f);
-                    closedir(dp);
-                    return true;
-                }
-                // Check if comm matches the beginning of name (for truncated names)
-                if (comm.size() == 15 && name.size() >= 15 && name.compare(0, 15, comm) == 0)
-                {
-                    fclose(f);
-                    closedir(dp);
-                    return true;
-                }
-            }
-            fclose(f);
-        }
-
-        // Also check /proc/<pid>/cmdline for full command line
-        path.assign(256, '\0');
-        n = snprintf(&path[0], path.size(), "/proc/%s/cmdline", e->d_name);
-        if (n > 0)
-            path.resize(n);
-        f = fopen(path.c_str(), "r");
-        if (f)
-        {
-            std::string cmdline(512, '\0');
-            size_t len = fread(&cmdline[0], 1, cmdline.size() - 1, f);
-            fclose(f);
-            
-            if (len > 0)
-            {
-                cmdline.resize(len);
-                // Extract basename from cmdline (first argument is the executable path)
-                std::string basename = get_basename(cmdline);
-                // Check if name matches basename
-                if (basename == name)
-                {
-                    closedir(dp);
-                    return true;
-                }
-                // Also check if name appears anywhere in cmdline (for full path matches)
-                if (cmdline.find(name) != std::string::npos)
-                {
-                    closedir(dp);
-                    return true;
-                }
-            }
+            closedir(dp);
+            return true;
         }
     }
     closedir(dp);
