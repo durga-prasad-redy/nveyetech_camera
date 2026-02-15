@@ -250,15 +250,14 @@ static std::string get_basename(const std::string &path)
 // Check if /proc/<pid>/comm matches the target process name
 static bool match_proc_comm(const char *pid_dir, const std::string &name)
 {
-    char path[280];
-    snprintf(path, sizeof(path), "/proc/%s/comm", pid_dir);
+    std::string path = "/proc/" + std::string(pid_dir) + "/comm";
 
-    FILE *f = fopen(path, "r");
+    FILE *f = fopen(path.c_str(), "r");
     if (!f)
         return false;
 
-    char buf[128];
-    if (!fgets(buf, sizeof(buf), f))
+    std::string buf(128, '\0');
+    if (!fgets(&buf[0], static_cast<int>(buf.size()), f))
     {
         fclose(f);
         return false;
@@ -266,8 +265,8 @@ static bool match_proc_comm(const char *pid_dir, const std::string &name)
     fclose(f);
 
     // Strip trailing newline
-    size_t len = strcspn(buf, "\n");
-    std::string comm(buf, len);
+    size_t len = strcspn(buf.c_str(), "\n");
+    std::string comm(buf.c_str(), len);
 
     // Check exact match
     if (comm == name)
@@ -283,21 +282,20 @@ static bool match_proc_comm(const char *pid_dir, const std::string &name)
 // Check if /proc/<pid>/cmdline matches the target process name
 static bool match_proc_cmdline(const char *pid_dir, const std::string &name)
 {
-    char path[280];
-    snprintf(path, sizeof(path), "/proc/%s/cmdline", pid_dir);
+    std::string path = "/proc/" + std::string(pid_dir) + "/cmdline";
 
-    FILE *f = fopen(path, "r");
+    FILE *f = fopen(path.c_str(), "r");
     if (!f)
         return false;
 
-    char buf[512];
-    size_t len = fread(buf, 1, sizeof(buf) - 1, f);
+    std::string buf(512, '\0');
+    size_t len = fread(&buf[0], 1, buf.size() - 1, f);
     fclose(f);
 
     if (len == 0)
         return false;
 
-    std::string cmdline(buf, len);
+    std::string cmdline(buf.c_str(), len);
 
     // Check if basename of the executable matches
     if (get_basename(cmdline) == name)

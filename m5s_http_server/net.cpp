@@ -177,11 +177,11 @@ static void handle_proxy_request(struct mg_connection *conn, const struct mg_req
     printf("Proxying request to: %s:%d%s\n", host.c_str(), port, target_path);
 
     // Create client connection to backend
-    char error_buffer[256];
-    struct mg_connection *backend_conn = mg_connect_client(host.c_str(), port, 0, error_buffer, sizeof(error_buffer));
+    std::string error_buffer(256, '\0');
+    struct mg_connection *backend_conn = mg_connect_client(host.c_str(), port, 0, &error_buffer[0], error_buffer.size());
     if (!backend_conn)
     {
-        printf("Failed to connect to backend %s:%d: %s\n", host.c_str(), port, error_buffer);
+        printf("Failed to connect to backend %s:%d: %s\n", host.c_str(), port, error_buffer.c_str());
         mg_printf(conn, "HTTP/1.1 502 Bad Gateway\r\n"
                         "Content-Type: application/json\r\n\r\n"
                         "{\"error\": \"Bad Gateway\", \"message\": \"Cannot connect to backend service\"}\n");
@@ -229,11 +229,11 @@ static void handle_proxy_request(struct mg_connection *conn, const struct mg_req
     // If it's a POST request, forward the body
     if (strcmp(ri->request_method, "POST") == 0)
     {
-        char buffer[4096];
+        std::string buffer(4096, '\0');
         int bytes_read;
-        while ((bytes_read = mg_read(conn, buffer, sizeof(buffer))) > 0)
+        while ((bytes_read = mg_read(conn, &buffer[0], buffer.size())) > 0)
         {
-            if (mg_write(backend_conn, buffer, bytes_read) < 0)
+            if (mg_write(backend_conn, buffer.data(), bytes_read) < 0)
             {
                 printf("Failed to forward POST body to backend\n");
                 break;
@@ -242,12 +242,12 @@ static void handle_proxy_request(struct mg_connection *conn, const struct mg_req
     }
 
     // Get response from backend
-    char response_error_buffer[256];
-    int response_status = mg_get_response(backend_conn, response_error_buffer, sizeof(response_error_buffer), 5000); // 5 second timeout
+    std::string response_error_buffer(256, '\0');
+    int response_status = mg_get_response(backend_conn, &response_error_buffer[0], response_error_buffer.size(), 5000); // 5 second timeout
 
     if (response_status < 0)
     {
-        printf("Failed to get response from backend: %s\n", response_error_buffer);
+        printf("Failed to get response from backend: %s\n", response_error_buffer.c_str());
         mg_close_connection(backend_conn);
         mg_printf(conn, "HTTP/1.1 502 Bad Gateway\r\n"
                         "Content-Type: application/json\r\n\r\n"
@@ -264,15 +264,15 @@ static void handle_proxy_request(struct mg_connection *conn, const struct mg_req
     mg_printf(conn, "Connection: close\r\n");
 
     // Read response body from backend
-    char response_buffer[4096];
+    std::string response_buffer(4096, '\0');
     int total_bytes = 0;
     int bytes_read;
 
     // Read response body in chunks
-    while ((bytes_read = mg_read(backend_conn, response_buffer + total_bytes, sizeof(response_buffer) - total_bytes - 1)) > 0)
+    while ((bytes_read = mg_read(backend_conn, &response_buffer[0] + total_bytes, response_buffer.size() - total_bytes - 1)) > 0)
     {
         total_bytes += bytes_read;
-        if (total_bytes >= (int)sizeof(response_buffer) - 1)
+        if (total_bytes >= (int)response_buffer.size() - 1)
         {
             break; // Buffer full
         }
@@ -281,13 +281,13 @@ static void handle_proxy_request(struct mg_connection *conn, const struct mg_req
     if (total_bytes > 0)
     {
         response_buffer[total_bytes] = '\0'; // Null terminate
-        printf("Response body from backend (%d bytes): %s\n", total_bytes, response_buffer);
+        printf("Response body from backend (%d bytes): %s\n", total_bytes, response_buffer.c_str());
 
         // Send content length header
         mg_printf(conn, "Content-Length: %d\r\n\r\n", total_bytes);
 
         // Forward the response body to the client
-        mg_write(conn, response_buffer, total_bytes);
+        mg_write(conn, response_buffer.data(), total_bytes);
     }
     else
     {
@@ -313,12 +313,12 @@ static int handle_login(struct mg_connection *conn, const struct mg_request_info
         return 1;
     }
 
-    char post_data[1024];
-    int data_len = mg_read(conn, post_data, sizeof(post_data) - 1);
+    std::string post_data(1024, '\0');
+    int data_len = mg_read(conn, &post_data[0], post_data.size() - 1);
     if (data_len > 0) { 
         post_data[data_len] = '\0';
     }
-    printf("Received POST data (length: %d): %s\n", data_len, post_data);
+    printf("Received POST data (length: %d): %s\n", data_len, post_data.c_str());
     if (data_len <= 0)
     {
         const char *body = "{\"error\": \"No data received\"}\n";
@@ -471,8 +471,8 @@ static int handle_force_logout_others(struct mg_connection *conn, const struct m
         return 1;
     }
 
-    char post_data[4096];
-    int data_len = mg_read(conn, post_data, sizeof(post_data) - 1);
+    std::string post_data(4096, '\0');
+    int data_len = mg_read(conn, &post_data[0], post_data.size() - 1);
     if (data_len <= 0)
     {
         mg_printf(conn, "HTTP/1.1 400 Bad Request\r\n\r\n");
@@ -480,7 +480,7 @@ static int handle_force_logout_others(struct mg_connection *conn, const struct m
     }
     post_data[data_len] = '\0';
 
-    printf("Received force_logout data (length: %d): %s\n", data_len, post_data);
+    printf("Received force_logout data (length: %d): %s\n", data_len, post_data.c_str());
 
     uint8_t byteArray[256];
     int byteArrayLen = 0;
@@ -572,8 +572,8 @@ static int handle_motocam_api(struct mg_connection *conn, const struct mg_reques
         return 1;
     }
 
-    char post_data[4096];
-    int data_len = mg_read(conn, post_data, sizeof(post_data) - 1);
+    std::string post_data(4096, '\0');
+    int data_len = mg_read(conn, &post_data[0], post_data.size() - 1);
     if (data_len <= 0)
     {
         mg_printf(conn, "HTTP/1.1 400 Bad Request\r\n\r\n");
@@ -581,13 +581,13 @@ static int handle_motocam_api(struct mg_connection *conn, const struct mg_reques
     }
     post_data[data_len] = '\0';
 
-    printf("Received data (length: %d): %s\n", data_len, post_data);
+    printf("Received data (length: %d): %s\n", data_len, post_data.c_str());
 
     uint8_t byteArray[256];
     int byteArrayLen = 0;
 
     char *saveptr;
-    char *token = strtok_r(post_data, " ", &saveptr);
+    char *token = strtok_r(&post_data[0], " ", &saveptr);
     while (token != nullptr && byteArrayLen < 256)
     {
         if (strncmp(token, "0x", 2) == 0 || strncmp(token, "0X", 2) == 0)
@@ -627,8 +627,8 @@ static int handle_reset_pin(struct mg_connection *conn, const struct mg_request_
         return 1;
     }
 
-    char post_data[4096];
-    int data_len = mg_read(conn, post_data, sizeof(post_data) - 1);
+    std::string post_data(4096, '\0');
+    int data_len = mg_read(conn, &post_data[0], post_data.size() - 1);
     if (data_len <= 0)
     {
         mg_printf(conn, "HTTP/1.1 400 Bad Request\r\n\r\n");
@@ -636,13 +636,13 @@ static int handle_reset_pin(struct mg_connection *conn, const struct mg_request_
     }
     post_data[data_len] = '\0';
 
-    printf("Received data (length: %d): %s\n", data_len, post_data);
+    printf("Received data (length: %d): %s\n", data_len, post_data.c_str());
 
     uint8_t byteArray[256];
     int byteArrayLen = 0;
 
     char *saveptr;
-    char *token = strtok_r(post_data, " ", &saveptr);
+    char *token = strtok_r(&post_data[0], " ", &saveptr);
     while (token != nullptr && byteArrayLen < 256)
     {
         if (strncmp(token, "0x", 2) == 0 || strncmp(token, "0X", 2) == 0)
@@ -688,8 +688,8 @@ static int handle_firmware_version(struct mg_connection *conn, const struct mg_r
         return 1;
     }
 
-    char post_data[4096];
-    int data_len = mg_read(conn, post_data, sizeof(post_data) - 1);
+    std::string post_data(4096, '\0');
+    int data_len = mg_read(conn, &post_data[0], post_data.size() - 1);
     if (data_len <= 0)
     {
         mg_printf(conn, "HTTP/1.1 400 Bad Request\r\n\r\n");
@@ -697,13 +697,13 @@ static int handle_firmware_version(struct mg_connection *conn, const struct mg_r
     }
     post_data[data_len] = '\0';
 
-    printf("Received data (length: %d): %s\n", data_len, post_data);
+    printf("Received data (length: %d): %s\n", data_len, post_data.c_str());
 
     uint8_t byteArray[256];
     int byteArrayLen = 0;
 
     char *saveptr;
-    char *token = strtok_r(post_data, " ", &saveptr);
+    char *token = strtok_r(&post_data[0], " ", &saveptr);
     while (token != nullptr && byteArrayLen < 256)
     {
         if (strncmp(token, "0x", 2) == 0 || strncmp(token, "0X", 2) == 0)
@@ -749,10 +749,10 @@ static void send_provision_json_response(struct mg_connection *conn, int code, c
 }
 
 // Extract a quoted string value for key "\"key\":\"...\"" from post data
-static std::string extract_json_string_field(const char *post_data, const char *key)
+static std::string extract_json_string_field(const std::string &post_data, const char *key)
 {
     std::string pattern = std::string("\"") + key + "\":";
-    const char *start = strstr(post_data, pattern.c_str());
+    const char *start = strstr(post_data.c_str(), pattern.c_str());
     if (!start)
         return std::string();
     start += pattern.size();
@@ -801,15 +801,15 @@ static int handle_provision_device(struct mg_connection *conn, const struct mg_r
         return 1;
     }
 
-    char post_data[1024];
-    int data_len = mg_read(conn, post_data, sizeof(post_data) - 1);
+    std::string post_data(1024, '\0');
+    int data_len = mg_read(conn, &post_data[0], post_data.size() - 1);
     if (data_len <= 0)
     {
         send_provision_json_response(conn, 400, "Bad Request", "{\"error\": \"No data received\"}\n");
         return 1;
     }
     post_data[data_len] = '\0';
-    printf("Received provisioning data (length: %d): %s\n", data_len, post_data);
+    printf("Received provisioning data (length: %d): %s\n", data_len, post_data.c_str());
 
     std::string mac_address = extract_json_string_field(post_data, "mac_address");
     std::string serial_number = extract_json_string_field(post_data, "serial_number");
