@@ -1,102 +1,156 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
-PROJECT(VTCS_LIB_APP)
+cmake_minimum_required(VERSION 3.12)
+project(VTCS_LIB_APP)
 
-# DEBUG, RELEASE, MINSIZEREL, RELWITHDEBINFO
-# We can use -DCMAKE_BUILD_TYPE=Debug or -DCMAKE_BUILD_TYPE=RelWithDebInfo to define something
-IF(CMAKE_BUILD_TYPE STREQUAL "Debug")
-	MESSAGE("====== Debug mode ======")
-	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wall -Wextra -pthread -g -fasynchronous-unwind-tables")
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -pthread -g -fasynchronous-unwind-tables")
-	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -rdynamic")
-	SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -rdynamic")
-	SET(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -rdynamic")
-	ADD_DEFINITIONS("-DDEBUG")
-	SET(DEBUG_ENABLE true)
-ELSE(CMAKE_BUILD_TYPE STREQUAL "Debug")
-	IF(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-		MESSAGE("====== RelWithDebInfo mode ======")
-		SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -O3 -Wall -Wextra -pthread")
-		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -Wall -Wextra -pthread")
-		ADD_DEFINITIONS("-DDEBUG")
-		SET(DEBUG_ENABLE true)
-	ELSE(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-		MESSAGE("====== Release mode ======")
-		SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -O3 -Wall -Wextra -pthread")
-		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -Wall -Wextra -pthread")
-		ADD_DEFINITIONS("-DNDEBUG")
-		SET(DEBUG_ENABLE false)
-	ENDIF(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-ENDIF(CMAKE_BUILD_TYPE STREQUAL "Debug")
+# --------------------------------------------------
+# Language Standards (IMPORTANT for SonarQube)
+# --------------------------------------------------
 
-SET(VIENNA_PLATFORM true CACHE BOOL "target to Vienna platform")
-SET(PLATFORM_DIR vienna)
-# SET(CMAKE_CROSSCOMPILING TRUE)
-SET(CMAKE_MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake)
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
-SET(MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../modules")
-SET(MODULE_LIB "${MODULE_PATH}/libs/${PLATFORM_DIR}")
-SET(MODULE_OPEN_SRC_3RD_INSTALL_DIR "${MODULE_PATH}/install_temp_open_src_3rd")
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-SET(VTCS_SW_DEV_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../vtcs_root_${PLATFORM_DIR}/")
-SET(VTCS_TOOLKIT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../toolkit")
-SET(VTCS_APP_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+# --------------------------------------------------
+# Build Type Configuration
+# --------------------------------------------------
 
-IF(CMAKE_CROSSCOMPILING)
-	SET(HOST_CONFIG --host=arm-linux)	
-	if(${CMAKE_VERSION} VERSION_GREATER 2.8.11)
-		GET_FILENAME_COMPONENT(MY_TOOLCHAIN_DIR ${CMAKE_C_COMPILER} DIRECTORY) # This is for CMake > 2.8.11
-	ELSE()
-		GET_FILENAME_COMPONENT(MY_TOOLCHAIN_DIR ${CMAKE_C_COMPILER} PATH) # This is for CMake <= 2.8.11
-	ENDIF()	
-	SET(ADDITIONAL_ENV_CONFIG CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} LD=${CMAKE_LINKER} NM=${CMAKE_NM} AR=${CMAKE_AR} RANLIB=${CMAKE_RANLIB} STRIP=${CMAKE_STRIP} OBJDUMP=${CMAKE_OBJDUMP} PKG_CONFIG=${MY_TOOLCHAIN_DIR}/pkg-config)
-ENDIF(CMAKE_CROSSCOMPILING)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message("====== Debug mode ======")
+    add_compile_options(-Wall -Wextra -pthread -g -fasynchronous-unwind-tables)
+    add_link_options(-rdynamic)
+    add_definitions(-DDEBUG)
+    set(DEBUG_ENABLE true)
 
-INCLUDE_DIRECTORIES(${MODULE_PATH} ${MODULE_OPEN_SRC_3RD_INSTALL_DIR}/include ${VTCS_SW_DEV_ROOT}/include ${VTCS_SW_DEV_ROOT}/include/vmf ${VTCS_TOOLKIT_ROOT})
-LINK_DIRECTORIES(${MODULE_LIB} ${MODULE_OPEN_SRC_3RD_INSTALL_DIR}/lib ${VTCS_SW_DEV_ROOT}/lib)
+elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    message("====== RelWithDebInfo mode ======")
+    add_compile_options(-O3 -Wall -Wextra -pthread)
+    add_definitions(-DDEBUG)
+    set(DEBUG_ENABLE true)
 
-SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin/${PLATFORM_DIR})
+else()
+    message("====== Release mode ======")
+    add_compile_options(-O3 -Wall -Wextra -pthread)
+    add_definitions(-DNDEBUG)
+    set(DEBUG_ENABLE false)
+endif()
 
-INCLUDE(${CMAKE_MODULE_DIR}/ConditionalAddSubDir.cmake)
+# --------------------------------------------------
+# Platform Configuration
+# --------------------------------------------------
 
-#
-# m5s_mw_server
-#
+set(VIENNA_PLATFORM true CACHE BOOL "target to Vienna platform")
+set(PLATFORM_DIR vienna)
 
-file(GLOB SRC_L2
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/l2/motocam_*.cpp"
-)
-file(GLOB SRC_L1
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/l1/motocam_*.cpp"
-)
+set(CMAKE_MODULE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake)
 
-SET(SRC_LIST
-    src/motocam_api_l2.cpp
-    src/motocam_api_l1.cpp
+set(MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../modules")
+set(MODULE_LIB "${MODULE_PATH}/libs/${PLATFORM_DIR}")
+set(MODULE_OPEN_SRC_3RD_INSTALL_DIR "${MODULE_PATH}/install_temp_open_src_3rd")
 
-    ${SRC_L2}
-    ${SRC_L1}
-)
+set(VTCS_SW_DEV_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../vtcs_root_${PLATFORM_DIR}/")
+set(VTCS_TOOLKIT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../toolkit")
+set(VTCS_APP_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
-# Prebuilt fw library (replaces src/fw.cpp, src/gpio.cpp and src/fw/*.cpp)
-SET(MOTOCAM_FW_LIB "${CMAKE_CURRENT_SOURCE_DIR}/../motocam_fw_libs/build_vienna/libmotocam_fw.a")
-ADD_LIBRARY(motocam_fw STATIC IMPORTED GLOBAL)
-SET_TARGET_PROPERTIES(motocam_fw PROPERTIES IMPORTED_LOCATION "${MOTOCAM_FW_LIB}")
+# --------------------------------------------------
+# Cross Compilation Support
+# --------------------------------------------------
 
-INCLUDE_DIRECTORIES(
+if(CMAKE_CROSSCOMPILING)
+
+    set(HOST_CONFIG --host=arm-linux)
+
+    if(${CMAKE_VERSION} VERSION_GREATER 2.8.11)
+        get_filename_component(MY_TOOLCHAIN_DIR ${CMAKE_C_COMPILER} DIRECTORY)
+    else()
+        get_filename_component(MY_TOOLCHAIN_DIR ${CMAKE_C_COMPILER} PATH)
+    endif()
+
+    set(ADDITIONAL_ENV_CONFIG
+        CC=${CMAKE_C_COMPILER}
+        CXX=${CMAKE_CXX_COMPILER}
+        LD=${CMAKE_LINKER}
+        NM=${CMAKE_NM}
+        AR=${CMAKE_AR}
+        RANLIB=${CMAKE_RANLIB}
+        STRIP=${CMAKE_STRIP}
+        OBJDUMP=${CMAKE_OBJDUMP}
+        PKG_CONFIG=${MY_TOOLCHAIN_DIR}/pkg-config
+    )
+
+endif()
+
+# --------------------------------------------------
+# Include & Link Directories
+# --------------------------------------------------
+
+include_directories(
+    ${MODULE_PATH}
+    ${MODULE_OPEN_SRC_3RD_INSTALL_DIR}/include
+    ${VTCS_SW_DEV_ROOT}/include
+    ${VTCS_SW_DEV_ROOT}/include/vmf
+    ${VTCS_TOOLKIT_ROOT}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/include/l1
     ${CMAKE_CURRENT_SOURCE_DIR}/include/l2
 )
 
-#ADD_DEFINITIONS("-DDEBUG")
-# INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR} ${VMF_PATH})
-LINK_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
-MESSAGE("${INCLUDE_DIRECTORIES}")
-SET(LIBRARY_NAME motocam_apis)
-ADD_LIBRARY(${LIBRARY_NAME} STATIC ${SRC_LIST})
-TARGET_LINK_LIBRARIES(${LIBRARY_NAME} PUBLIC motocam_fw)
+link_directories(
+    ${MODULE_LIB}
+    ${MODULE_OPEN_SRC_3RD_INSTALL_DIR}/lib
+    ${VTCS_SW_DEV_ROOT}/lib
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
+# --------------------------------------------------
+# Output Directory
+# --------------------------------------------------
 
-# # Add executable for the DOB test examples
-# add_executable(dob_test_examples DOB_TEST_EXAMPLES.c)
-# target_link_libraries(dob_test_examples PRIVATE motocam_apis)
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin/${PLATFORM_DIR})
+
+include(${CMAKE_MODULE_DIR}/ConditionalAddSubDir.cmake)
+
+# --------------------------------------------------
+# Source Files
+# --------------------------------------------------
+
+file(GLOB SRC_L2
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/l2/motocam_*.cpp"
+)
+
+file(GLOB SRC_L1
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/l1/motocam_*.cpp"
+)
+
+set(SRC_LIST
+    src/motocam_api_l2.cpp
+    src/motocam_api_l1.cpp
+    ${SRC_L2}
+    ${SRC_L1}
+)
+
+# --------------------------------------------------
+# Prebuilt Firmware Library
+# --------------------------------------------------
+
+set(MOTOCAM_FW_LIB
+    "${CMAKE_CURRENT_SOURCE_DIR}/../motocam_fw_libs/build_vienna/libmotocam_fw.a"
+)
+
+add_library(motocam_fw STATIC IMPORTED GLOBAL)
+set_target_properties(motocam_fw PROPERTIES
+    IMPORTED_LOCATION "${MOTOCAM_FW_LIB}"
+)
+
+# --------------------------------------------------
+# Main Static Library
+# --------------------------------------------------
+
+set(LIBRARY_NAME motocam_apis)
+
+add_library(${LIBRARY_NAME} STATIC ${SRC_LIST})
+
+target_link_libraries(${LIBRARY_NAME}
+    PUBLIC motocam_fw
+)
