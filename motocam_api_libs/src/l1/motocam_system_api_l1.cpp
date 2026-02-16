@@ -240,8 +240,7 @@ int8_t get_system_command(const uint8_t sub_command, const uint8_t data_length, 
 {
     switch (sub_command)
     {
-        //        case IPAddressSubnetMask:
-        //            return get_network_IPAddressSubnetMask(data_length, data, res_data_bytes, res_data_bytes_size);
+
     case GETCAMERANAME:
         return get_system_camera_name_l1(data_length, data, res_data_bytes, res_data_bytes_size);
     case FIRMWAREVERSION:
@@ -400,7 +399,7 @@ int8_t get_system_user_dob_l1(const uint8_t data_length, const uint8_t *data, ui
          return -5;
     }
 
-    uint8_t *dob = NULL;
+    uint8_t *dob = nullptr;
     uint8_t length = 0;
     if (get_system_user_dob_l2(&dob, &length) == 0) {
         *res_data_bytes = dob;
