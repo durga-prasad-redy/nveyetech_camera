@@ -4,7 +4,7 @@
 #include "motocam_streaming_api_l2.h"
 #include "fw/fw_streaming.h"
 
-uint8_t current_streaming_state; // 1-running, 2-not running
+static uint8_t current_streaming_state; // 1-running, 2-not running
 
 int8_t start_stream_l2()
 {

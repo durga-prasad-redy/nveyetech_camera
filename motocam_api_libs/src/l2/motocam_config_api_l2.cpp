@@ -15,9 +15,9 @@
 #include "l2/motocam_streaming_api_l2.h"
 #include "l2/motocam_system_api_l2.h"
 
-const char *motocam_default_config_file =
+constexpr const char *motocam_default_config_file =
      "/mnt/flash/vienna/motocam/motocam_default_config";
-const char *motocam_current_config_file =              
+constexpr const char *motocam_current_config_file =              
     "/mnt/flash/vienna/motocam/motocam_current_config";
 
 int8_t writeConfigFile(const char *fileName, struct MotocamConfig *config);
@@ -210,8 +210,7 @@ int8_t get_config_streaming_config_l2(uint8_t **config, uint8_t *length) {
 
   // Parse each stream
   for (int i = 0; i < stream_count; i++) {
-    char section[32];
-    snprintf(section, sizeof(section), "stream%d", i);
+    std::string section = "stream" + std::to_string(i);
 
     // Get width and height
     int width = get_ini_value(stream_ini_path, section, "width", 1920);
