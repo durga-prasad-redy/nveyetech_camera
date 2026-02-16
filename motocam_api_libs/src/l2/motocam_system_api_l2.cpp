@@ -35,23 +35,23 @@ int8_t provision_device_l2(const uint8_t provision_data_len,
   printf("provision_device_l2 provision data len=%d\n", provision_data_len);
   uint8_t macid_len_idx = 0;
   uint8_t macid_len = provision_data[macid_len_idx];
-  uint8_t macid_idx = (uint8_t)(macid_len_idx + 1);
+  auto macid_idx = (uint8_t)(macid_len_idx + 1);
   const uint8_t *macid = &provision_data[macid_idx];
   if (provision_data_len < macid_idx + macid_len + 1) // 1 for val
     return -1;
 
-  uint8_t serial_number_len_idx = (uint8_t)(macid_idx + 1);
+  auto serial_number_len_idx = (uint8_t)(macid_idx + 1);
   uint8_t serial_number_len = provision_data[serial_number_len_idx];
-  uint8_t serial_number_idx = (uint8_t)(serial_number_len_idx + 1);
+  auto serial_number_idx = (uint8_t)(serial_number_len_idx + 1);
   const uint8_t *serial_number = &provision_data[serial_number_idx];
   if (provision_data_len <
       serial_number_idx + serial_number_len + 2) // 2---1 for len 1 for val
     return -1;
 
-  uint8_t manufacture_date_len_idx =
+  auto manufacture_date_len_idx =
       (uint8_t)(serial_number_idx + serial_number_len);
   uint8_t manufacture_date_len = provision_data[manufacture_date_len_idx];
-  uint8_t manufacture_date_idx = (uint8_t)(manufacture_date_len_idx + 1);
+  auto manufacture_date_idx = (uint8_t)(manufacture_date_len_idx + 1);
   const uint8_t *manufacture_date = &provision_data[manufacture_date_idx];
   if (provision_data_len < manufacture_date_idx + manufacture_date_len +
                                2) // 2-- 1 for len, 1 for val
@@ -285,14 +285,24 @@ int8_t get_camera_health_l2(uint8_t **camera_health, uint8_t *length) {
   auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   uint8_t camera_health_idx = 0;
-  buf[camera_health_idx++] = stream_status;
-  buf[camera_health_idx++] = rtsp_status;
-  buf[camera_health_idx++] = portableRtc_status;
-  buf[camera_health_idx++] = cpu_usage;
-  buf[camera_health_idx++] = memory_usage;
-  buf[camera_health_idx++] = isp_temp;
-  buf[camera_health_idx++] = ir_temp;
-  buf[camera_health_idx++] = sensor_temp;
+
+  const uint8_t values[] = {
+      stream_status,
+      rtsp_status,
+      portableRtc_status,
+      cpu_usage,
+      memory_usage,
+      isp_temp,
+      ir_temp,
+      sensor_temp
+  };
+  
+  for (uint8_t value : values) {
+
+    buf[camera_health_idx] = value;
+    camera_health_idx += 1;
+
+  }
   *camera_health = buf.release();
 
   return 0;
@@ -309,7 +319,7 @@ int8_t login_with_pin_l2(const uint8_t pinLength, const uint8_t *loginPin,
 
   uint8_t user_pin_len_idx = 0;
   uint8_t user_pin_len = pinLength;
-  uint8_t user_pin_idx = (uint8_t)(user_pin_len_idx);
+  auto user_pin_idx = (uint8_t)(user_pin_len_idx);
   const uint8_t *user_pin = &loginPin[user_pin_idx];
 
   if (user_pin_len != 4) {
