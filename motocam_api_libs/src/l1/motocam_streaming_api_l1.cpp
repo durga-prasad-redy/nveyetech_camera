@@ -103,25 +103,45 @@ int8_t set_streaming_stop(const uint8_t data_length, const uint8_t *data)
     return -5;
 }
 
-int8_t get_streaming_state(const uint8_t data_length, const uint8_t *data, uint8_t **res_data_bytes, uint8_t *res_data_bytes_size)
+
+
+
+int8_t get_streaming_state(const uint8_t data_length,
+                           const uint8_t* data,
+                           uint8_t** res_data_bytes,
+                           uint8_t* res_data_bytes_size)
 {
     (void)data;
-    if (data_length == 0)
-    {
-        int8_t streaming_state = get_stream_state_l2();
-        if (streaming_state > 0)
-        {
-            *res_data_bytes_size = 1;
-            *res_data_bytes = (uint8_t *)malloc(*res_data_bytes_size);
-            (*res_data_bytes)[0] = (uint8_t)streaming_state;
-            return 0;
-        }
+
+    if (data_length != 0) {
+        printf("invalid data/data length\n");
+        return -5;
+    }
+
+    int8_t streaming_state = get_stream_state_l2();
+    if (streaming_state <= 0) {
         printf("error in executing the command\n");
         return -1;
     }
-    printf("invalid data/data length\n");
-    return -5;
+
+    *res_data_bytes_size = 1;
+
+    // Allocate using unique_ptr (no malloc)
+    std::unique_ptr<uint8_t[]> buffer(new (std::nothrow) uint8_t[*res_data_bytes_size]);
+    if (!buffer) {
+        return -2;  // allocation failure
+    }
+
+    buffer[0] = static_cast<uint8_t>(streaming_state);
+
+    // Transfer ownership to caller
+    *res_data_bytes = buffer.release();
+
+    return 0;
 }
+
+
+
 
 int8_t get_webrtc_streaming_state_l1(const uint8_t data_length, const uint8_t *data, uint8_t **res_data_bytes, uint8_t *res_data_bytes_size)
 {
