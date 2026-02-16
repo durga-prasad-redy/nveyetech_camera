@@ -319,7 +319,7 @@ void do_action_for_12()
 void set_misc(uint8_t misc)
 {
 
-  std:print("fw set_misc %d\n", misc);
+  printf("fw set_misc %d\n", misc);
   switch (misc)
   {
   case DAY_EIS_OFF_WDR_OFF:
@@ -719,7 +719,7 @@ int8_t set_image_misc(uint8_t misc)
   uint8_t webrtc_en = atoi(webrtc_enabled.c_str());
   if (webrtc_en == 1 && (misc == DAY_EIS_ON_WDR_ON || misc == NIGHT_EIS_ON_WDR_ON))
   {
-    std:print("[INFO] WebRTC is enabled. Cannot set misc to %d\n", misc);
+    printf("[INFO] WebRTC is enabled. Cannot set misc to %d\n", misc);
     pthread_mutex_unlock(&lock);
     return -1;
   }

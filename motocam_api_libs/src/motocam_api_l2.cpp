@@ -39,10 +39,10 @@ int8_t init_motocam_configs() {
   //    set_image_flip(current_config.flip);
   //    set_image_flip(0);
   set_image_tilt(current_config.tilt);
-  if (current_config.mic == 1)
-    set_mic(ON);
-  if (current_config.mic == 0)
-    set_mic(OFF);
+  // if (current_config.mic == 1)
+  //   set_mic(ON);
+  // if (current_config.mic == 0)
+  //   set_mic(OFF);
   set_image_misc(current_config.misc);
   stop_webrtc_stream();
 

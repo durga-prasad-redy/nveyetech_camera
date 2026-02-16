@@ -70,23 +70,17 @@ file(GLOB SRC_L1
 )
 
 SET(SRC_LIST
-    src/gpio.cpp
-    src/fw.cpp
     src/motocam_api_l2.cpp
     src/motocam_api_l1.cpp
-    
+
     ${SRC_L2}
     ${SRC_L1}
-
-    src/fw/fw_audio.cpp
-    src/fw/fw_config.cpp
-    src/fw/fw_helper.cpp
-    src/fw/fw_image.cpp
-    src/fw/fw_network.cpp
-    src/fw/fw_streaming.cpp
-    src/fw/fw_system.cpp
 )
-# SET(LINK_LIST vmf membroker msgbroker syncringbuffer)
+
+# Prebuilt fw library (replaces src/fw.cpp, src/gpio.cpp and src/fw/*.cpp)
+SET(MOTOCAM_FW_LIB "${CMAKE_CURRENT_SOURCE_DIR}/../motocam_fw_libs/build_vienna/libmotocam_fw.a")
+ADD_LIBRARY(motocam_fw STATIC IMPORTED GLOBAL)
+SET_TARGET_PROPERTIES(motocam_fw PROPERTIES IMPORTED_LOCATION "${MOTOCAM_FW_LIB}")
 
 INCLUDE_DIRECTORIES(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -100,7 +94,7 @@ LINK_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 MESSAGE("${INCLUDE_DIRECTORIES}")
 SET(LIBRARY_NAME motocam_apis)
 ADD_LIBRARY(${LIBRARY_NAME} STATIC ${SRC_LIST})
-# TARGET_LINK_LIBRARIES(${LIBRARY_NAME} ${LINK_LIST})
+TARGET_LINK_LIBRARIES(${LIBRARY_NAME} PUBLIC motocam_fw)
 
 
 # # Add executable for the DOB test examples

@@ -7,27 +7,28 @@
  * Audio
  * */
 
-int8_t set_audio_mic_l1(const uint8_t data_length, const uint8_t *data)
-{
-    if (data_length == 1)
-    {
-        if (set_audio_mic_l2(data[0]) == 0)
-        {
-            return 0;
-        }
-        printf("error in executing the command\n");
-        return -1;
-    }
-    printf("invalid data/data length\n");
-    return -5;
-}
+// int8_t set_audio_mic_l1(const uint8_t data_length, const uint8_t *data)
+// {
+//     if (data_length == 1)
+//     {
+//         if (set_audio_mic_l2(data[0]) == 0)
+//         {
+//             return 0;
+//         }
+//         printf("error in executing the command\n");
+//         return -1;
+//     }
+//     printf("invalid data/data length\n");
+//     return -5;
+// }
 
 int8_t set_audio_command(const uint8_t sub_command, const uint8_t data_length, const uint8_t *data)
 {
     switch (sub_command)
     {
     case MIC:
-        return set_audio_mic_l1(data_length, data);
+        // return set_audio_mic_l1(data_length, data);
+        return 0;
     default:
         printf("invalid sub command\n");
         return -4;
