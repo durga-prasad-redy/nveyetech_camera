@@ -1,6 +1,6 @@
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
+#include <new>
 #include <string>
 #include <fstream>
 
@@ -64,7 +64,8 @@ int8_t set_config_currenttodefault_l2() {
 int8_t get_config_factory_l2(uint8_t **config, uint8_t *length) {
   printf("get_config_factory_l2\n");
   *length = 14;
-  *config = (uint8_t *)malloc(*length);
+  *config = new (std::nothrow) uint8_t[*length];
+  if (!*config) return -1;
   (*config)[0] = factory_config.zoom;
   (*config)[1] = factory_config.rotation;
   (*config)[2] = factory_config.ircutfilter;
@@ -85,7 +86,8 @@ int8_t get_config_factory_l2(uint8_t **config, uint8_t *length) {
 int8_t get_config_default_l2(uint8_t **config, uint8_t *length) {
   printf("get_config_default_l2\n");
   *length = 14;
-  *config = (uint8_t *)malloc(*length);
+  *config = new (std::nothrow) uint8_t[*length];
+  if (!*config) return -1;
   (*config)[0] = default_config.zoom;
   (*config)[1] = default_config.rotation;
   (*config)[2] = default_config.ircutfilter;
@@ -105,11 +107,11 @@ int8_t get_config_default_l2(uint8_t **config, uint8_t *length) {
 
 void initialize_config(MotocamConfig *config) {
   printf("initialize_config\n");
-  uint8_t *data = NULL;
+  uint8_t *data = nullptr;
   uint8_t length = 0;
 
   // Get the current configuration as a byte array
-  if (get_config_current_l2(&data, &length) == 0 && data != NULL) {
+  if (get_config_current_l2(&data, &length) == 0 && data != nullptr) {
     // Make sure we got the expected amount of data
     if (length >= 14) {
       // Unpack the byte array into the struct
@@ -130,14 +132,15 @@ void initialize_config(MotocamConfig *config) {
     }
 
     // Free the allocated memory
-    free(data);
+    delete[] data;
   }
 }
 
 int8_t get_config_current_l2(uint8_t **config, uint8_t *length) {
   printf("get_config_current_l2\n");
   *length = 14;
-  *config = (uint8_t *)malloc(*length);
+  *config = new (std::nothrow) uint8_t[*length];
+  if (!*config) return -1;
 
   uint8_t zoom;
   get_image_zoom(&zoom);
@@ -198,8 +201,8 @@ int8_t get_config_streaming_config_l2(uint8_t **config, uint8_t *length) {
   
   // Allocate memory: 4 bytes per stream (resolution, fps, bitrate, encoder)
   *length = stream_count * 4;
-  *config = (uint8_t *)malloc(*length);
-  if (*config == NULL) {
+  *config = new (std::nothrow) uint8_t[*length];
+  if (*config == nullptr) {
     printf("Failed to allocate memory for streaming config\n");
     return -1;
   }
@@ -249,10 +252,14 @@ int8_t get_config_streaming_config_l2(uint8_t **config, uint8_t *length) {
   return 0;
 }
 
+void motocam_l2_free_buffer(void* p) {
+  delete[] static_cast<uint8_t*>(p);
+}
+
 int8_t writeConfigFile(const char *fileName, struct MotocamConfig *config) {
   printf("writeToFile %s\n", fileName);
   FILE *f = fopen(fileName, "wb");
-  if (f == NULL) {
+  if (f == nullptr) {
     printf("open file error %s\n", fileName);
     return -1;
   }
