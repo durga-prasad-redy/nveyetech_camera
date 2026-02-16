@@ -3,9 +3,9 @@
 #include <pthread.h>
 #include "fw/fw_system.h"
 #include "fw/fw_sensor.h"
-#define IR_FILE "/sys/bus/iio/devices/iio:device0/in_voltage1_raw"
-#define SENSOR_FILE "/sys/bus/iio/devices/iio:device0/in_voltage0_raw"
-#define ISP_FILE "/sys/class/thermal/thermal_zone0/temp"
+constexpr const char* IR_FILE "/sys/bus/iio/devices/iio:device0/in_voltage1_raw"
+constexpr const char* SENSOR_FILE "/sys/bus/iio/devices/iio:device0/in_voltage0_raw"
+constexpr const char* ISP_FILE "/sys/class/thermal/thermal_zone0/temp"
 
 // Structure representing a temperature and its corresponding volume level
 typedef struct
