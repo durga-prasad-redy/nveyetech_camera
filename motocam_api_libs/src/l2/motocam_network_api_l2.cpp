@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <memory>
 #include <new>
 #include "motocam_network_api_l2.h"
 #include "fw/fw_network.h"
@@ -197,27 +198,28 @@ int8_t get_WifiHotspot_l2(uint8_t **wifiHotspot, uint8_t *length) {
 
   *length = (uint8_t)(1 + ssid_len + 1 + 1 + encryption_key_len + 1 +
                       ipaddress_len + 1 + subnetmask_len);
-  *wifiHotspot = new (std::nothrow) uint8_t[*length];
-  if (!*wifiHotspot) return -1;
+  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  if (!buf) return -1;
   uint8_t wifiHotspot_idx = 0;
-  (*wifiHotspot)[wifiHotspot_idx] = ssid_len;
+  buf[wifiHotspot_idx] = ssid_len;
   uint8_t i;
   for (i = 0; i < ssid_len; i++) {
-    (*wifiHotspot)[++wifiHotspot_idx] = (uint8_t)ssid[i];
+    buf[++wifiHotspot_idx] = (uint8_t)ssid[i];
   }
-  (*wifiHotspot)[++wifiHotspot_idx] = encryption_type;
-  (*wifiHotspot)[++wifiHotspot_idx] = encryption_key_len;
+  buf[++wifiHotspot_idx] = encryption_type;
+  buf[++wifiHotspot_idx] = encryption_key_len;
   for (i = 0; i < encryption_key_len; i++) {
-    (*wifiHotspot)[++wifiHotspot_idx] = (uint8_t)encryption_key[i];
+    buf[++wifiHotspot_idx] = (uint8_t)encryption_key[i];
   }
-  (*wifiHotspot)[++wifiHotspot_idx] = ipaddress_len;
+  buf[++wifiHotspot_idx] = ipaddress_len;
   for (i = 0; i < ipaddress_len; i++) {
-    (*wifiHotspot)[++wifiHotspot_idx] = (uint8_t)ipaddress[i];
+    buf[++wifiHotspot_idx] = (uint8_t)ipaddress[i];
   }
-  (*wifiHotspot)[++wifiHotspot_idx] = subnetmask_len;
+  buf[++wifiHotspot_idx] = subnetmask_len;
   for (i = 0; i < subnetmask_len; i++) {
-    (*wifiHotspot)[++wifiHotspot_idx] = (uint8_t)subnetmask[i];
+    buf[++wifiHotspot_idx] = (uint8_t)subnetmask[i];
   }
+  *wifiHotspot = buf.release();
   return 0;
 }
 
@@ -361,27 +363,28 @@ int8_t get_WifiClient_l2(uint8_t **wifiClient, uint8_t *length) {
 
   *length = (uint8_t)(1 + ssid_len + 1 + 1 + encryption_key_len + 1 +
                       ipaddress_len + 1 + subnetmask_len);
-  *wifiClient = new (std::nothrow) uint8_t[*length];
-  if (!*wifiClient) return -1;
+  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  if (!buf) return -1;
   uint8_t wificlient_idx = 0;
-  (*wifiClient)[wificlient_idx] = ssid_len;
+  buf[wificlient_idx] = ssid_len;
   uint8_t i;
   for (i = 0; i < ssid_len; i++) {
-    (*wifiClient)[++wificlient_idx] = (uint8_t)ssid[i];
+    buf[++wificlient_idx] = (uint8_t)ssid[i];
   }
-  (*wifiClient)[++wificlient_idx] = encryption_type;
-  (*wifiClient)[++wificlient_idx] = encryption_key_len;
+  buf[++wificlient_idx] = encryption_type;
+  buf[++wificlient_idx] = encryption_key_len;
   for (i = 0; i < encryption_key_len; i++) {
-    (*wifiClient)[++wificlient_idx] = (uint8_t)encryption_key[i];
+    buf[++wificlient_idx] = (uint8_t)encryption_key[i];
   }
-  (*wifiClient)[++wificlient_idx] = ipaddress_len;
+  buf[++wificlient_idx] = ipaddress_len;
   for (i = 0; i < ipaddress_len; i++) {
-    (*wifiClient)[++wificlient_idx] = (uint8_t)ipaddress[i];
+    buf[++wificlient_idx] = (uint8_t)ipaddress[i];
   }
-  (*wifiClient)[++wificlient_idx] = subnetmask_len;
+  buf[++wificlient_idx] = subnetmask_len;
   for (i = 0; i < subnetmask_len; i++) {
-    (*wifiClient)[++wificlient_idx] = (uint8_t)subnetmask[i];
+    buf[++wificlient_idx] = (uint8_t)subnetmask[i];
   }
+  *wifiClient = buf.release();
   return 0;
 }
 
@@ -393,10 +396,11 @@ int8_t get_wifi_state_l2(uint8_t **wifi_state, uint8_t *length) {
     return -1;
   }
   *length = 1;
-  *wifi_state = new (std::nothrow) uint8_t[*length];
-  if (!*wifi_state) return -1;
+  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  if (!buf) return -1;
   printf("get_wifi_state_l2 state=%d\n", state);
-  (*wifi_state)[0] = state;
+  buf[0] = state;
+  *wifi_state = buf.release();
   return 0;
 }
 
@@ -413,17 +417,16 @@ int8_t get_ethernet_l2(uint8_t **ethernet, uint8_t *length) {
   printf("ip_address %s %d\n", ip_address, ip_address_len);
 
   *length = ip_address_len + 1;
-  *ethernet = new (std::nothrow) uint8_t[*length];
-
-  if (*ethernet == nullptr) {
+  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  if (!buf) {
     return -1;
   }
 
-  // Fix: Use parentheses to ensure correct precedence
-  (*ethernet)[0] = ip_address_len;
+  buf[0] = ip_address_len;
   for (int i = 0; i < ip_address_len; i++) {
-    (*ethernet)[i + 1] = (uint8_t)ip_address[i]; // Also simplified the indexing
+    buf[i + 1] = (uint8_t)ip_address[i];
   }
+  *ethernet = buf.release();
 
   return 0;
 }

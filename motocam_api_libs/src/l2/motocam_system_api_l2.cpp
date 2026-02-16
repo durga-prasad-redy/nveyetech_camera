@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstring>
+#include <memory>
 #include <new>
 #include <ctime>
 #include <cctype>
@@ -229,11 +230,12 @@ int8_t get_system_camera_name_l2(uint8_t **cameraName, uint8_t *length) {
   }
 
   *length = (uint8_t)strlen(name);
-  *cameraName = new (std::nothrow) uint8_t[*length];
-  if (!*cameraName) return -1;
+  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  if (!buf) return -1;
   for (uint8_t i = 0; i < *length; i++) {
-    (*cameraName)[i] = (uint8_t)name[i];
+    buf[i] = (uint8_t)name[i];
   }
+  *cameraName = buf.release();
 
   return 0;
 }
@@ -246,11 +248,12 @@ int8_t get_system_firmware_version_l2(uint8_t **firmwareVersion,
   }
 
   *length = (uint8_t)strlen(version);
-  *firmwareVersion = new (std::nothrow) uint8_t[*length];
-  if (!*firmwareVersion) return -1;
+  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  if (!buf) return -1;
   for (uint8_t i = 0; i < *length; i++) {
-    (*firmwareVersion)[i] = (uint8_t)version[i];
+    buf[i] = (uint8_t)version[i];
   }
+  *firmwareVersion = buf.release();
 
   return 0;
 }
@@ -262,11 +265,12 @@ int8_t get_system_mac_address_l2(uint8_t **macAddress, uint8_t *length) {
   }
 
   *length = (uint8_t)strlen(mac);
-  *macAddress = new (std::nothrow) uint8_t[*length];
-  if (!*macAddress) return -1;
+  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  if (!buf) return -1;
   for (uint8_t i = 0; i < *length; i++) {
-    (*macAddress)[i] = (uint8_t)mac[i];
+    buf[i] = (uint8_t)mac[i];
   }
+  *macAddress = buf.release();
 
   return 0;
 }
@@ -279,11 +283,12 @@ int8_t get_ota_update_status_l2(uint8_t **ota_status, uint8_t *length) {
   }
 
   *length = (uint8_t)strlen(status);
-  *ota_status = new (std::nothrow) uint8_t[*length];
-  if (!*ota_status) return -1;
+  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  if (!buf) return -1;
   for (uint8_t i = 0; i < *length; i++) {
-    (*ota_status)[i] = (uint8_t)status[i];
+    buf[i] = (uint8_t)status[i];
   }
+  *ota_status = buf.release();
 
   return 0;
 }
@@ -310,23 +315,18 @@ int8_t get_camera_health_l2(uint8_t **camera_health, uint8_t *length) {
 
   *length = (uint8_t)(8); // 5 bytes for status + 3 bytes for temperatures
   // 1 byte for each status and 1 byte for each temperature
-  *camera_health = new (std::nothrow) uint8_t[*length];
-  if (!*camera_health) return -1;
+  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  if (!buf) return -1;
   uint8_t camera_health_idx = 0;
-  (*camera_health)[camera_health_idx++] = stream_status;
-  (*camera_health)[camera_health_idx++] = rtsp_status;
-  (*camera_health)[camera_health_idx++] = portableRtc_status;
-  (*camera_health)[camera_health_idx++] = cpu_usage;
-  (*camera_health)[camera_health_idx++] = memory_usage;
-  (*camera_health)[camera_health_idx++] = isp_temp;
-  (*camera_health)[camera_health_idx++] = ir_temp;
-  (*camera_health)[camera_health_idx++] = sensor_temp;
-
-  // printf("get_camera_health_l2 stream_status=%d, rtsp_status=%d,
-  // portableRtc_status=%d, cpu_usage=%d, memory_usage=%d, isp_temp=%d,
-  // ir_temp=%d, sensor_temp=%d\n",
-  //        stream_status, rtsp_status, portableRtc_status, cpu_usage,
-  //        memory_usage, isp_temp, ir_temp, sensor_temp);
+  buf[camera_health_idx++] = stream_status;
+  buf[camera_health_idx++] = rtsp_status;
+  buf[camera_health_idx++] = portableRtc_status;
+  buf[camera_health_idx++] = cpu_usage;
+  buf[camera_health_idx++] = memory_usage;
+  buf[camera_health_idx++] = isp_temp;
+  buf[camera_health_idx++] = ir_temp;
+  buf[camera_health_idx++] = sensor_temp;
+  *camera_health = buf.release();
 
   return 0;
 }
@@ -376,23 +376,22 @@ int8_t login_with_pin_l2(const uint8_t pinLength, const uint8_t *loginPin,
     user_provided_pin[user_pin_len - 1] = '\0';
   }
 
+  *auth_data_bytes_size = 1; // Assuming auth data size is 1 byte
+  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*auth_data_bytes_size]);
+  if (!buf) return -1;
   if (strcmp(current_login_pin, user_provided_pin) == 0) {
-    *auth_data_bytes_size = 1; // Assuming auth data size is 1 byte
-    *auth_data_byte = new (std::nothrow) uint8_t[*auth_data_bytes_size];
-    if (!*auth_data_byte) return -1;
-    (*auth_data_byte)[0] = 0; // Indicating success
+    buf[0] = 0; // Indicating success
     printf("Authentication successful, current login pin: %s, user provided "
            "pin: %s\n",
            current_login_pin, user_provided_pin);
+    *auth_data_byte = buf.release();
     return 0;
   } else {
-    *auth_data_bytes_size = 1; // Assuming auth data size is 1 byte
-    *auth_data_byte = new (std::nothrow) uint8_t[*auth_data_bytes_size];
-    if (!*auth_data_byte) return -1;
-    (*auth_data_byte)[0] = 3; // Indicating failure
+    buf[0] = 3; // Indicating failure
     printf(
         "Authentication failed, current login pin: %s, user provided pin: %s\n",
         current_login_pin, user_provided_pin);
+    *auth_data_byte = buf.release();
     return -3;
   }
 
@@ -473,10 +472,11 @@ int8_t get_system_user_dob_l2(uint8_t **dob, uint8_t *length) {
     char buffer[11];
     if (get_user_dob(buffer) == 0) {
         *length = 10;
-        *dob = new (std::nothrow) uint8_t[*length];
-        if (!*dob) return -1;
-        memcpy(*dob, buffer, *length);
-         return 0;
+        std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+        if (!buf) return -1;
+        memcpy(buf.get(), buffer, *length);
+        *dob = buf.release();
+        return 0;
     }
     return -1;
 }
