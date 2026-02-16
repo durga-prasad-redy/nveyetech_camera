@@ -206,7 +206,7 @@ int8_t set_WifiClient_l2(const uint8_t wifiClient_len,
   printf("set_WifiClient_l2 wifiClient_len=%d\n", wifiClient_len);
   uint8_t ssid_len_idx = 0;
   uint8_t ssid_len = wifiClient[ssid_len_idx];
-  uint8_t ssid_idx = (uint8_t)(ssid_len_idx + 1);
+  auto ssid_idx = (uint8_t)(ssid_len_idx + 1);
   const uint8_t *ssid = &wifiClient[ssid_idx];
   if (wifiClient_len < ssid_idx + ssid_len + 1) // 1 for val
   {
@@ -347,7 +347,9 @@ int8_t get_WifiClient_l2(uint8_t **wifiClient, uint8_t *length) {
     wificlient_idx += 1;
     buf[wificlient_idx] = (uint8_t)ipaddress[i];
   }
-  buf[++wificlient_idx] = subnetmask_len;
+      wificlient_idx += 1;
+
+  buf[wificlient_idx] = subnetmask_len;
   for (i = 0; i < subnetmask_len; i++) {
     wificlient_idx += 1;
     buf[wificlient_idx] = (uint8_t)subnetmask[i];
