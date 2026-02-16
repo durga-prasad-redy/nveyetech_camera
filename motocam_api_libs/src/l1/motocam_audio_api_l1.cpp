@@ -9,35 +9,43 @@
 
 
 
-int8_t set_audio_command(const uint8_t sub_command, const uint8_t data_length, const uint8_t *data)
+int8_t set_audio_command(const uint8_t sub_command,
+                         const uint8_t data_length,
+                         const uint8_t* data)
 {
-    printf("set_audio_command: sub_command=%d, data_length=%d\n", sub_command, data_length);
+    printf("set_audio_command: sub_command=%u, data_length=%u\n",
+           sub_command, data_length);
+
     printf("set_audio_command: data=");
-    for (int i = 0; i < data_length; i++)    {
+    for (uint8_t i = 0; i < data_length; ++i) {
         printf("%02x ", data[i]);
     }
     printf("\n");
-    switch (sub_command)
-    {
-    case MIC:
+
+    if (sub_command == MIC) {
         return 0;
-    default:
-        printf("invalid sub command\n");
-        return -4;
     }
+
+    printf("invalid sub command\n");
+    return -4;
 }
 
-int8_t get_audio_command(const uint8_t sub_command, const uint8_t data_length, const uint8_t *data,
-                         uint8_t **res_data_bytes, uint8_t *res_data_bytes_size)
+
+int8_t get_audio_command(const uint8_t sub_command,
+                         const uint8_t data_length,
+                         const uint8_t* data,
+                         uint8_t** res_data_bytes,
+                         uint8_t* res_data_bytes_size)
 {
-    switch (sub_command)
-    {
-    case MIC:
-        return get_audio_mic_l1(data_length, data, res_data_bytes, res_data_bytes_size);
-    default:
-        printf("invalid sub command\n");
-        return -4;
+    if (sub_command == MIC) {
+        return get_audio_mic_l1(data_length,
+                                data,
+                                res_data_bytes,
+                                res_data_bytes_size);
     }
+
+    printf("invalid sub command\n");
+    return -4;
 }
 
 int8_t get_audio_mic_l1(const uint8_t data_length, const uint8_t *data, uint8_t **res_data_bytes, uint8_t *res_data_bytes_size)
