@@ -39,7 +39,7 @@ int8_t get_stream_state()
 {
   pthread_mutex_lock(&lock);
   std::string output = exec(GET_STREAMING_STATE);
-  uint8_t state = (uint8_t)atoi(output.c_str());
+  auto state = static_cast<uint8_t>(atoi(output.c_str()));
   pthread_mutex_unlock(&lock);
   return state;
 }
@@ -140,20 +140,15 @@ int8_t stop_webrtc_stream()
 
 
 
-
-
-
-
-
-
-
-
 // Helper function to trim whitespace from string
-std::string trim(const std::string& str) {
-  size_t first = str.find_first_not_of(" \t\r\n");
-  if (first == std::string::npos) return "";
-  size_t last = str.find_last_not_of(" \t\r\n");
-  return str.substr(first, (last - first + 1));
+std::string trim(std::string_view str)
+{
+    size_t first = str.find_first_not_of(" \t\r\n");
+    if (first == std::string_view::npos)
+        return "";
+
+    size_t last = str.find_last_not_of(" \t\r\n");
+    return std::string(str.substr(first, last - first + 1));
 }
 
 // Helper function to get value from INI file section
@@ -186,20 +181,23 @@ std::string trim(const std::string& str) {
     }
     
     // Parse key=value if in the right section
-    if (in_section) {
-      size_t eq_pos = line.find('=');
-      if (eq_pos != std::string::npos) {
-        std::string current_key = trim(line.substr(0, eq_pos));
-        std::string value_str = trim(line.substr(eq_pos + 1));
-        
-        if (current_key == key) {
-          file.close();
-          return atoi(value_str.c_str());
-        }
-      }
-    }
+    if (!in_section)
+        continue;
+
+    size_t eq_pos = line.find('=');
+    if (eq_pos == std::string::npos)
+        continue;
+
+    std::string current_key = trim(line.substr(0, eq_pos));
+    if (current_key != key)
+        continue;
+
+    std::string value_str = trim(line.substr(eq_pos + 1));
+    file.close();
+    return atoi(value_str.c_str());
+
   }
-  
+
   file.close();
   return default_value;
 }
