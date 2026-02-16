@@ -221,7 +221,6 @@ ImageResolution map_resolution(int width, int height) {
 
 // Helper function to map codec value to Encoder enum
  Encoder map_encoder(int codec) {
-  // codec: 0=H264, 1=H265, 2=mjpg
   if (codec == 0) {
     return H264;
   } else if (codec == 1) {
