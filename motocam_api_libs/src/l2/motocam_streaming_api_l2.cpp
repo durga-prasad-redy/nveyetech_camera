@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <memory>
 #include <new>
 #include "motocam_streaming_api_l2.h"
 #include "fw/fw_streaming.h"
@@ -41,17 +42,15 @@ int8_t get_webrtc_streaming_state_l2(uint8_t **webrtc_state,uint8_t *webrtc_stat
   printf("get_webrtc_streaming_state_l2\n");
 
   webrtc_state_size[0]=1;
-  webrtc_state[0] = new (std::nothrow) uint8_t[webrtc_state_size[0]];
-  if (!webrtc_state[0]) return -1;
-  int8_t ret=get_webrtc_streaming_state(&webrtc_state[0][0]);
+  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[webrtc_state_size[0]]);
+  if (!buf) return -1;
+  int8_t ret=get_webrtc_streaming_state(&buf[0]);
   if(ret<0) {
       printf("get_webrtc_streaming_state_l2: Failed to get webrtc streaming state\n");
-      delete[] webrtc_state[0];
-      webrtc_state[0] = nullptr;
       return -1;
   }
+  webrtc_state[0] = buf.release();
   return 0;
-  
 }
 
 int8_t start_webrtc_streaming_state_l2()

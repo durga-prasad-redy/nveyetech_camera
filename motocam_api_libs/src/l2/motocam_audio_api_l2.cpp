@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <memory>
 #include <new>
 #include "motocam_command_enums.h"
 #include "motocam_api_l2.h"
@@ -30,8 +31,9 @@ int8_t get_audio_mic_l2(uint8_t **mic, uint8_t *length) {
     return -1;
   }
   *length = 1;
-  *mic = new (std::nothrow) uint8_t[*length];
-  if (!*mic) return -1;
-  (*mic)[0] = mic_e;
+  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  if (!buf) return -1;
+  buf[0] = mic_e;
+  *mic = buf.release();
   return 0;
 }
