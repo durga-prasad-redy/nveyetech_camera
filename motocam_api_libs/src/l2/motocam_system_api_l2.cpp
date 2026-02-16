@@ -1,6 +1,6 @@
-#include <cstdlib>
 #include <cstdio>
 #include <cstring>
+#include <new>
 #include <ctime>
 #include <cctype>
 #include "fw/fw_system.h"
@@ -229,7 +229,8 @@ int8_t get_system_camera_name_l2(uint8_t **cameraName, uint8_t *length) {
   }
 
   *length = (uint8_t)strlen(name);
-  *cameraName = (uint8_t *)malloc(*length);
+  *cameraName = new (std::nothrow) uint8_t[*length];
+  if (!*cameraName) return -1;
   for (uint8_t i = 0; i < *length; i++) {
     (*cameraName)[i] = (uint8_t)name[i];
   }
@@ -245,7 +246,8 @@ int8_t get_system_firmware_version_l2(uint8_t **firmwareVersion,
   }
 
   *length = (uint8_t)strlen(version);
-  *firmwareVersion = (uint8_t *)malloc(*length);
+  *firmwareVersion = new (std::nothrow) uint8_t[*length];
+  if (!*firmwareVersion) return -1;
   for (uint8_t i = 0; i < *length; i++) {
     (*firmwareVersion)[i] = (uint8_t)version[i];
   }
@@ -260,7 +262,8 @@ int8_t get_system_mac_address_l2(uint8_t **macAddress, uint8_t *length) {
   }
 
   *length = (uint8_t)strlen(mac);
-  *macAddress = (uint8_t *)malloc(*length);
+  *macAddress = new (std::nothrow) uint8_t[*length];
+  if (!*macAddress) return -1;
   for (uint8_t i = 0; i < *length; i++) {
     (*macAddress)[i] = (uint8_t)mac[i];
   }
@@ -276,7 +279,8 @@ int8_t get_ota_update_status_l2(uint8_t **ota_status, uint8_t *length) {
   }
 
   *length = (uint8_t)strlen(status);
-  *ota_status = (uint8_t *)malloc(*length);
+  *ota_status = new (std::nothrow) uint8_t[*length];
+  if (!*ota_status) return -1;
   for (uint8_t i = 0; i < *length; i++) {
     (*ota_status)[i] = (uint8_t)status[i];
   }
@@ -302,14 +306,12 @@ int8_t get_camera_health_l2(uint8_t **camera_health, uint8_t *length) {
   if (ret < 0)
     return -1;
 
-  // uint8_t ssid_len = (uint8_t)strlen(ssid);
-  // uint8_t encryption_key_len = (uint8_t)strlen(encryption_key);
-  // uint8_t ipaddress_len = (uint8_t)strlen(ipaddress);
-  // uint8_t subnetmask_len = (uint8_t)strlen(subnetmask);
+
 
   *length = (uint8_t)(8); // 5 bytes for status + 3 bytes for temperatures
   // 1 byte for each status and 1 byte for each temperature
-  *camera_health = (uint8_t *)malloc(*length);
+  *camera_health = new (std::nothrow) uint8_t[*length];
+  if (!*camera_health) return -1;
   uint8_t camera_health_idx = 0;
   (*camera_health)[camera_health_idx++] = stream_status;
   (*camera_health)[camera_health_idx++] = rtsp_status;
@@ -376,7 +378,8 @@ int8_t login_with_pin_l2(const uint8_t pinLength, const uint8_t *loginPin,
 
   if (strcmp(current_login_pin, user_provided_pin) == 0) {
     *auth_data_bytes_size = 1; // Assuming auth data size is 1 byte
-    *auth_data_byte = (uint8_t *)malloc(*auth_data_bytes_size);
+    *auth_data_byte = new (std::nothrow) uint8_t[*auth_data_bytes_size];
+    if (!*auth_data_byte) return -1;
     (*auth_data_byte)[0] = 0; // Indicating success
     printf("Authentication successful, current login pin: %s, user provided "
            "pin: %s\n",
@@ -384,7 +387,8 @@ int8_t login_with_pin_l2(const uint8_t pinLength, const uint8_t *loginPin,
     return 0;
   } else {
     *auth_data_bytes_size = 1; // Assuming auth data size is 1 byte
-    *auth_data_byte = (uint8_t *)malloc(*auth_data_bytes_size);
+    *auth_data_byte = new (std::nothrow) uint8_t[*auth_data_bytes_size];
+    if (!*auth_data_byte) return -1;
     (*auth_data_byte)[0] = 3; // Indicating failure
     printf(
         "Authentication failed, current login pin: %s, user provided pin: %s\n",
@@ -435,18 +439,7 @@ static int validate_dob_string(const char* date_str) {
     if (day < 1 || day > get_days_in_month(month, year)) return -2;
 
     printf("validate_dob_string: day=%d, month=%d, year=%d\n", day, month, year);
-    // time_t t = time(NULL);
-    // struct tm *now = localtime(&t);
-    // int current_year = now->tm_year + 1900;
-    // int current_month = now->tm_mon + 1;
-    // int current_day = now->tm_mday;
-    // printf("current_year: %d, current_month: %d, current_day: %d\n", current_year, current_month, current_day);
 
-    // if (year > current_year) return -3;
-    // if (year == current_year) {
-    //     if (month > current_month) return -3;
-    //     if (month == current_month && day > current_day) return -3;
-    // }
 
     return 0;
 }
@@ -480,7 +473,8 @@ int8_t get_system_user_dob_l2(uint8_t **dob, uint8_t *length) {
     char buffer[11];
     if (get_user_dob(buffer) == 0) {
         *length = 10;
-        *dob = (uint8_t *)malloc(*length);
+        *dob = new (std::nothrow) uint8_t[*length];
+        if (!*dob) return -1;
         memcpy(*dob, buffer, *length);
          return 0;
     }

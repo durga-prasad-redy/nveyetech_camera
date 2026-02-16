@@ -1,51 +1,9 @@
-#include <cstdlib>
 #include <cstdio>
+#include <new>
 #include "motocam_network_api_l2.h"
 #include "fw/fw_network.h"
 
-/*int8_t set_ipaddress_subnetmask_l2(const uint8_t *ipaddress_subnetmask) {
-    printf("set_ipaddress_subnetmask_l2\n");
-    char ipaddress[100];
-    char subnetmask[100];
-    sprintf(ipaddress, "%d.%d.%d.%d", ipaddress_subnetmask[0],
-ipaddress_subnetmask[1], ipaddress_subnetmask[2], ipaddress_subnetmask[3]);
-    sprintf(subnetmask, "%d.%d.%d.%d", ipaddress_subnetmask[4],
-ipaddress_subnetmask[5], ipaddress_subnetmask[6], ipaddress_subnetmask[7]);
-    int8_t ret = set_ipaddress_l3(ipaddress, strlen(ipaddress));
-    if(ret < 0)
-        return ret;
-    ret = set_subnetmask_l3(subnetmask, strlen(subnetmask));
-    if(ret < 0)
-        return ret;
-    return 0;
-}
 
-int8_t get_ipaddress_subnetmask_l2(uint8_t **ipaddress_subnetmask, uint8_t
-*length) { printf("get_ipaddress_subnetmask_l2\n"); char *ipaddress; uint8_t
-ipaddress_len; int8_t ret = get_ipaddress_l3(&ipaddress, &ipaddress_len); if(ret
-< 0) return ret; char *subnetmask; uint8_t subnetmask_len; ret =
-get_subnetmask_l3(&subnetmask, &subnetmask_len); if(ret < 0) return ret;
-
-    *length = 8;
-    *ipaddress_subnetmask=malloc(*length);
-    char* ipaddress_token = strtok(ipaddress, ".");
-    uint8_t ipaddres_subnetmask_indx=0;
-    while (ipaddress_token != NULL) {
-        (*ipaddress_subnetmask)[ipaddres_subnetmask_indx]= (uint8_t)
-atoi(ipaddress_token); ipaddres_subnetmask_indx++;
-        if(ipaddres_subnetmask_indx==4) break;
-        ipaddress_token = strtok(NULL, ".");
-    }
-
-    char* subnetmask_token = strtok(subnetmask, ".");
-    while (subnetmask_token != NULL) {
-        (*ipaddress_subnetmask)[ipaddres_subnetmask_indx]= (uint8_t)
-atoi(subnetmask_token); ipaddres_subnetmask_indx++;
-        if(ipaddres_subnetmask_indx==8) break;
-        subnetmask_token = strtok(NULL, ".");
-    }
-    return 0;
-}*/
 
 uint8_t current_wifi_state;
 
@@ -239,7 +197,8 @@ int8_t get_WifiHotspot_l2(uint8_t **wifiHotspot, uint8_t *length) {
 
   *length = (uint8_t)(1 + ssid_len + 1 + 1 + encryption_key_len + 1 +
                       ipaddress_len + 1 + subnetmask_len);
-  *wifiHotspot = (uint8_t *)malloc(*length);
+  *wifiHotspot = new (std::nothrow) uint8_t[*length];
+  if (!*wifiHotspot) return -1;
   uint8_t wifiHotspot_idx = 0;
   (*wifiHotspot)[wifiHotspot_idx] = ssid_len;
   uint8_t i;
@@ -269,16 +228,13 @@ int8_t set_WifiClient_l2(const uint8_t wifiClient_len,
   uint8_t ssid_len = wifiClient[ssid_len_idx];
   uint8_t ssid_idx = (uint8_t)(ssid_len_idx + 1);
   const uint8_t *ssid = &wifiClient[ssid_idx];
-  // printf("set_WifiClient_l2 1 %d,%d\n", ssid, ssid_len);
   if (wifiClient_len < ssid_idx + ssid_len + 1) // 1 for val
   {
-    // printf("set_WifiClient_l2 1 %d,%d\n", ssid_idx, ssid_len);
     return -1;
   }
 
   uint8_t encryption_type_idx = (uint8_t)(ssid_idx + ssid_len);
   const uint8_t encryption_type = wifiClient[encryption_type_idx];
-  // printf("set_WifiClient_l2 2 %d\n", encryption_type);
   if (wifiClient_len < encryption_type_idx + 2) // 2---1 for len 1 for val
   {
     printf("set_WifiClient_l2 2 %d\n", encryption_type_idx);
@@ -343,11 +299,9 @@ int8_t set_WifiClient_l2(const uint8_t wifiClient_len,
   }
   uint8_t ipaddress_idx = (uint8_t)(ipaddress_len_idx + 1);
   const uint8_t *ipaddress = &wifiClient[ipaddress_idx];
-  // printf("set_WifiClient_l2 4 %d,%d\n", ipaddress, ipaddress_len);
   if (wifiClient_len <
       ipaddress_idx + ipaddress_len + 2) // 2-- 1 for len, 1 for val
   {
-    // printf("set_WifiClient_l2 4 %d,%d\n", ipaddress_idx, ipaddress_len);
     return -1;
   }
 
@@ -357,7 +311,6 @@ int8_t set_WifiClient_l2(const uint8_t wifiClient_len,
   const uint8_t *subnetmask = &wifiClient[subnetmask_idx];
   printf("set_WifiClient_l2 5 %p,%d\n",(void*) subnetmask, subnetmask_len);
   if (wifiClient_len < subnetmask_idx + subnetmask_len) {
-    // printf("set_WifiClient_l2 5 %d,%d\n", subnetmask, subnetmask_len);
     return -1;
   }
 
@@ -385,7 +338,6 @@ int8_t set_WifiClient_l2(const uint8_t wifiClient_len,
     return ret;
 
   current_wifi_state = 2;
-  // writeState(motocam_wifi_state_file, &current_wifi_state);
   return 0;
 }
 
@@ -409,7 +361,8 @@ int8_t get_WifiClient_l2(uint8_t **wifiClient, uint8_t *length) {
 
   *length = (uint8_t)(1 + ssid_len + 1 + 1 + encryption_key_len + 1 +
                       ipaddress_len + 1 + subnetmask_len);
-  *wifiClient = (uint8_t *)malloc(*length);
+  *wifiClient = new (std::nothrow) uint8_t[*length];
+  if (!*wifiClient) return -1;
   uint8_t wificlient_idx = 0;
   (*wifiClient)[wificlient_idx] = ssid_len;
   uint8_t i;
@@ -440,7 +393,8 @@ int8_t get_wifi_state_l2(uint8_t **wifi_state, uint8_t *length) {
     return -1;
   }
   *length = 1;
-  *wifi_state = (uint8_t *)malloc(*length);
+  *wifi_state = new (std::nothrow) uint8_t[*length];
+  if (!*wifi_state) return -1;
   printf("get_wifi_state_l2 state=%d\n", state);
   (*wifi_state)[0] = state;
   return 0;
@@ -459,10 +413,9 @@ int8_t get_ethernet_l2(uint8_t **ethernet, uint8_t *length) {
   printf("ip_address %s %d\n", ip_address, ip_address_len);
 
   *length = ip_address_len + 1;
-  *ethernet = (uint8_t *)malloc(*length);
+  *ethernet = new (std::nothrow) uint8_t[*length];
 
-  // Check if malloc succeeded
-  if (*ethernet == NULL) {
+  if (*ethernet == nullptr) {
     return -1;
   }
 

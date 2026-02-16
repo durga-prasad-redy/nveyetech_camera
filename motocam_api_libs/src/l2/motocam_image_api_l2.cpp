@@ -1,5 +1,5 @@
-#include <cstdlib>
 #include <cstdio>
+#include <new>
 #include "motocam_api_l2.h"
 #include "motocam_image_api_l2.h"
 #include "fw/fw_image.h"
@@ -11,7 +11,6 @@ int8_t set_image_zoom_l2(const uint8_t zoom) {
     return -1;
   }
   current_config.zoom = zoom;
-  // writeConfigFile(motocam_current_config_file, &current_config);
   return 0;
 }
 int8_t set_image_rotation_l2(const uint8_t rotation) {
@@ -20,7 +19,6 @@ int8_t set_image_rotation_l2(const uint8_t rotation) {
     return -1;
   }
   current_config.rotation = rotation;
-  // writeConfigFile(motocam_current_config_file, &current_config);
   return 0;
 }
 int8_t set_image_ircutfilter_l2(const uint8_t ircutfilter) {
@@ -32,7 +30,6 @@ int8_t set_image_ircutfilter_l2(const uint8_t ircutfilter) {
       return -1;
     }
     current_config.ircutfilter = ircutfilter;
-    // writeConfigFile(motocam_current_config_file, &current_config);
     return 0;
   }
   if (ircutfilter == 0) {
@@ -40,7 +37,6 @@ int8_t set_image_ircutfilter_l2(const uint8_t ircutfilter) {
       return -1;
     }
     current_config.ircutfilter = ircutfilter;
-    // writeConfigFile(motocam_current_config_file, &current_config);
     return 0;
   }
   return -1;
@@ -51,7 +47,6 @@ int8_t set_image_irbrightness_l2(const uint8_t irbrightness) {
     return -1;
   }
   current_config.irledbrightness = irbrightness;
-  // writeConfigFile(motocam_current_config_file, &current_config);
   return 0;
 }
 int8_t set_image_mid_irbrightness_l2(const uint8_t irbrightness) {
@@ -59,8 +54,6 @@ int8_t set_image_mid_irbrightness_l2(const uint8_t irbrightness) {
   if (debug_pwm5_set(irbrightness) < 0) {
     return -1;
   }
-  // current_config.irledbrightness = irbrightness;
-  // writeConfigFile(motocam_current_config_file, &current_config);
   return 0;
 }
 int8_t set_image_side_irbrightness_l2(const uint8_t irbrightness) {
@@ -68,8 +61,6 @@ int8_t set_image_side_irbrightness_l2(const uint8_t irbrightness) {
   if (debug_pwm4_set(irbrightness) < 0) {
     return -1;
   }
-  // current_config.irledbrightness = irbrightness;
-  // writeConfigFile(motocam_current_config_file, &current_config);
   return 0;
 }
 int8_t set_image_daymode_l2(const uint8_t daymode) {
@@ -79,7 +70,6 @@ int8_t set_image_daymode_l2(const uint8_t daymode) {
       return -1;
     }
     current_config.daymode = daymode;
-    // writeConfigFile(motocam_current_config_file, &current_config);
     return 0;
   }
   if (daymode == 0) {
@@ -87,7 +77,6 @@ int8_t set_image_daymode_l2(const uint8_t daymode) {
       return -1;
     }
     current_config.daymode = daymode;
-    // writeConfigFile(motocam_current_config_file, &current_config);
     return 0;
   }
   return -1;
@@ -99,7 +88,6 @@ int8_t set_gyroreader_l2(const uint8_t gyroreader) {
       return -1;
     }
     current_config.gyroreader = gyroreader;
-    // writeConfigFile(motocam_current_config_file, &current_config);
     return 0;
   }
   if (gyroreader == 0) {
@@ -107,7 +95,6 @@ int8_t set_gyroreader_l2(const uint8_t gyroreader) {
       return -1;
     }
     current_config.gyroreader = gyroreader;
-    // writeConfigFile(motocam_current_config_file, &current_config);
     return 0;
   }
   return -1;
@@ -139,7 +126,6 @@ int8_t set_image_tilt_l2(const uint8_t tilt) {
     return -1;
   }
   current_config.tilt = tilt;
-  // writeConfigFile(motocam_current_config_file, &current_config);
   return 0;
 }
 int8_t set_image_wdr_l2(const uint8_t wdr) {
@@ -170,21 +156,22 @@ int8_t set_image_misc_l2(const uint8_t misc) {
     return -2;
   }
   current_config.misc = misc;
-  // writeConfigFile(motocam_current_config_file, &current_config);
   return 0;
 }
 
 int8_t get_image_zoom_l2(uint8_t **zoom, uint8_t *length) {
   printf("get_image_zoom_l2\n");
   *length = 1;
-  *zoom = (uint8_t *)malloc(*length);
+  *zoom = new (std::nothrow) uint8_t[*length];
+  if (!*zoom) return -1;
   (*zoom)[0] = current_config.zoom;
   return 0;
 }
 int8_t get_image_rotation_l2(uint8_t **rotation, uint8_t *length) {
   printf("get_image_rotation_l2\n");
   *length = 1;
-  *rotation = (uint8_t *)malloc(*length);
+  *rotation = new (std::nothrow) uint8_t[*length];
+  if (!*rotation) return -1;
   (*rotation)[0] = current_config.rotation;
   return 0;
 }
@@ -195,7 +182,8 @@ int8_t get_image_ircutfilter_l2(uint8_t **ircutfilter, uint8_t *length) {
     return -1;
   }
   *length = 1;
-  *ircutfilter = (uint8_t *)malloc(*length);
+  *ircutfilter = new (std::nothrow) uint8_t[*length];
+  if (!*ircutfilter) return -1;
   (*ircutfilter)[0] = ir_cutfilter;
   return 0;
 }
@@ -206,7 +194,8 @@ int8_t get_image_irbrightness_l2(uint8_t **irbrightness, uint8_t *length) {
     return -1;
   }
   *length = 1;
-  *irbrightness = (uint8_t *)malloc(*length);
+  *irbrightness = new (std::nothrow) uint8_t[*length];
+  if (!*irbrightness) return -1;
   (*irbrightness)[0] = ir_led_brightness;
   return 0;
 }
@@ -217,7 +206,8 @@ int8_t get_image_daymode_l2(uint8_t **daymode, uint8_t *length) {
     return -1;
   }
   *length = 1;
-  *daymode = (uint8_t *)malloc(*length);
+  *daymode = new (std::nothrow) uint8_t[*length];
+  if (!*daymode) return -1;
   (*daymode)[0] = day_mode;
   return 0;
 }
@@ -228,7 +218,8 @@ int8_t get_gyroreader_l2(uint8_t **gyroreader, uint8_t *length) {
     return -1;
   }
   *length = 1;
-  *gyroreader = (uint8_t *)malloc(*length);
+  *gyroreader = new (std::nothrow) uint8_t[*length];
+  if (!*gyroreader) return -1;
   (*gyroreader)[0] = day_mode;
   return 0;
 }
@@ -239,7 +230,8 @@ int8_t get_image_resolution_l2(uint8_t **mirror, uint8_t *length) {
     return -1;
   }
   *length = 1;
-  *mirror = (uint8_t *)malloc(*length);
+  *mirror = new (std::nothrow) uint8_t[*length];
+  if (!*mirror) return -1;
   (*mirror)[0] = resolution;
   return 0;
 }
@@ -250,7 +242,8 @@ int8_t get_wdr_l2(uint8_t **mirror, uint8_t *length) {
     return -1;
   }
   *length = 1;
-  *mirror = (uint8_t *)malloc(*length);
+  *mirror = new (std::nothrow) uint8_t[*length];
+  if (!*mirror) return -1;
   (*mirror)[0] = wdr;
   return 0;
 }
@@ -261,28 +254,32 @@ int8_t get_eis_l2(uint8_t **mirror, uint8_t *length) {
     return -1;
   }
   *length = 1;
-  *mirror = (uint8_t *)malloc(*length);
+  *mirror = new (std::nothrow) uint8_t[*length];
+  if (!*mirror) return -1;
   (*mirror)[0] = eis;
   return 0;
 }
 int8_t get_image_mirror_l2(uint8_t **mirror, uint8_t *length) {
   printf("get_image_mirror_l2\n");
   *length = 1;
-  *mirror = (uint8_t *)malloc(*length);
+  *mirror = new (std::nothrow) uint8_t[*length];
+  if (!*mirror) return -1;
   (*mirror)[0] = current_config.mirror;
   return 0;
 }
 int8_t get_image_flip_l2(uint8_t **flip, uint8_t *length) {
   printf("get_image_flip_l2\n");
   *length = 1;
-  *flip = (uint8_t *)malloc(*length);
+  *flip = new (std::nothrow) uint8_t[*length];
+  if (!*flip) return -1;
   (*flip)[0] = current_config.flip;
   return 0;
 }
 int8_t get_image_tilt_l2(uint8_t **tilt, uint8_t *length) {
   printf("get_image_tilt_l2\n");
   *length = 1;
-  *tilt = (uint8_t *)malloc(*length);
+  *tilt = new (std::nothrow) uint8_t[*length];
+  if (!*tilt) return -1;
   (*tilt)[0] = current_config.tilt;
   return 0;
 }
