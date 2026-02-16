@@ -42,9 +42,9 @@ int8_t get_webrtc_streaming_state_l2(uint8_t **webrtc_state,uint8_t *webrtc_stat
   printf("get_webrtc_streaming_state_l2\n");
 
   webrtc_state_size[0]=1;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[webrtc_state_size[0]]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[webrtc_state_size[0]]);
   if (!buf) return -1;
-  int8_t ret=get_webrtc_streaming_state(&buf[0]);
+  auto ret=get_webrtc_streaming_state(&buf[0]);
   if(ret<0) {
       printf("get_webrtc_streaming_state_l2: Failed to get webrtc streaming state\n");
       return -1;
@@ -57,7 +57,7 @@ int8_t start_webrtc_streaming_state_l2()
 {
 
   printf("set_webrtc_enabled_l2 \n");
-  int ret=start_webrtc_stream();
+  auto ret=start_webrtc_stream();
   if(ret<0) {
       printf("set_webrtc_enabled_l2: Failed to start webrtc stream as misc is set to 4k mode\n");
       return -1;

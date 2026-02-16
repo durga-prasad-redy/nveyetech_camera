@@ -49,16 +49,16 @@ int8_t set_WifiHotspot_l2(const uint8_t wifiHotspot_len,
   if (wifiHotspot_len < subnetmask_idx + subnetmask_len)
     return -1;
 
-  std::string ssid_str(ssid, ssid + ssid_len);
+  auto ssid_str = std::string(ssid, ssid + ssid_len);
   if (ssid_len > 0 && ssid_str[ssid_len - 1] == '\n') {
     ssid_str.resize(ssid_len - 1);
   }
 
-  std::string encryption_key_str(encryption_key, encryption_key + encryption_key_len);
-  std::string ipaddress_str(ipaddress, ipaddress + ipaddress_len);
-  std::string subnetmask_str(subnetmask, subnetmask + subnetmask_len);
+  auto encryption_key_str = std::string(encryption_key, encryption_key + encryption_key_len);
+  auto ipaddress_str = std::string(ipaddress, ipaddress + ipaddress_len);
+  auto subnetmask_str = std::string(subnetmask, subnetmask + subnetmask_len);
 
-  int8_t ret =
+  auto ret =
       set_wifi_hotspot_config(ssid_str.c_str(), encryption_type, encryption_key_str.c_str(),
                               ipaddress_str.c_str(), subnetmask_str.c_str());
   printf("set_WifiHotspot_l2 ssid=%s, encryption_type=%d, encryption_key=%s, "
@@ -96,9 +96,9 @@ int8_t set_ethernet_ip_address_l2(const uint8_t ethernet_len,
   if (ethernet_len < subnetmask_idx + subnetmask_len)
     return -1;
 
-  std::string ipaddress_str(ip_address, ip_address + ip_address_len);
-  std::string subnetmask_str(subnetmask, subnetmask + subnetmask_len);
-  int8_t ret = set_ethernet_ip_address(ipaddress_str.c_str(), subnetmask_str.c_str());
+  auto ipaddress_str = std::string(ip_address, ip_address + ip_address_len);
+  auto subnetmask_str = std::string(subnetmask, subnetmask + subnetmask_len);
+  auto ret = set_ethernet_ip_address(ipaddress_str.c_str(), subnetmask_str.c_str());
   printf("set_ethernet_ip_address  ipaddress=%s, subnetmask=%s ret=%d\n",
          ipaddress_str.c_str(), subnetmask_str.c_str(), ret);
 
@@ -112,7 +112,7 @@ int8_t set_ethernet_ip_address_l2(const uint8_t ethernet_len,
 
 int8_t set_ethernet_dhcp_config_l2() {
   printf("set_ethernet_dhcp_config_l2\n");
-  int8_t ret = set_ethernet_dhcp_config();
+  auto ret = set_ethernet_dhcp_config();
   printf("set_ethernet_dhcp_config_l2 ret=%d\n", ret);
   return ret;
 }
@@ -124,7 +124,7 @@ uint8_t set_onvif_interface_l2(const uint8_t onvif_interface_len, const uint8_t 
 {
   LOG_DEBUG("set_onvif_interface with interface",onvif_interface);
   uint8_t current_onvif_interface_state;
-  int8_t ret=get_onvif_interface_state(&current_onvif_interface_state);
+  auto ret=get_onvif_interface_state(&current_onvif_interface_state);
   (void)onvif_interface_len;
 
   if (ret<0)
@@ -159,17 +159,17 @@ int8_t get_WifiHotspot_l2(uint8_t **wifiHotspot, uint8_t *length) {
   if (ret < 0)
     return -1;
   ssid.resize(strlen(ssid.c_str()));
-  uint8_t ssid_len = (uint8_t)ssid.size();
+  auto ssid_len = (uint8_t)ssid.size();
   encryption_key.resize(strlen(encryption_key.c_str()));
-  uint8_t encryption_key_len = (uint8_t)encryption_key.size();
+  auto encryption_key_len = (uint8_t)encryption_key.size();
   ipaddress.resize(strlen(ipaddress.c_str()));
-  uint8_t ipaddress_len = (uint8_t)ipaddress.size();
+  auto ipaddress_len = (uint8_t)ipaddress.size();
   subnetmask.resize(strlen(subnetmask.c_str()));
-  uint8_t subnetmask_len = (uint8_t)subnetmask.size();
+  auto subnetmask_len = (uint8_t)subnetmask.size();
 
   *length = (uint8_t)(1 + ssid_len + 1 + 1 + encryption_key_len + 1 +
                       ipaddress_len + 1 + subnetmask_len);
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   uint8_t wifiHotspot_idx = 0;
   buf[wifiHotspot_idx] = ssid_len;
@@ -227,18 +227,18 @@ int8_t set_WifiClient_l2(const uint8_t wifiClient_len,
     return -1;
   }
 
-  std::string ssid_str(ssid, ssid + ssid_len);
+  auto ssid_str = std::string(ssid, ssid + ssid_len);
   if (ssid_len > 0 && ssid_str[ssid_len - 1] == '\n') {
     ssid_str.resize(ssid_len - 1);
   }
 
-  std::string encryption_key_str(encryption_key, encryption_key + encryption_key_len);
+  auto encryption_key_str = std::string(encryption_key, encryption_key + encryption_key_len);
 
   uint8_t ipaddress_len_idx =
       (uint8_t)(encryption_key_idx + encryption_key_len);
   uint8_t ipaddress_len = wifiClient[ipaddress_len_idx];
   if (ipaddress_len <= 0) {
-    int8_t ret = set_wifi_dhcp_client_config(ssid_str.c_str(), encryption_type,
+    auto ret = set_wifi_dhcp_client_config(ssid_str.c_str(), encryption_type,
                                              encryption_key_str.c_str());
 
      uint8_t state;
@@ -278,10 +278,10 @@ int8_t set_WifiClient_l2(const uint8_t wifiClient_len,
     return -1;
   }
 
-  std::string ipaddress_str(ipaddress, ipaddress + ipaddress_len);
-  std::string subnetmask_str(subnetmask, subnetmask + subnetmask_len);
+  auto ipaddress_str = std::string(ipaddress, ipaddress + ipaddress_len);
+  auto subnetmask_str = std::string(subnetmask, subnetmask + subnetmask_len);
 
-  int8_t ret =
+  auto ret =
       set_wifi_client_config(ssid_str.c_str(), encryption_type, encryption_key_str.c_str(),
                              ipaddress_str.c_str(), subnetmask_str.c_str());
 
@@ -313,14 +313,14 @@ int8_t get_WifiClient_l2(uint8_t **wifiClient, uint8_t *length) {
   encryption_key.resize(strlen(encryption_key.c_str()));
   ipaddress.resize(strlen(ipaddress.c_str()));
   subnetmask.resize(strlen(subnetmask.c_str()));
-  uint8_t ssid_len = (uint8_t)ssid.size();
-  uint8_t encryption_key_len = (uint8_t)encryption_key.size();
-  uint8_t ipaddress_len = (uint8_t)ipaddress.size();
-  uint8_t subnetmask_len = (uint8_t)subnetmask.size();
+  auto ssid_len = (uint8_t)ssid.size();
+  auto encryption_key_len = (uint8_t)encryption_key.size();
+  auto ipaddress_len = (uint8_t)ipaddress.size();
+  auto subnetmask_len = (uint8_t)subnetmask.size();
 
   *length = (uint8_t)(1 + ssid_len + 1 + 1 + encryption_key_len + 1 +
                       ipaddress_len + 1 + subnetmask_len);
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   uint8_t wificlient_idx = 0;
   buf[wificlient_idx] = ssid_len;
@@ -353,7 +353,7 @@ int8_t get_wifi_state_l2(uint8_t **wifi_state, uint8_t *length) {
     return -1;
   }
   *length = 1;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   printf("get_wifi_state_l2 state=%d\n", state);
   buf[0] = state;
@@ -369,13 +369,13 @@ int8_t get_ethernet_l2(uint8_t **ethernet, uint8_t *length) {
   }
 
   ip_address.resize(strlen(ip_address.c_str()));
-  uint8_t ip_address_len = (uint8_t)ip_address.size();
+  auto ip_address_len = (uint8_t)ip_address.size();
   if (ip_address_len <= 0)
     return -1;
   printf("ip_address %s %d\n", ip_address.c_str(), ip_address_len);
 
   *length = ip_address_len + 1;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) {
     return -1;
   }
@@ -393,7 +393,7 @@ int8_t get_onvif_interface_state_l2(uint8_t **interface,uint8_t *length){
 
   printf("get_onvif_interface_state_l2\n");
   uint8_t onvif_interface;
-  int8_t ret=get_onvif_interface_state(&onvif_interface); 
+  auto ret=get_onvif_interface_state(&onvif_interface); 
   if(ret<0){
     return ret;
   }
