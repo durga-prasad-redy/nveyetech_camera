@@ -127,7 +127,7 @@ static void export_gpio(int gpio_pin)
 {
     FILE *export_file = fopen(GPIO_EXPORT_PATH, "w");
     
-    if (export_file == NULL) {
+    if (export_file == nullptr) {
         perror("Failed to export GPIO pin");
         exit(EXIT_FAILURE);
     }
@@ -141,7 +141,7 @@ static void set_gpio_direction(int gpio_pin, const char *direction)
     snprintf(direction_path, sizeof(direction_path), GPIO_DIRECTION_PATH, gpio_pin);
     FILE *direction_file = fopen(direction_path, "w");
 
-    if (direction_file == NULL) {
+    if (direction_file == nullptr) {
         perror("Failed to set GPIO direction");
         exit(EXIT_FAILURE);
     }
@@ -155,7 +155,7 @@ static void set_gpio_value(int gpio_pin, int value)
     snprintf(value_path, sizeof(value_path), GPIO_VALUE_PATH, gpio_pin);
     FILE *value_file = fopen(value_path, "w");
     
-    if (value_file == NULL) {
+    if (value_file == nullptr) {
         perror("Failed to set GPIO value");
         exit(EXIT_FAILURE);
     }
@@ -175,7 +175,7 @@ static uint8_t get_gpio_value(int gpio_pin)
     }
 
     char value[4];
-    if (fgets(value, sizeof(value), fp) == NULL) {
+    if (fgets(value, sizeof(value), fp) == nullptr) {
         perror("Failed to read GPIO value");
         fclose(fp);
         return 2;
