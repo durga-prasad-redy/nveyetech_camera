@@ -24,7 +24,7 @@ int8_t writeConfigFile(const char *fileName, struct MotocamConfig *config);
 
 int8_t set_config_defaulttofactory_l2() {
   printf("config_defaulttofactory_l2\n");
-  int8_t ret = writeConfigFile(motocam_default_config_file, &factory_config);
+  auto ret = writeConfigFile(motocam_default_config_file, &factory_config);
   if (ret == -1) {
     return -1;
   }
@@ -34,7 +34,7 @@ int8_t set_config_defaulttofactory_l2() {
 
 int8_t set_config_defaulttocurrent_l2() {
   printf("config_defaulttocurrent_l2\n");
-  int8_t ret = writeConfigFile(motocam_default_config_file, &current_config);
+  auto ret = writeConfigFile(motocam_default_config_file, &current_config);
   if (ret == -1) {
     return -1;
   }
@@ -44,7 +44,7 @@ int8_t set_config_defaulttocurrent_l2() {
 
 int8_t set_config_currenttofactory_l2() {
   printf("config_currenttofactory_l2\n");
-  int8_t ret = writeConfigFile(motocam_current_config_file, &factory_config);
+  auto ret = writeConfigFile(motocam_current_config_file, &factory_config);
   if (ret == -1) {
     return -1;
   }
@@ -54,7 +54,7 @@ int8_t set_config_currenttofactory_l2() {
 
 int8_t set_config_currenttodefault_l2() {
   printf("config_currenttodefault_l2\n");
-  int8_t ret = writeConfigFile(motocam_current_config_file, &default_config);
+  auto ret = writeConfigFile(motocam_current_config_file, &default_config);
   if (ret == -1) {
     return -1;
   }
@@ -65,7 +65,7 @@ int8_t set_config_currenttodefault_l2() {
 int8_t get_config_factory_l2(uint8_t **config, uint8_t *length) {
   printf("get_config_factory_l2\n");
   *length = 14;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   buf[0] = factory_config.zoom;
   buf[1] = factory_config.rotation;
@@ -88,7 +88,7 @@ int8_t get_config_factory_l2(uint8_t **config, uint8_t *length) {
 int8_t get_config_default_l2(uint8_t **config, uint8_t *length) {
   printf("get_config_default_l2\n");
   *length = 14;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   buf[0] = default_config.zoom;
   buf[1] = default_config.rotation;
@@ -115,7 +115,7 @@ void initialize_config(MotocamConfig *config) {
 
   // Get the current configuration as a byte array
   if (get_config_current_l2(&data, &length) == 0 && data != nullptr) {
-    std::unique_ptr<uint8_t[]> data_guard(data);
+    auto data_guard = std::unique_ptr<uint8_t[]>(data);
     // Make sure we got the expected amount of data
     if (length >= 14) {
       // Unpack the byte array into the struct
@@ -140,7 +140,7 @@ void initialize_config(MotocamConfig *config) {
 int8_t get_config_current_l2(uint8_t **config, uint8_t *length) {
   printf("get_config_current_l2\n");
   *length = 14;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
 
   uint8_t zoom;
@@ -194,7 +194,7 @@ int8_t get_config_streaming_config_l2(uint8_t **config, uint8_t *length) {
   std::string stream_ini_path = std::string(CONFIG_PATH) + "/stream.ini";
   
   // Get stream_count from [streamer] section
-  int stream_count = get_ini_value(stream_ini_path, "streamer", "stream_count", 2);
+  auto stream_count = get_ini_value(stream_ini_path, "streamer", "stream_count", 2);
   if (stream_count < 1 || stream_count > 10) {
     printf("Invalid stream_count: %d, defaulting to 2\n", stream_count);
     stream_count = 2;
@@ -202,7 +202,7 @@ int8_t get_config_streaming_config_l2(uint8_t **config, uint8_t *length) {
   
   // Allocate memory: 4 bytes per stream (resolution, fps, bitrate, encoder)
   *length = stream_count * 4;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) {
     printf("Failed to allocate memory for streaming config\n");
     return -1;
@@ -210,16 +210,16 @@ int8_t get_config_streaming_config_l2(uint8_t **config, uint8_t *length) {
 
   // Parse each stream
   for (int i = 0; i < stream_count; i++) {
-    std::string section = "stream" + std::to_string(i);
+    auto section = std::string("stream" + std::to_string(i));
 
     // Get width and height
-    int width = get_ini_value(stream_ini_path, section, "width", 1920);
-    int height = get_ini_value(stream_ini_path, section, "height", 1080);
-    ImageResolution resolution = map_resolution(width, height);
+    auto width = get_ini_value(stream_ini_path, section, "width", 1920);
+    auto height = get_ini_value(stream_ini_path, section, "height", 1080);
+    auto resolution = map_resolution(width, height);
     buf[i * 4 + 0] = resolution;
 
     // Get fps
-    int fps = get_ini_value(stream_ini_path, section, "fps", 25);
+    auto fps = get_ini_value(stream_ini_path, section, "fps", 25);
     if (fps < 0 || fps > 255) {
       printf("Warning: Invalid fps %d for stream%d, defaulting to 25\n", fps, i);
       fps = 25;
@@ -227,10 +227,10 @@ int8_t get_config_streaming_config_l2(uint8_t **config, uint8_t *length) {
     buf[i * 4 + 1] = (uint8_t)fps;
 
     // Get bitrate (in bps from stream.ini, convert to Mbps to match original format)
-    int bitrate_bps = get_ini_value(stream_ini_path, section, "bitrate", 2000000);
+    auto bitrate_bps = get_ini_value(stream_ini_path, section, "bitrate", 2000000);
     // Convert from bps to Mbps (divide by 1000000)
     // Original config files store bitrate in Mbps as uint8_t
-    int bitrate_mbps = bitrate_bps / 1000000;
+    auto bitrate_mbps = bitrate_bps / 1000000;
     if (bitrate_mbps < 0) {
       bitrate_mbps = 0;
     } else if (bitrate_mbps > 255) {
@@ -241,8 +241,8 @@ int8_t get_config_streaming_config_l2(uint8_t **config, uint8_t *length) {
     buf[i * 4 + 2] = (uint8_t)bitrate_mbps;
 
     // Get codec/encoder
-    int codec = get_ini_value(stream_ini_path, section, "codec", 1);
-    Encoder encoder = map_encoder(codec);
+    auto codec = get_ini_value(stream_ini_path, section, "codec", 1);
+    auto encoder = map_encoder(codec);
     buf[i * 4 + 3] = encoder;
 
     printf("Stream %d: resolution=%d, fps=%d, bitrate=%d Mbps, encoder=%d\n",
@@ -259,12 +259,12 @@ void motocam_l2_free_buffer(void* p) {
 
 int8_t writeConfigFile(const char *fileName, struct MotocamConfig *config) {
   printf("writeToFile %s\n", fileName);
-  FILE *f = fopen(fileName, "wb");
+  auto f = fopen(fileName, "wb");
   if (f == nullptr) {
     printf("open file error %s\n", fileName);
     return -1;
   }
-  size_t write_bytes = fwrite(config, sizeof(struct MotocamConfig), 1, f);
+  auto write_bytes = fwrite(config, sizeof(struct MotocamConfig), 1, f);
   if (write_bytes <= 0) {
     printf("error writing bytes to file %s\n", fileName);
     fclose(f);

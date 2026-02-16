@@ -31,7 +31,7 @@ int8_t get_audio_mic_l2(uint8_t **mic, uint8_t *length) {
     return -1;
   }
   *length = 1;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   buf[0] = mic_e;
   *mic = buf.release();

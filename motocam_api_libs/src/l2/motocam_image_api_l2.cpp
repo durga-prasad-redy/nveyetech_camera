@@ -163,7 +163,7 @@ int8_t set_image_misc_l2(const uint8_t misc) {
 int8_t get_image_zoom_l2(uint8_t **zoom, uint8_t *length) {
   printf("get_image_zoom_l2\n");
   *length = 1;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   buf[0] = current_config.zoom;
   *zoom = buf.release();
@@ -172,7 +172,7 @@ int8_t get_image_zoom_l2(uint8_t **zoom, uint8_t *length) {
 int8_t get_image_rotation_l2(uint8_t **rotation, uint8_t *length) {
   printf("get_image_rotation_l2\n");
   *length = 1;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   buf[0] = current_config.rotation;
   *rotation = buf.release();
@@ -185,7 +185,7 @@ int8_t get_image_ircutfilter_l2(uint8_t **ircutfilter, uint8_t *length) {
     return -1;
   }
   *length = 1;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   buf[0] = ir_cutfilter;
   *ircutfilter = buf.release();
@@ -198,7 +198,7 @@ int8_t get_image_irbrightness_l2(uint8_t **irbrightness, uint8_t *length) {
     return -1;
   }
   *length = 1;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   buf[0] = ir_led_brightness;
   *irbrightness = buf.release();
@@ -211,7 +211,7 @@ int8_t get_image_daymode_l2(uint8_t **daymode, uint8_t *length) {
     return -1;
   }
   *length = 1;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   buf[0] = day_mode;
   *daymode = buf.release();
@@ -224,7 +224,7 @@ int8_t get_gyroreader_l2(uint8_t **gyroreader, uint8_t *length) {
     return -1;
   }
   *length = 1;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   buf[0] = day_mode;
   *gyroreader = buf.release();
@@ -237,7 +237,7 @@ int8_t get_image_resolution_l2(uint8_t **mirror, uint8_t *length) {
     return -1;
   }
   *length = 1;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   buf[0] = resolution;
   *mirror = buf.release();
@@ -250,7 +250,7 @@ int8_t get_wdr_l2(uint8_t **mirror, uint8_t *length) {
     return -1;
   }
   *length = 1;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   buf[0] = wdr;
   *mirror = buf.release();
@@ -263,7 +263,7 @@ int8_t get_eis_l2(uint8_t **mirror, uint8_t *length) {
     return -1;
   }
   *length = 1;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   buf[0] = eis;
   *mirror = buf.release();
@@ -272,7 +272,7 @@ int8_t get_eis_l2(uint8_t **mirror, uint8_t *length) {
 int8_t get_image_mirror_l2(uint8_t **mirror, uint8_t *length) {
   printf("get_image_mirror_l2\n");
   *length = 1;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   buf[0] = current_config.mirror;
   *mirror = buf.release();
@@ -281,7 +281,7 @@ int8_t get_image_mirror_l2(uint8_t **mirror, uint8_t *length) {
 int8_t get_image_flip_l2(uint8_t **flip, uint8_t *length) {
   printf("get_image_flip_l2\n");
   *length = 1;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   buf[0] = current_config.flip;
   *flip = buf.release();
@@ -290,7 +290,7 @@ int8_t get_image_flip_l2(uint8_t **flip, uint8_t *length) {
 int8_t get_image_tilt_l2(uint8_t **tilt, uint8_t *length) {
   printf("get_image_tilt_l2\n");
   *length = 1;
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   buf[0] = current_config.tilt;
   *tilt = buf.release();

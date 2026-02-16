@@ -57,15 +57,15 @@ int8_t provision_device_l2(const uint8_t provision_data_len,
                                2) // 2-- 1 for len, 1 for val
     return -1;
 
-  std::string macid_str(macid, macid + macid_len);
+  auto macid_str = std::string(macid, macid + macid_len);
   if (macid_len > 0 && macid_str[macid_len - 1] == '\n') {
     macid_str.resize(macid_len - 1);
   }
 
-  std::string serial_number_str(serial_number, serial_number + serial_number_len);
-  std::string manufacture_date_str(manufacture_date, manufacture_date + manufacture_date_len);
+  auto serial_number_str = std::string(serial_number, serial_number + serial_number_len);
+  auto manufacture_date_str = std::string(manufacture_date, manufacture_date + manufacture_date_len);
 
-  int8_t ret =
+  auto ret =
       provisioning_mode(macid_str.c_str(), serial_number_str.c_str(), manufacture_date_str.c_str());
   printf("provisioning_mode  macid_str=%s, serial_number_str=%s, "
          "manufacture_date_str=%s ret=%d\n",
@@ -87,17 +87,17 @@ int8_t set_system_factory_reset_l2(const uint8_t dobLength, const uint8_t *dob) 
   }
   
   // Convert DOB to string
-  std::string dob_str(dob, dob + dobLength);
+  auto dob_str = std::string(dob, dob + dobLength);
   
   // Validate DOB format
-  int val_ret = validate_dob_string(dob_str.c_str());
+  auto val_ret = validate_dob_string(dob_str.c_str());
   if (val_ret != 0) {
     printf("set_system_factory_reset_l2: invalid DOB format %d\n", val_ret);
     return val_ret; // Return validation error
   }
   
   // Call fw function with DOB validation
-  int8_t ret = set_factory_reset(dob_str.c_str());
+  auto ret = set_factory_reset(dob_str.c_str());
   if (ret < 0) {
     return ret; // Return -6 (DOB not set) or -7 (DOB mismatch) or -1 (other error)
   }
@@ -118,17 +118,17 @@ int8_t set_system_config_reset_l2(const uint8_t dobLength, const uint8_t *dob) {
   }
   
   // Convert DOB to string
-  std::string dob_str(dob, dob + dobLength);
+  auto dob_str = std::string(dob, dob + dobLength);
   
   // Validate DOB format
-  int val_ret = validate_dob_string(dob_str.c_str());
+  auto val_ret = validate_dob_string(dob_str.c_str());
   if (val_ret != 0) {
     printf("set_system_config_reset_l2: invalid DOB format %d\n", val_ret);
     return val_ret; // Return validation error
   }
   
   // Call fw function with DOB validation
-  int8_t ret = set_config_reset(dob_str.c_str());
+  auto ret = set_config_reset(dob_str.c_str());
   if (ret < 0) {
     return ret; // Return -6 (DOB not set) or -7 (DOB mismatch) or -1 (other error)
   }
@@ -142,7 +142,7 @@ int8_t set_system_camera_name_l2(const uint8_t cameraNameLength,
     return -1; // Name too long
   }
 
-  std::string name(cameraName, cameraName + cameraNameLength);
+  auto name = std::string(cameraName, cameraName + cameraNameLength);
 
   if (set_camera_name(name.c_str()) < 0) {
     return -1; // Error setting camera name
@@ -164,20 +164,20 @@ int8_t set_system_login_l2(const uint8_t loginLength, const uint8_t *loginPin, c
     return -5; // Invalid data length
   }
 
-  std::string login_str(loginPin, loginPin + loginLength);
+  auto login_str = std::string(loginPin, loginPin + loginLength);
 
   // Convert DOB to string
-  std::string dob_str(dob, dob + dobLength);
+  auto dob_str = std::string(dob, dob + dobLength);
   
   // Validate DOB format
-  int val_ret = validate_dob_string(dob_str.c_str());
+  auto val_ret = validate_dob_string(dob_str.c_str());
   if (val_ret != 0) {
     printf("set_system_login_l2: invalid DOB format %d\n", val_ret);
     return val_ret; // Return validation error
   }
 
   // Call fw function with DOB validation
-  int8_t ret = set_login(login_str.c_str(), dob_str.c_str());
+  auto ret = set_login(login_str.c_str(), dob_str.c_str());
   if (ret < 0) {
     return ret; // Return -6 (DOB not set) or -7 (DOB mismatch) or -1 (other error)
   }
@@ -194,7 +194,7 @@ int8_t get_system_camera_name_l2(uint8_t **cameraName, uint8_t *length) {
   name.resize(strlen(name.c_str()));
 
   *length = (uint8_t)name.size();
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   for (uint8_t i = 0; i < *length; i++) {
     buf[i] = (uint8_t)name[i];
@@ -282,7 +282,7 @@ int8_t get_camera_health_l2(uint8_t **camera_health, uint8_t *length) {
 
   *length = (uint8_t)(8); // 5 bytes for status + 3 bytes for temperatures
   // 1 byte for each status and 1 byte for each temperature
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
   if (!buf) return -1;
   uint8_t camera_health_idx = 0;
   buf[camera_health_idx++] = stream_status;
@@ -317,7 +317,7 @@ int8_t login_with_pin_l2(const uint8_t pinLength, const uint8_t *loginPin,
     return -1; // Pin length must be 4
   }
 
-  std::string user_provided_pin;
+  auto user_provided_pin = std::string();
   user_provided_pin.reserve(user_pin_len);
   for (uint8_t i = 0; i < user_pin_len; i++) {
     // Check if character is not numeric (ASCII '0' to '9')
@@ -333,7 +333,7 @@ int8_t login_with_pin_l2(const uint8_t pinLength, const uint8_t *loginPin,
   }
 
   *auth_data_bytes_size = 1; // Assuming auth data size is 1 byte
-  std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*auth_data_bytes_size]);
+  auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*auth_data_bytes_size]);
   if (!buf) return -1;
   if (current_login_pin == user_provided_pin) {
     buf[0] = 0; // Indicating success
@@ -386,9 +386,9 @@ static int validate_dob_string(const char* date_str) {
         if (!isdigit(date_str[i])) return -1;
     }
 
-    int day = atoi(date_str);
-    int month = atoi(date_str + 3);
-    int year = atoi(date_str + 6);
+    auto day = atoi(date_str);
+    auto month = atoi(date_str + 3);
+    auto year = atoi(date_str + 6);
 
     if (month < 1 || month > 12) return -2;
     if (day < 1 || day > get_days_in_month(month, year)) return -2;
@@ -404,11 +404,11 @@ int8_t set_system_user_dob_l2(const uint8_t length, const uint8_t *dob) {
     
     if (length > 10) return -1;
     
-    uint8_t copy_len = (length < 10) ? length : 10;
-    std::string dob_str(dob, dob + copy_len);
+    auto copy_len = (length < 10) ? length : 10;
+    auto dob_str = std::string(dob, dob + copy_len);
     
     // Validate
-    int val_ret = validate_dob_string(dob_str.c_str());
+    auto val_ret = validate_dob_string(dob_str.c_str());
     if (val_ret != 0) {
         printf("set_system_user_dob_l2: validation failed %d\n", val_ret);
         return val_ret;
@@ -426,7 +426,7 @@ int8_t get_system_user_dob_l2(uint8_t **dob, uint8_t *length) {
     if (get_user_dob(&buffer[0]) == 0) {
         buffer.resize(strlen(buffer.c_str()));
         *length = 10;
-        std::unique_ptr<uint8_t[]> buf(new (std::nothrow) uint8_t[*length]);
+        auto buf = std::unique_ptr<uint8_t[]>(new (std::nothrow) uint8_t[*length]);
         if (!buf) return -1;
         for (uint8_t i = 0; i < 10; i++) {
             buf[i] = (uint8_t)(i < buffer.size() ? buffer[i] : 0);
@@ -443,7 +443,7 @@ int8_t set_system_time_l2(uint8_t epoch_time_length,
     if (!epoch_time || epoch_time_length == 0 || epoch_time_length > 32)
         return -1;
 
-    std::string epoch_str;
+    auto epoch_str = std::string();
     epoch_str.reserve(epoch_time_length);
     for (uint8_t i = 0; i < epoch_time_length; i++) {
         if (epoch_time[i] > 9) {
