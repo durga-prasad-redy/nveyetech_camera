@@ -46,7 +46,7 @@ int validate_date_string(const char* date_str) {
     if (month < 1 || month > 12) return -2;
     if (day < 1 || day > get_days_in_month(month, year)) return -2;
 
-    time_t t = time(NULL);
+    time_t t = time(nullptr);
     struct tm tm_buf;
     struct tm *now = localtime_r(&t, &tm_buf);
     if (!now) return -1;
