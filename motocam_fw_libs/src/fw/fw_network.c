@@ -37,22 +37,52 @@ int8_t get_wifi_hotspot_config(char *ssid, uint8_t *encryption_type,
                                char *encryption_key, char *ip_address,
                                char *subnetmask)
 {
-  pthread_mutex_lock(&lock);
-  std::string output_ssid = exec(GET_WIFI_HOTSPOT_SSID);
-  std::string output_encryption_type = exec(GET_WIFI_HOTSPOT_ENCRYPTION_TYPE);
-  std::string output_encryption_key = exec(GET_WIFI_HOTSPOT_ENCRYPTION_KEY);
-  std::string output_ip_address = exec(GET_WIFI_HOTSPOT_IPADDRESS);
-  std::string output_subnetmask = exec(GET_WIFI_HOTSPOT_SUBNETMASK);
+    char output_ssid[64];
+    char output_encryption_type[64];
+    char output_encryption_key[64];
+    char output_ip_address[64];
+    char output_subnetmask[64];
 
-snprintf(ssid, 32, "%s", output_ssid.c_str());
-*encryption_type = (uint8_t)atoi(output_encryption_type.c_str());
-  snprintf(encryption_key, 32, "%s", output_encryption_key.c_str());
-  snprintf(ip_address, 16, "%s", output_ip_address.c_str());
-  snprintf(subnetmask, 16, "%s", output_subnetmask.c_str());
+    pthread_mutex_lock(&lock);
 
-  pthread_mutex_unlock(&lock);
-  return 0;
+    if (exec_cmd(GET_WIFI_HOTSPOT_SSID,
+                 output_ssid, sizeof(output_ssid)) == 0)
+    {
+        snprintf(ssid, 32, "%s", output_ssid);
+    }
+
+    if (exec_cmd(GET_WIFI_HOTSPOT_ENCRYPTION_TYPE,
+                 output_encryption_type,
+                 sizeof(output_encryption_type)) == 0)
+    {
+        *encryption_type = (uint8_t)atoi(output_encryption_type);
+    }
+
+    if (exec_cmd(GET_WIFI_HOTSPOT_ENCRYPTION_KEY,
+                 output_encryption_key,
+                 sizeof(output_encryption_key)) == 0)
+    {
+        snprintf(encryption_key, 32, "%s", output_encryption_key);
+    }
+
+    if (exec_cmd(GET_WIFI_HOTSPOT_IPADDRESS,
+                 output_ip_address,
+                 sizeof(output_ip_address)) == 0)
+    {
+        snprintf(ip_address, 16, "%s", output_ip_address);
+    }
+
+    if (exec_cmd(GET_WIFI_HOTSPOT_SUBNETMASK,
+                 output_subnetmask,
+                 sizeof(output_subnetmask)) == 0)
+    {
+        snprintf(subnetmask, 16, "%s", output_subnetmask);
+    }
+
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
+
 int8_t set_wifi_client_config(const char *ssid, const uint8_t encryption_type,
                               const char *encryption_key,
                               const char *ip_address, const char *subnetmask)
@@ -121,134 +151,200 @@ int8_t set_wifi_dhcp_client_config(const char *ssid,
   pthread_mutex_unlock(&lock);
   return 0;
 }
+
 int8_t get_wifi_client_config(char *ssid, uint8_t *encryption_type,
                               char *encryption_key, char *ip_address,
                               char *subnetmask)
 {
-  pthread_mutex_lock(&lock);
-  std::string output_ssid = exec(GET_WIFI_CLIENT_SSID);
-  std::string output_encryption_type = exec(GET_WIFI_CLIENT_ENCRYPTION_TYPE);
-  std::string output_encryption_key = exec(GET_WIFI_CLIENT_ENCRYPTION_KEY);
-  std::string output_ip_address = exec(GET_WIFI_CLIENT_IPADDRESS);
-  std::string output_subnetmask = exec(GET_WIFI_CLIENT_SUBNETMASK);
+    char output_ssid[64];
+    char output_encryption_type[64];
+    char output_encryption_key[64];
+    char output_ip_address[64];
+    char output_subnetmask[64];
 
-snprintf(ssid, 32, "%s", output_ssid.c_str());
-*encryption_type = (uint8_t)atoi(output_encryption_type.c_str());
-  snprintf(encryption_key, 32, "%s", output_encryption_key.c_str());
-  snprintf(ip_address, 16, "%s", output_ip_address.c_str());
-  snprintf(subnetmask, 16, "%s", output_subnetmask.c_str());
+    pthread_mutex_lock(&lock);
 
-  pthread_mutex_unlock(&lock);
-  return 0;
+    if (exec_cmd(GET_WIFI_CLIENT_SSID,
+                 output_ssid, sizeof(output_ssid)) == 0)
+    {
+        snprintf(ssid, 32, "%s", output_ssid);
+    }
+
+    if (exec_cmd(GET_WIFI_CLIENT_ENCRYPTION_TYPE,
+                 output_encryption_type,
+                 sizeof(output_encryption_type)) == 0)
+    {
+        *encryption_type = (uint8_t)atoi(output_encryption_type);
+    }
+
+    if (exec_cmd(GET_WIFI_CLIENT_ENCRYPTION_KEY,
+                 output_encryption_key,
+                 sizeof(output_encryption_key)) == 0)
+    {
+        snprintf(encryption_key, 32, "%s", output_encryption_key);
+    }
+
+    if (exec_cmd(GET_WIFI_CLIENT_IPADDRESS,
+                 output_ip_address,
+                 sizeof(output_ip_address)) == 0)
+    {
+        snprintf(ip_address, 16, "%s", output_ip_address);
+    }
+
+    if (exec_cmd(GET_WIFI_CLIENT_SUBNETMASK,
+                 output_subnetmask,
+                 sizeof(output_subnetmask)) == 0)
+    {
+        snprintf(subnetmask, 16, "%s", output_subnetmask);
+    }
+
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
 
 int8_t get_wifi_state(uint8_t *state)
 {
-  // uint8_t *state;
-  pthread_mutex_lock(&lock);
-  std::string output = exec(GET_WIFI_STATE);
-  printf("get_wifi_state %s\n", output.c_str());
+    char output[64];
 
-  *state = (uint8_t)atoi(output.c_str());
-  pthread_mutex_unlock(&lock);
-  printf("get_wifi_state %d\n", state[0]);
-  return 0;
+    pthread_mutex_lock(&lock);
+
+    if (exec_cmd(GET_WIFI_STATE, output, sizeof(output)) == 0)
+    {
+        printf("get_wifi_state %s\n", output);
+        *state = (uint8_t)atoi(output);
+    }
+
+    pthread_mutex_unlock(&lock);
+
+    printf("get_wifi_state %d\n", state[0]);
+    return 0;
 }
 
 int8_t get_onvif_interface_state(uint8_t *interface)
 {
+    char cmd[500];
+    char output[64];
 
-  char cmd[500];
-  pthread_mutex_lock(&lock);
-  sprintf(cmd, "cat %s", ONVIF_INTERFACE_STATE_FILE);
-  std::string output = exec(cmd);
+    pthread_mutex_lock(&lock);
 
-  if (!output.empty() && (output.back() == '\n' || output.back() == '\r'))
-    output.pop_back();
-  if (!output.empty() && (output.back() == '\n' || output.back() == '\r'))
-    output.pop_back(); // handle both \r\n cases
+    snprintf(cmd, sizeof(cmd), "cat %s", ONVIF_INTERFACE_STATE_FILE);
 
-  LOG_DEBUG("fw onvif interface state %s\n", output.c_str());
+    if (exec_cmd(cmd, output, sizeof(output)) != 0)
+    {
+        pthread_mutex_unlock(&lock);
+        return -1;
+    }
 
-  if (strcmp(output.c_str(), "eth") == 0)
-  {
+    /* trim trailing \n / \r (handle \r\n too) */
+    size_t len = strlen(output);
+    while (len > 0 && (output[len - 1] == '\n' || output[len - 1] == '\r'))
+    {
+        output[--len] = '\0';
+    }
 
-    LOG_DEBUG("changing onvif interface to eth");
-    *interface = 0;
-  }
-  else if (strcmp(output.c_str(), "wifi") == 0)
-  {
-    LOG_DEBUG("changing onvif interface to wifi");
-    *interface = 1;
-  }
-  else
-  {
-    LOG_DEBUG("invalid onvif interface option %d", *interface);
+    LOG_DEBUG("fw onvif interface state %s\n", output);
+
+    if (strcmp(output, "eth") == 0)
+    {
+        LOG_DEBUG("changing onvif interface to eth");
+        *interface = 0;
+    }
+    else if (strcmp(output, "wifi") == 0)
+    {
+        LOG_DEBUG("changing onvif interface to wifi");
+        *interface = 1;
+    }
+    else
+    {
+        LOG_DEBUG("invalid onvif interface option %d", *interface);
+        pthread_mutex_unlock(&lock);
+        return -1;
+    }
+
     pthread_mutex_unlock(&lock);
-    return -1;
-  }
-
-  // LOG_DEBUG("changing onvif interface to wifalsdfjasl;dfji");
-
-  pthread_mutex_unlock(&lock);
-  return 0;
+    return 0;
 }
-
 
 int8_t get_wifi_hotspot_ipaddress(char *ip_address)
 {
-  pthread_mutex_lock(&lock);
-  std::string output_ip_address = exec(GET_WIFI_HOTSPOT_IPADDRESS);
-  if (!output_ip_address.empty() && output_ip_address.back() == '\n')
-  {
-    output_ip_address.pop_back();
-  }
-  snprintf(ip_address, 16, "%s", output_ip_address.c_str());
-  
-  pthread_mutex_unlock(&lock);
-  return 0;
+    char output[64];
+
+    pthread_mutex_lock(&lock);
+
+    if (exec_cmd(GET_WIFI_HOTSPOT_IPADDRESS, output, sizeof(output)) == 0)
+    {
+        /* trim trailing newline */
+        size_t len = strlen(output);
+        if (len > 0 && output[len - 1] == '\n')
+            output[len - 1] = '\0';
+
+        snprintf(ip_address, 16, "%s", output);
+    }
+
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
+
 int8_t get_wifi_client_ipaddress(char *ip_address)
 {
-  pthread_mutex_lock(&lock);
-  std::string output_ip_address = exec(GET_WIFI_CLIENT_IPADDRESS);
-  if (!output_ip_address.empty() && output_ip_address.back() == '\n')
-  {
-    output_ip_address.pop_back();
-  }
-  snprintf(ip_address, 16, "%s", output_ip_address.c_str());
-  pthread_mutex_unlock(&lock);
-  return 0;
+    char output[64];
+
+    pthread_mutex_lock(&lock);
+
+    if (exec_cmd(GET_WIFI_CLIENT_IPADDRESS, output, sizeof(output)) == 0)
+    {
+        /* trim trailing newline */
+        size_t len = strlen(output);
+        if (len > 0 && output[len - 1] == '\n')
+            output[len - 1] = '\0';
+
+        snprintf(ip_address, 16, "%s", output);
+    }
+
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
 
 int8_t get_eth_ipaddress(char *ip_address)
 {
-  pthread_mutex_lock(&lock);
-  std::string output_ip_address = exec(GET_ETHERNET_IPADDRESS);
-  if (!output_ip_address.empty() && output_ip_address.back() == '\n')
-  {
-    output_ip_address.pop_back();
-  }
+    char output[64];
 
-  snprintf(ip_address, 16, "%s", output_ip_address.c_str());
+    pthread_mutex_lock(&lock);
 
-  pthread_mutex_unlock(&lock);
-  return 0;
+    if (exec_cmd(GET_ETHERNET_IPADDRESS, output, sizeof(output)) == 0)
+    {
+        /* trim trailing newline */
+        size_t len = strlen(output);
+        if (len > 0 && output[len - 1] == '\n')
+            output[len - 1] = '\0';
+
+        snprintf(ip_address, 16, "%s", output);
+    }
+
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
 
-int8_t set_ethernet_ip_address(const char *ip_address, const char *subnetmask)
+int8_t set_ethernet_ip_address(const char *ip_address,
+                               const char *subnetmask)
 {
+    char cmd[500];
+    char dummy[8];
 
-  printf("fw set_ethernet_ip_address %s\n", ip_address);
-  pthread_mutex_lock(&lock);
-  char cmd[500];
-  sprintf(cmd, "%s %s ", SET_ETHERNET_IPADDRESS, ip_address);
-  (void)subnetmask;
-  exec(cmd);
+    printf("fw set_ethernet_ip_address %s\n", ip_address);
 
-  pthread_mutex_unlock(&lock);
-  return 0;
+    pthread_mutex_lock(&lock);
+
+    snprintf(cmd, sizeof(cmd), "%s %s ",
+             SET_ETHERNET_IPADDRESS, ip_address);
+
+    (void)subnetmask; /* unused, kept for API compatibility */
+    exec_cmd(cmd, dummy, sizeof(dummy));
+
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
+
 
 int8_t set_ethernet_dhcp_config()
 {

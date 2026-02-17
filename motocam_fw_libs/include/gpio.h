@@ -1,5 +1,11 @@
 #ifndef GPIO_H
 #define GPIO_H
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 // GPIO Pin Definitions
 #define GPIO_PIN_IR_INIT_0   0
@@ -26,5 +32,9 @@ int gpio_init();
 void update_ir_cut_filter_off();
 void update_ir_cut_filter_on();
 uint8_t get_ir_cut_filter();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // GPIO_H

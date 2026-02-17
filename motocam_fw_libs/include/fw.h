@@ -1,20 +1,25 @@
 #ifndef FW_H
 #define FW_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "gpio.h"
 #include "log.h"
-#include <array>
-#include <csignal>
-#include <cstdio>
-#include <cstring>
+
+#include <stdio.h>
 #include <fcntl.h>
-#include <stdint.h>
-#include <memory>
-#include <stdexcept>
-#include <stdlib.h>
-#include <string>
-#include <sys/stat.h>
+#include <string.h>
 #include <unistd.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <stddef.h>
+#include <ctype.h>
+#include <pthread.h>
 
 /*
 // #define GET_CPU_USAGE "grep '^cpu ' /proc/stat | awk '{total = $2 + $3 + $4 + $5 + $6 + $7 + $8 + $9 + $10 + $11;idle = $5;print 100 * (total - idle) / total " \
@@ -74,6 +79,12 @@
 #define RTSP_SERVER_PROCESS_NAME "rtsps"
 #define STREAM_RESTART_SERVICE_PROCESS_NAME "start.sh"
 
+#define EXEC_GET_UINT8(cmd, out_ptr)        \
+do {                                       \
+    char _buf[64];                         \
+    if (exec_cmd(cmd, _buf, sizeof(_buf)) == 0) \
+        *(out_ptr) = (uint8_t)atoi(_buf);  \
+} while (0)
 
 #define WIFI_RUNTIME_RESULT "/mnt/flash/vienna/m5s_config/wifi_runtime_result" // Replace with actual file path
 
@@ -156,7 +167,7 @@ int8_t is_sensor_temp();
 // system commands
 
 
-std::string exec(const char *cmd);
+int exec_cmd(const char *cmd, char *out, size_t out_size);
 int8_t outdu_update_brightness(uint8_t val);
 void safe_remove(const char *path);
 void safe_symlink(const char *target, const char *linkpath);
@@ -179,5 +190,9 @@ int8_t set_haptic_motor(int duty_cycle, int duration);
 
 int8_t set_uboot_env_chars(const char *key, const char *value);
 void kill_all_processes();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // FW_H

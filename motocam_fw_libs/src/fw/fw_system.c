@@ -47,16 +47,20 @@ int8_t get_cpu_usage(uint8_t *cpu_usage);
 
 int8_t get_memory_usage(uint8_t *memory_usage)
 {
-  std::string output = exec(GET_MEMORY_USAGE);
-  if (output.empty())
-  {
-    LOG_ERROR("Failed to get memory usage");
-    pthread_mutex_unlock(&lock);
-    return -1;
-  }
-  printf("Memory Usage: %s\n", output.c_str());
-  *memory_usage = (uint8_t)atoi(output.c_str());
-  return 0;
+    char output[64];
+
+    if (exec_cmd(GET_MEMORY_USAGE, output, sizeof(output)) != 0 ||
+        output[0] == '\0')
+    {
+        LOG_ERROR("Failed to get memory usage");
+        pthread_mutex_unlock(&lock);
+        return -1;
+    }
+
+    printf("Memory Usage: %s\n", output);
+    *memory_usage = (uint8_t)atoi(output);
+
+    return 0;
 }
 
 int8_t camera_health_check(uint8_t *streamer, uint8_t *rtsp,
@@ -179,8 +183,16 @@ int8_t ota_update()
 
   // Update the camera
 
-  std::string output = exec(OTA_UPDATE_COMMAND);
-  printf("executing ota update command %s\n", output.c_str());
+  char output[256];
+
+  if (exec_cmd(OTA_UPDATE_COMMAND, output, sizeof(output)) == 0)
+  {
+      printf("executing ota update command %s\n", output);
+  }
+  else
+  {
+      printf("executing ota update command failed\n");
+  }
 
   pthread_mutex_unlock(&lock);
 
@@ -218,73 +230,109 @@ int8_t set_login(const char *login_pin, const char *dob)
   pthread_mutex_unlock(&lock);
   return 0;
 }
+
 int8_t get_camera_name(char *camera_name)
 {
-  pthread_mutex_lock(&lock);
-  std::string output = exec(GET_CAMERA_NAME);
-  if (!output.empty() && output.back() == '\n')
-  {
-    output.pop_back();
-  }
-  snprintf(camera_name, 32, "%s", output.c_str());
-  pthread_mutex_unlock(&lock);
-  return 0;
+    char output[64];
+
+    pthread_mutex_lock(&lock);
+
+    if (exec_cmd(GET_CAMERA_NAME, output, sizeof(output)) == 0)
+    {
+        /* trim trailing newline */
+        size_t len = strlen(output);
+        if (len > 0 && output[len - 1] == '\n')
+            output[len - 1] = '\0';
+
+        snprintf(camera_name, 32, "%s", output);
+    }
+
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
+
 int8_t get_firmware_version(char *firmware_version)
 {
-  pthread_mutex_lock(&lock);
-  std::string output = exec(GET_FIRMWARE_VERSION);
-  snprintf(firmware_version, 32, "%s", output.c_str());
-  
-  printf("firmware-version %s\n", firmware_version);
-  pthread_mutex_unlock(&lock);
-  return 0;
+    char output[64];
+
+    pthread_mutex_lock(&lock);
+
+    if (exec_cmd(GET_FIRMWARE_VERSION, output, sizeof(output)) == 0)
+    {
+        snprintf(firmware_version, 32, "%s", output);
+        printf("firmware-version %s\n", firmware_version);
+    }
+
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
+
 int8_t get_mac_address(char *mac_address)
 {
-  pthread_mutex_lock(&lock);
-  std::string output = exec(GET_MAC_ADDRESS);
-  snprintf(mac_address, 18, "%s", output.c_str());
-  
-  printf("mac-address %s\n", mac_address);
+    char output[64];
 
-  pthread_mutex_unlock(&lock);
-  return 0;
+    pthread_mutex_lock(&lock);
+
+    if (exec_cmd(GET_MAC_ADDRESS, output, sizeof(output)) == 0)
+    {
+        snprintf(mac_address, 18, "%s", output);
+        printf("mac-address %s\n", mac_address);
+    }
+
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
+
 int8_t get_ota_update_status(char *ota_status)
 {
-  pthread_mutex_lock(&lock);
-  std::string output = exec(GET_OTA_STATUS);
-  snprintf(ota_status, 32, "%s", output.c_str());
-  
-  printf("ota_status %s\n", ota_status);
+    char output[64];
 
-  pthread_mutex_unlock(&lock);
-  return 0;
+    pthread_mutex_lock(&lock);
+
+    if (exec_cmd(GET_OTA_STATUS, output, sizeof(output)) == 0)
+    {
+        snprintf(ota_status, 32, "%s", output);
+        printf("ota_status %s\n", ota_status);
+    }
+
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
+
 int8_t get_factory_reset_status(char *factory_reset_status)
 {
-  pthread_mutex_lock(&lock);
-  std::string output = exec(GET_FACTORY_RESET_STATUS);
-  snprintf(factory_reset_status, 32, "%s", output.c_str());
-  
-  printf("factory_reset_status %s\n", factory_reset_status);
+    char output[64];
 
-  pthread_mutex_unlock(&lock);
-  return 0;
+    pthread_mutex_lock(&lock);
+
+    if (exec_cmd(GET_FACTORY_RESET_STATUS, output, sizeof(output)) == 0)
+    {
+        snprintf(factory_reset_status, 32, "%s", output);
+        printf("factory_reset_status %s\n", factory_reset_status);
+    }
+
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
+
 int8_t get_login_pin(char *loginPin)
 {
-  pthread_mutex_lock(&lock);
-  std::string output = exec(GET_LOGIN_PIN);
-  if (!output.empty() && output.back() == '\n')
-  {
-    output.pop_back();
-  }
-  snprintf(loginPin, 32, "%s", output.c_str());
+    char output[64];
 
-  pthread_mutex_unlock(&lock);
-  return 0;
+    pthread_mutex_lock(&lock);
+
+    if (exec_cmd(GET_LOGIN_PIN, output, sizeof(output)) == 0)
+    {
+        /* trim trailing newline */
+        size_t len = strlen(output);
+        if (len > 0 && output[len - 1] == '\n')
+            output[len - 1] = '\0';
+
+        snprintf(loginPin, 32, "%s", output);
+    }
+
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
 
 // Validate DOB: Returns 0 on success, -6 if DOB not set, -7 if DOB mismatch
@@ -372,44 +420,75 @@ int8_t set_config_reset(const char *dob)
 int8_t get_stream_resolution(enum image_resolution *resolution,
                              uint8_t stream_number)
 {
-  pthread_mutex_lock(&lock);
-  char cmd[100];
-  sprintf(cmd, "cat " M5S_CONFIG_DIR "/stream%d_resolution", stream_number);
-  std::string output = exec(cmd);
-  *resolution = (enum image_resolution)atoi(output.c_str());
-  pthread_mutex_unlock(&lock);
-  return 0;
+    char cmd[100];
+    char output[64];
+
+    pthread_mutex_lock(&lock);
+
+    snprintf(cmd, sizeof(cmd),
+             "cat " M5S_CONFIG_DIR "/stream%d_resolution",
+             stream_number);
+
+    if (exec_cmd(cmd, output, sizeof(output)) == 0)
+        *resolution = (enum image_resolution)atoi(output);
+
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
 
 int8_t get_stream_fps(uint8_t *fps, uint8_t stream_number)
 {
-  pthread_mutex_lock(&lock);
-  char cmd[100];
-  sprintf(cmd, "cat " M5S_CONFIG_DIR "/stream%d_fps", stream_number);
-  std::string output = exec(cmd);
-  *fps = (uint8_t)atoi(output.c_str());
-  pthread_mutex_unlock(&lock);
-  return 0;
+    char cmd[100];
+    char output[64];
+
+    pthread_mutex_lock(&lock);
+
+    snprintf(cmd, sizeof(cmd),
+             "cat " M5S_CONFIG_DIR "/stream%d_fps",
+             stream_number);
+
+    if (exec_cmd(cmd, output, sizeof(output)) == 0)
+        *fps = (uint8_t)atoi(output);
+
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
+
 int8_t get_stream_bitrate(uint8_t *bitrate, uint8_t stream_number)
 {
-  pthread_mutex_lock(&lock);
-  char cmd[100];
-  sprintf(cmd, "cat " M5S_CONFIG_DIR "/stream%d_bitrate", stream_number);
-  std::string output = exec(cmd);
-  *bitrate = (uint8_t)atoi(output.c_str());
-  pthread_mutex_unlock(&lock);
-  return 0;
+    char cmd[100];
+    char output[64];
+
+    pthread_mutex_lock(&lock);
+
+    snprintf(cmd, sizeof(cmd),
+             "cat " M5S_CONFIG_DIR "/stream%d_bitrate",
+             stream_number);
+
+    if (exec_cmd(cmd, output, sizeof(output)) == 0)
+        *bitrate = (uint8_t)atoi(output);
+
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
-int8_t get_stream_encoder(enum encoder_type *encoder1, uint8_t stream_number)
+
+int8_t get_stream_encoder(enum encoder_type *encoder1,
+                          uint8_t stream_number)
 {
-  pthread_mutex_lock(&lock);
-  char cmd[100];
-  sprintf(cmd, "cat " M5S_CONFIG_DIR "/stream%d_encoder", stream_number);
-  std::string output = exec(cmd);
-  *encoder1 = (enum encoder_type)atoi(output.c_str());
-  pthread_mutex_unlock(&lock);
-  return 0;
+    char cmd[100];
+    char output[64];
+
+    pthread_mutex_lock(&lock);
+
+    snprintf(cmd, sizeof(cmd),
+             "cat " M5S_CONFIG_DIR "/stream%d_encoder",
+             stream_number);
+
+    if (exec_cmd(cmd, output, sizeof(output)) == 0)
+        *encoder1 = (enum encoder_type)atoi(output);
+
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
 
 typedef struct
@@ -580,11 +659,15 @@ int8_t get_user_dob(char *dob) {
 
 int8_t set_system_time(const char *epoch_time)
 {
-  pthread_mutex_lock(&lock);
-  char cmd[300];
-  sprintf(cmd, "%s %s", SET_TIME_COMMAND, epoch_time);
-  exec(cmd);
-  pthread_mutex_unlock(&lock);
-  return 0;
+    char cmd[300];
+    char dummy[8];
+
+    pthread_mutex_lock(&lock);
+
+    snprintf(cmd, sizeof(cmd), "%s %s", SET_TIME_COMMAND, epoch_time);
+    exec_cmd(cmd, dummy, sizeof(dummy));   /* output not needed */
+
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
 

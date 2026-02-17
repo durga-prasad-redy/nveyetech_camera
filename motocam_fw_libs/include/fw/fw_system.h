@@ -1,5 +1,10 @@
 #ifndef FW_SYSTEM_H
 #define FW_SYSTEM_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "fw.h"
 #include "fw/fw_sensor.h"
 
@@ -26,5 +31,9 @@ int8_t get_user_dob(char *dob);
 int8_t validate_user_dob(const char *input_dob);
 int8_t set_system_time(const char *epoch_time);
 // int8_t set_haptic_motor(int duty_cycle, int duration);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -6,7 +6,7 @@ PROJECT(VTCS_LIB_APP)
 IF(CMAKE_BUILD_TYPE STREQUAL "Debug")
 	MESSAGE("====== Debug mode ======")
 	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Wall -Wextra -pthread -g -fasynchronous-unwind-tables")
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -pthread -g -fasynchronous-unwind-tables")
+	#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -pthread -g -fasynchronous-unwind-tables")
 	SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -rdynamic")
 	SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -rdynamic")
 	SET(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -rdynamic")
@@ -16,13 +16,13 @@ ELSE(CMAKE_BUILD_TYPE STREQUAL "Debug")
 	IF(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
 		MESSAGE("====== RelWithDebInfo mode ======")
 		SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -O3 -Wall -Wextra -pthread")
-		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -Wall -Wextra -pthread")
+		#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -Wall -Wextra -pthread")
 		ADD_DEFINITIONS("-DDEBUG")
 		SET(DEBUG_ENABLE true)
 	ELSE(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
 		MESSAGE("====== Release mode ======")
 		SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -O3 -Wall -Wextra -pthread")
-		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -Wall -Wextra -pthread")
+		#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -Wall -Wextra -pthread")
 		ADD_DEFINITIONS("-DNDEBUG")
 		SET(DEBUG_ENABLE false)
 	ENDIF(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
@@ -63,15 +63,15 @@ INCLUDE(${CMAKE_MODULE_DIR}/ConditionalAddSubDir.cmake)
 #
 
 SET(SRC_LIST
-    src/gpio.cpp
-    src/fw.cpp
-    src/fw/fw_audio.cpp 
-    src/fw/fw_config.cpp
-    src/fw/fw_helper.cpp
-    src/fw/fw_image.cpp
-    src/fw/fw_network.cpp
-    src/fw/fw_streaming.cpp
-    src/fw/fw_system.cpp
+    src/gpio.c
+    src/fw.c
+    src/fw/fw_audio.c
+    src/fw/fw_config.c
+    src/fw/fw_helper.c
+    src/fw/fw_image.c
+    src/fw/fw_network.c
+    src/fw/fw_streaming.c
+    src/fw/fw_system.c
 )
 # SET(LINK_LIST vmf membroker msgbroker syncringbuffer)
 

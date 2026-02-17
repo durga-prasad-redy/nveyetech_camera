@@ -40,11 +40,12 @@ static int start_process_with_name(const char *process_name)
 
 int8_t get_stream_state()
 {
-  pthread_mutex_lock(&lock);
-  std::string output = exec(GET_STREAMING_STATE);
-  uint8_t state = (uint8_t)atoi(output.c_str());
-  pthread_mutex_unlock(&lock);
-  return state;
+    uint8_t state = 0;
+
+    pthread_mutex_lock(&lock);
+    EXEC_GET_UINT8(GET_STREAMING_STATE, &state);
+    pthread_mutex_unlock(&lock);
+    return (int8_t)state;
 }
 
 int8_t start_stream()
@@ -77,11 +78,10 @@ int8_t stop_stream()
 
 int8_t get_webrtc_streaming_state(uint8_t *webrtc_state)
 {
+  uint8_t webrtc_enabled = 0;
   printf("fw get_webrtc_streaming_state \n");
   pthread_mutex_lock(&lock);
-
-  std::string output = exec(GET_WEBRTC_ENABLED);
-  uint8_t webrtc_enabled = atoi(output.c_str());
+  EXEC_GET_UINT8(GET_WEBRTC_ENABLED, &webrtc_enabled);
   printf("fw get_webrtc_streaming_state webrtc_enabled=%d\n", webrtc_enabled);
   webrtc_state[0] = webrtc_enabled;
   pthread_mutex_unlock(&lock);
@@ -90,12 +90,12 @@ int8_t get_webrtc_streaming_state(uint8_t *webrtc_state)
 
 int8_t start_webrtc_stream()
 {
+  uint8_t misc = 0;
   LOG_DEBUG("fw start_webrtc %d\n", misc);
   pthread_mutex_lock(&lock);
 
-  std::string output = exec(GET_MISC);
-  printf("fw get_misc output=%s\n", output.c_str());
-  uint8_t misc = atoi(output.c_str());
+  EXEC_GET_UINT8(GET_MISC, &misc);
+  printf("fw get_misc misc=%d\n", misc);
 
   if (misc == DAY_EIS_ON_WDR_ON || misc == NIGHT_EIS_ON_WDR_ON)
   {
@@ -149,62 +149,93 @@ int8_t stop_webrtc_stream()
 
 
 
+/* Trim leading and trailing whitespace (modifies string in place) */
+char *trim(char *str)
+{
+    char *end;
 
+    if (!str)
+        return str;
 
-// Helper function to trim whitespace from string
-std::string trim(const std::string& str) {
-  size_t first = str.find_first_not_of(" \t\r\n");
-  if (first == std::string::npos) return "";
-  size_t last = str.find_last_not_of(" \t\r\n");
-  return str.substr(first, (last - first + 1));
+    /* Trim leading space */
+    while (*str && isspace((unsigned char)*str))
+        str++;
+
+    if (*str == 0)
+        return str;
+
+    /* Trim trailing space */
+    end = str + strlen(str) - 1;
+    while (end > str && isspace((unsigned char)*end))
+        end--;
+
+    end[1] = '\0';
+    return str;
 }
 
-// Helper function to get value from INI file section
- int get_ini_value(const std::string& filename, const std::string& section, 
-                         const std::string& key, int default_value) {
-  std::ifstream file(filename);
-  if (!file.is_open()) {
-    printf("Failed to open file: %s\n", filename.c_str());
-    return default_value;
-  }
+int get_ini_value(const char *filename,
+                  const char *section,
+                  const char *key,
+                  int default_value)
+{
+    FILE *file;
+    char line[256];
+    int in_section = 0;
 
-  std::string line;
-  bool in_section = false;
-  
-  while (std::getline(file, line)) {
-    // Remove comments
-    size_t comment_pos = line.find('#');
-    if (comment_pos != std::string::npos) {
-      line = line.substr(0, comment_pos);
+    if (!filename || !section || !key)
+        return default_value;
+
+    file = fopen(filename, "r");
+    if (!file)
+    {
+        printf("Failed to open file: %s\n", filename);
+        return default_value;
     }
-    
-    line = trim(line);
-    if (line.empty()) continue;
-    
-    // Check for section header
-    if (line[0] == '[' && line.back() == ']') {
-      std::string current_section = trim(line.substr(1, line.length() - 2));
-      in_section = (current_section == section);
-      continue;
-    }
-    
-    // Parse key=value if in the right section
-    if (in_section) {
-      size_t eq_pos = line.find('=');
-      if (eq_pos != std::string::npos) {
-        std::string current_key = trim(line.substr(0, eq_pos));
-        std::string value_str = trim(line.substr(eq_pos + 1));
-        
-        if (current_key == key) {
-          file.close();
-          return atoi(value_str.c_str());
+
+    while (fgets(line, sizeof(line), file))
+    {
+        /* Remove comments */
+        char *comment = strchr(line, '#');
+        if (comment)
+            *comment = '\0';
+
+        char *trimmed = trim(line);
+        if (*trimmed == '\0')
+            continue;
+
+        /* Section header */
+        if (trimmed[0] == '[')
+        {
+            char *end = strchr(trimmed, ']');
+            if (end)
+            {
+                *end = '\0';
+                in_section = (strcmp(trim(trimmed + 1), section) == 0);
+            }
+            continue;
         }
-      }
+
+        /* key=value */
+        if (in_section)
+        {
+            char *eq = strchr(trimmed, '=');
+            if (eq)
+            {
+                *eq = '\0';
+                char *current_key = trim(trimmed);
+                char *value_str = trim(eq + 1);
+
+                if (strcmp(current_key, key) == 0)
+                {
+                    fclose(file);
+                    return atoi(value_str);
+                }
+            }
+        }
     }
-  }
-  
-  file.close();
-  return default_value;
+
+    fclose(file);
+    return default_value;
 }
 
 // Helper function to map width x height to ImageResolution enum
@@ -225,16 +256,16 @@ ImageResolution map_resolution(int width, int height) {
 }
 
 // Helper function to map codec value to Encoder enum
- Encoder map_encoder(int codec) {
-  // codec: 0=H264, 1=H265, 2=mjpg
-  if (codec == 0) {
-    return H264;
-  } else if (codec == 1) {
-    return H265;
-  } else {
-    // mjpg (2) or unknown, default to H264
+Encoder map_encoder(int codec)
+{
+    /* codec: 0=H264, 1=H265, 2=MJPEG */
+    if (codec == 0) {
+        return H264;
+    } else if (codec == 1) {
+        return H265;
+    } else {
     printf("Warning: Unknown codec %d, defaulting to H264\n", codec);
     return H264;
-  }
+    }
 }
 

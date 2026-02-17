@@ -6,59 +6,72 @@
 
 pthread_mutex_t lock;
 
-std::string exec(const char *cmd)
-{
-  LOG_DEBUG("%s\n", cmd);
-  std::array<char, 128> buffer;
-  std::string result;
-  std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
-  if (!pipe)
-  {
-    throw std::runtime_error("popen() failed!");
-  }
-  while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
-  {
-    result += buffer.data();
-  }
+#define EXEC_TMP_BUF 128
 
-  return result;
+int exec_cmd(const char *cmd, char *out, size_t out_size)
+{
+    FILE *pipe;
+    char buffer[EXEC_TMP_BUF];
+    size_t len;
+
+    if (!cmd || !out || out_size == 0)
+        return -1;
+
+    LOG_DEBUG("%s\n", cmd);
+
+    pipe = popen(cmd, "r");
+    if (!pipe)
+        return -1;
+
+    out[0] = '\0';
+
+    while (fgets(buffer, sizeof(buffer), pipe))
+    {
+        len = strlen(out);
+        if (len >= out_size - 1)
+            break;
+
+        strncat(out, buffer, out_size - len - 1);
+    }
+
+    pclose(pipe);
+    return 0;
 }
 
 int exec_return(const char *cmd)
 {
-  LOG_DEBUG("%s\n", cmd);
-  std::array<char, 4096> buffer = {{0}};
-  std::string result;
+    FILE *pipe;
+    char buffer[4096];
+    int status;
+    int exitCode = -1;
 
-  // open pipe/
-  std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
-  if (!pipe)
-  {
-    throw std::runtime_error("popen() failed!");
-  }
+    if (!cmd)
+        return -1;
 
-  // read stdout
-  while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
-  {
-    result += buffer.data();
-  }
+    LOG_DEBUG("%s\n", cmd);
 
-  // get exit code
-  int status =
-      pclose(pipe.release()); // release() -> unique_ptr won't call pclose twice
-  int exitCode = -1;
-  if (status != -1)
-  {
-    if (WIFEXITED(status))
+    pipe = popen(cmd, "r");
+    if (!pipe)
+        return -1;
+
+    /* Read and discard stdout */
+    while (fgets(buffer, sizeof(buffer), pipe))
     {
-      exitCode = WEXITSTATUS(status); // <- This gives 0, 1, etc.
+        /* no-op */
     }
-  }
 
-  return exitCode;
+    status = pclose(pipe);
+
+    if (status != -1)
+    {
+        if (WIFEXITED(status))
+        {
+            exitCode = WEXITSTATUS(status);
+        }
+    }
+
+    return exitCode;
 }
-
-
 
 int is_running(const char *process_name)
 {
@@ -105,42 +118,48 @@ int is_running(const char *process_name)
     return 0;
 }
 
-
-
-int8_t get_mode()
+int8_t get_mode(void)
 {
-  int8_t day_mode;
-  std::string output = exec(GET_DAY_MODE);
-  day_mode = atoi(output.c_str());
+    char output[64];
+    int8_t day_mode = 0;
 
-  return day_mode;
+    if (exec_cmd(GET_DAY_MODE, output, sizeof(output)) == 0)
+        day_mode = (int8_t)atoi(output);
+
+    return day_mode;
 }
 
-int8_t is_ir_temp()
+int8_t is_ir_temp(void)
 {
-  int8_t is_ir_temp;
-  std::string output = exec(GET_IS_IR_TEMP);
-  is_ir_temp = atoi(output.c_str());
+    char output[64];
+    int8_t is_ir_temp = 0;
 
-  return is_ir_temp;
+    if (exec_cmd(GET_IS_IR_TEMP, output, sizeof(output)) == 0)
+        is_ir_temp = (int8_t)atoi(output);
+
+    return is_ir_temp;
 }
 
-int8_t is_sensor_temp()
+int8_t is_sensor_temp(void)
 {
-  int8_t is_sensor_temp;
-  std::string output = exec(GET_IS_SENSOR_TEMP);
-  is_sensor_temp = atoi(output.c_str());
+    char output[64];
+    int8_t is_sensor_temp = 0;
 
-  return is_sensor_temp;
+    if (exec_cmd(GET_IS_SENSOR_TEMP, output, sizeof(output)) == 0)
+        is_sensor_temp = (int8_t)atoi(output);
+
+    return is_sensor_temp;
 }
 
-int8_t get_ir_tmp_ctl()
+int8_t get_ir_tmp_ctl(void)
 {
-  int8_t ir_tmp_ctl;
-  std::string output = exec(GET_IR_TEMP_CTL);
-  ir_tmp_ctl = atoi(output.c_str());
+    char output[64];
+    int8_t ir_tmp_ctl = 0;
 
-  return ir_tmp_ctl;
+    if (exec_cmd(GET_IR_TEMP_CTL, output, sizeof(output)) == 0)
+        ir_tmp_ctl = (int8_t)atoi(output);
+
+    return ir_tmp_ctl;
 }
 
 // One-file-per-key configuration system functions

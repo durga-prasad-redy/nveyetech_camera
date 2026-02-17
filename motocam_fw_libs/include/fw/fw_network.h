@@ -1,6 +1,10 @@
 #ifndef FW_NETWORK_H
 #define FW_NETWORK_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "fw.h"
 
 int8_t get_wifi_hotspot_ipaddress( char *ip_address);
@@ -22,5 +26,9 @@ int8_t get_wifi_state(uint8_t *wifi_state); // 1:Hotspot, 2:Client
 
 int8_t set_onvif_interface(const uint8_t interface);
 int8_t get_onvif_interface_state(uint8_t *interface);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

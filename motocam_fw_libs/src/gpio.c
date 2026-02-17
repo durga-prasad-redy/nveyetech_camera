@@ -10,41 +10,41 @@
 #include "gpio.h"
 #include "log.h"
 
-constexpr const char* GPIO_EXPORT_PATH = "/sys/class/gpio/export";
-constexpr const char* GPIO_DIRECTION_PATH = "/sys/class/gpio/gpio%d/direction";
-constexpr const char* GPIO_VALUE_PATH = "/sys/class/gpio/gpio%d/value";
+#define GPIO_EXPORT_PATH "/sys/class/gpio/export"
+#define GPIO_DIRECTION_PATH "/sys/class/gpio/gpio%d/direction"
+#define GPIO_VALUE_PATH "/sys/class/gpio/gpio%d/value"
 
-constexpr const char* OTA_WATCH_DIR = "/mnt/flash/vienna/firmware/ota/";
-constexpr const char* OTA_STATUS_FILE = "/mnt/flash/vienna/m5s_config/ota_status";
-constexpr const char* WIFI_STATE_PATH = "/sys/class/net/wlan0/operstate";
-constexpr const char* IRCUT_FILTER = "ircut_filter";
-constexpr const char* IRCUT_STATE_FILE = "/mnt/flash/vienna/m5s_config/ircut_filter";
-constexpr const char* WIFI_STATE_FILE = "/mnt/flash/vienna/m5s_config/wifi_state";
+#define OTA_WATCH_DIR   "/mnt/flash/vienna/firmware/ota/"
+#define OTA_STATUS_FILE "/mnt/flash/vienna/m5s_config/ota_status"
+#define WIFI_STATE_PATH "/sys/class/net/wlan0/operstate"
+#define IRCUT_FILTER "ircut_filter"
+#define IRCUT_STATE_FILE "/mnt/flash/vienna/m5s_config/ircut_filter"
+#define WIFI_STATE_FILE "/mnt/flash/vienna/m5s_config/wifi_state"
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
-enum class subsys_state_t {
+typedef enum {
     SUBSYS_OK = 0,
     SUBSYS_FAIL,
     SUBSYS_IN_PROGRESS
-};
+} subsys_state_t;
 
-struct system_state_t{
+typedef struct {
     subsys_state_t wifi;
     subsys_state_t ota;
     subsys_state_t onvif;
     int ota_passed_not_rebooted;
     int wifi_ap_no_client;
-};
+} system_state_t;
 
-struct led_step_t {
+typedef struct {
     int red;
     int green;
     int blue;
     int duration_ms;
-};
+} led_step_t;
 
 
 // define patterns for RGB LED
@@ -275,61 +275,61 @@ static int read_ircut_state(void)
 
 static void decide_and_run_led(system_state_t *st)
 {
-    if (st->ota == subsys_state_t::SUBSYS_IN_PROGRESS) {
+    if (st->ota == SUBSYS_IN_PROGRESS) {
         run_led_pattern(PATTERN_OTA_PROGRESS,
                         ARRAY_SIZE(PATTERN_OTA_PROGRESS));
         return;
     }
 
-    if (st->ota == subsys_state_t::SUBSYS_FAIL &&
-        st->wifi == subsys_state_t::SUBSYS_FAIL &&
-        st->onvif == subsys_state_t::SUBSYS_FAIL) {
+    if (st->ota == SUBSYS_FAIL &&
+        st->wifi == SUBSYS_FAIL &&
+        st->onvif == SUBSYS_FAIL) {
         run_led_pattern(PATTERN_ALL_FAIL,
                         ARRAY_SIZE(PATTERN_ALL_FAIL));
         return;
     }
 
-    if (st->wifi == subsys_state_t::SUBSYS_FAIL && st->ota == subsys_state_t::SUBSYS_FAIL) {
+    if (st->wifi == SUBSYS_FAIL && st->ota == SUBSYS_FAIL) {
         run_led_pattern(PATTERN_WIFI_OTA_FAIL,
                         ARRAY_SIZE(PATTERN_WIFI_OTA_FAIL));
         return;
     }
 
-    if (st->wifi == subsys_state_t::SUBSYS_FAIL && st->ota_passed_not_rebooted) {
+    if (st->wifi == SUBSYS_FAIL && st->ota_passed_not_rebooted) {
         run_led_pattern(PATTERN_WIFI_FAIL_OTA_PASSED,
                         ARRAY_SIZE(PATTERN_WIFI_FAIL_OTA_PASSED));
         return;
     }
 
     if (st->ota_passed_not_rebooted &&
-            st->wifi == subsys_state_t::SUBSYS_OK &&
-            st->onvif == subsys_state_t::SUBSYS_OK) {
+            st->wifi == SUBSYS_OK &&
+            st->onvif == SUBSYS_OK) {
         run_led_pattern(PATTERN_OTA_PASS_NO_REBOOT,
                 ARRAY_SIZE(PATTERN_OTA_PASS_NO_REBOOT));
         return;
     }
 
-    if (st->ota == subsys_state_t::SUBSYS_FAIL &&
-            st->onvif == subsys_state_t::SUBSYS_FAIL) {
+    if (st->ota == SUBSYS_FAIL &&
+            st->onvif == SUBSYS_FAIL) {
         run_led_pattern(PATTERN_OTA_ONVIF_FAIL,
                         ARRAY_SIZE(PATTERN_OTA_ONVIF_FAIL));
         return;
     }
 
-    if (st->wifi == subsys_state_t::SUBSYS_FAIL &&
-            st->onvif == subsys_state_t::SUBSYS_FAIL) {
+    if (st->wifi == SUBSYS_FAIL &&
+            st->onvif == SUBSYS_FAIL) {
         run_led_pattern(PATTERN_WIFI_ONVIF_FAIL,
                         ARRAY_SIZE(PATTERN_WIFI_ONVIF_FAIL));
         return;
     }
 
-    if (st->ota == subsys_state_t::SUBSYS_FAIL) {
+    if (st->ota == SUBSYS_FAIL) {
         run_led_pattern(PATTERN_OTA_FAIL,
                         ARRAY_SIZE(PATTERN_OTA_FAIL));
         return;
     }
 
-    if (st->onvif == subsys_state_t::SUBSYS_FAIL) {
+    if (st->onvif == SUBSYS_FAIL) {
         run_led_pattern(PATTERN_ONVIF_FAIL,
                         ARRAY_SIZE(PATTERN_ONVIF_FAIL));
         return;
@@ -341,7 +341,7 @@ static void decide_and_run_led(system_state_t *st)
         return;
     }
 
-    if (st->wifi == subsys_state_t::SUBSYS_FAIL) {
+    if (st->wifi == SUBSYS_FAIL) {
         run_led_pattern(PATTERN_WIFI_FAIL,
                         ARRAY_SIZE(PATTERN_WIFI_FAIL));
         return;
@@ -422,44 +422,44 @@ static subsys_state_t check_wifi(void)
 
     fp = fopen(WIFI_STATE_PATH, "r");
     if (!fp)
-        return subsys_state_t::SUBSYS_FAIL;
+        return SUBSYS_FAIL;
 
     fgets(buf, sizeof(buf), fp);
     fclose(fp);
 
     if (strncmp(buf, "up", 2) != 0)
-        return subsys_state_t::SUBSYS_FAIL;
+        return SUBSYS_FAIL;
 
     /* IP check */
     if (!wifi_has_ip())
-        return subsys_state_t::SUBSYS_FAIL;
+        return SUBSYS_FAIL;
 
-    return subsys_state_t::SUBSYS_OK;
+    return SUBSYS_OK;
 }
 
 static subsys_state_t check_onvif(void)
 {
     if (system("pidof multionvifserver > /dev/null") == 0)
-        return subsys_state_t::SUBSYS_OK;
+        return SUBSYS_OK;
 
-    return subsys_state_t::SUBSYS_FAIL;
+    return SUBSYS_FAIL;
 }
 
 static subsys_state_t check_ota(char *status_buf, size_t len)
 {
     if (read_ota_status(status_buf, len) < 0)
-        return subsys_state_t::SUBSYS_OK;   // treat as idle
+        return SUBSYS_OK;   // treat as idle
 
     if (strstr(status_buf, "in-progress"))
-        return subsys_state_t::SUBSYS_IN_PROGRESS;
+        return SUBSYS_IN_PROGRESS;
 
     if (!strcmp(status_buf, "ota-successful"))
-        return subsys_state_t::SUBSYS_OK;
+        return SUBSYS_OK;
 
     if (is_ota_failed_state(status_buf))
-        return subsys_state_t::SUBSYS_FAIL;
+        return SUBSYS_FAIL;
 
-    return subsys_state_t::SUBSYS_OK;
+    return SUBSYS_OK;
 }
 
 static void *system_led_watcher(void *arg)
@@ -474,7 +474,7 @@ static void *system_led_watcher(void *arg)
         st.onvif = check_onvif();
         st.ota   = check_ota(ota_status, sizeof(ota_status));
 
-        if (st.wifi == subsys_state_t::SUBSYS_OK && read_wifi_state() == 1 && !ap_has_connected_sta()) {
+        if (st.wifi == SUBSYS_OK && read_wifi_state() == 1 && !ap_has_connected_sta()) {
            st.wifi_ap_no_client = 1;
         }
         if (!strcmp(ota_status, "ota-successful"))

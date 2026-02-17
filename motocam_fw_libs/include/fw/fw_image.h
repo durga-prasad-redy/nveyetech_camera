@@ -1,6 +1,10 @@
 #ifndef FW_IMAGE_H
 #define FW_IMAGE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include "fw.h"
 
@@ -71,5 +75,8 @@ int8_t stop_webrtc_stream();
 int8_t start_webrtc_stream();
 int8_t stop_webrtc_stream();
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif // FW_IMAGE_H

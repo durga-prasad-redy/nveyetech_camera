@@ -94,17 +94,20 @@ snprintf(addr.sun_path, sizeof(addr.sun_path),"%s", IR_SOCK_PATH);
 
 void start_wdr_eis_mode(uint8_t day_mode)
 {
-  uint8_t eis;
-  uint8_t wdr;
-  uint8_t stream1_resolution;
-  std::string output = exec(GET_EIS);
-  eis = atoi(output.c_str());
+  uint8_t eis=0;
+  uint8_t wdr=0;
+  uint8_t stream1_resolution=0;
 
-  output = exec(GET_WDR);
-  wdr = atoi(output.c_str());
+  char output[64];
 
-  output = exec(GET_STREAM1_RESOLUTION);
-  stream1_resolution = atoi(output.c_str());
+  if (exec_cmd(GET_EIS, output, sizeof(output)) == 0)
+      eis = atoi(output);
+
+  if (exec_cmd(GET_WDR, output, sizeof(output)) == 0)
+      wdr = atoi(output);
+
+  if (exec_cmd(GET_STREAM1_RESOLUTION, output, sizeof(output)) == 0)
+      stream1_resolution = atoi(output);
 
   safe_remove(RES_PATH "/Resource");
 
@@ -461,7 +464,7 @@ int8_t set_ir_cutfilter(OnOff on_off)
 int8_t set_ir_led_brightness(uint8_t brightness)
 {
     LOG_INFO("fw set_ir_led_brightness %d\n", brightness);
-    uint8_t last_ir;
+    uint8_t last_ir=0;
     get_ir_led_brightness(&last_ir);
 
     pthread_mutex_lock(&lock);
@@ -715,8 +718,13 @@ int8_t set_image_misc(uint8_t misc)
   LOG_DEBUG("fw set_image_misc %d\n", misc);
   pthread_mutex_lock(&lock);
 
-  std::string webrtc_enabled = exec(GET_WEBRTC_ENABLED);
-  uint8_t webrtc_en = atoi(webrtc_enabled.c_str());
+  char webrtc_enabled[64];
+  uint8_t webrtc_en = 0;
+
+  if (exec_cmd(GET_WEBRTC_ENABLED, webrtc_enabled, sizeof(webrtc_enabled)) == 0)
+  {
+      webrtc_en = (uint8_t)atoi(webrtc_enabled);
+  }
   if (webrtc_en == 1 && (misc == DAY_EIS_ON_WDR_ON || misc == NIGHT_EIS_ON_WDR_ON))
   {
     printf("[INFO] WebRTC is enabled. Cannot set misc to %d\n", misc);
@@ -749,134 +757,98 @@ int8_t set_image_misc(uint8_t misc)
 
 int8_t get_ir_led_brightness(uint8_t *brightness)
 {
-  pthread_mutex_lock(&lock);
-
-  std::string output = exec(GET_IR);
-  *brightness = atoi(output.c_str());
-
-  pthread_mutex_unlock(&lock);
-
-  return 0;
+    pthread_mutex_lock(&lock);
+    EXEC_GET_UINT8(GET_IR, brightness);
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
 
 int8_t get_ir_temp_state(uint8_t *ir_temp_state)
 {
-  pthread_mutex_lock(&lock);
-
-  std::string output = exec(GET_IR_TEMP_STATE);
-  *ir_temp_state = atoi(output.c_str());
-
-  pthread_mutex_unlock(&lock);
-
-  return 0;
+    pthread_mutex_lock(&lock);
+    EXEC_GET_UINT8(GET_IR_TEMP_STATE, ir_temp_state);
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
 
 int8_t get_isp_temp_state(uint8_t *isp_temp_state)
 {
-  pthread_mutex_lock(&lock);
-
-  std::string output = exec(GET_ISP_TEMP_STATE);
-  *isp_temp_state = atoi(output.c_str());
-
-  pthread_mutex_unlock(&lock);
-
-  return 0;
+    pthread_mutex_lock(&lock);
+    EXEC_GET_UINT8(GET_ISP_TEMP_STATE, isp_temp_state);
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
 
 int8_t get_image_resolution(uint8_t *resolution)
 {
-  pthread_mutex_lock(&lock);
-
-  std::string output = exec(GET_RESOLUTION);
-  *resolution = atoi(output.c_str());
-
-  pthread_mutex_unlock(&lock);
-  return 0;
+    pthread_mutex_lock(&lock);
+    EXEC_GET_UINT8(GET_RESOLUTION, resolution);
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
 
 int8_t get_wdr(uint8_t *wdr)
 {
-  pthread_mutex_lock(&lock);
-
-  std::string output = exec(GET_WDR);
-  *wdr = atoi(output.c_str());
-
-  pthread_mutex_unlock(&lock);
-
-  return 0;
+    pthread_mutex_lock(&lock);
+    EXEC_GET_UINT8(GET_WDR, wdr);
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
+
 int8_t get_eis(uint8_t *eis)
 {
-  pthread_mutex_lock(&lock);
-
-  std::string output = exec(GET_EIS);
-  *eis = atoi(output.c_str());
-
-  pthread_mutex_unlock(&lock);
-
-  return 0;
+    pthread_mutex_lock(&lock);
+    EXEC_GET_UINT8(GET_EIS, eis);
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
+
 int8_t get_flip(uint8_t *flip)
 {
-  pthread_mutex_lock(&lock);
-
-  std::string output = exec(GET_FLIP);
-  *flip = atoi(output.c_str());
-
-  pthread_mutex_unlock(&lock);
-
-  return 0;
+    pthread_mutex_lock(&lock);
+    EXEC_GET_UINT8(GET_FLIP, flip);
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
+
 int8_t get_mirror(uint8_t *mirror)
 {
-  pthread_mutex_lock(&lock);
-
-  std::string output = exec(GET_MIRROR);
-  *mirror = atoi(output.c_str());
-
-  pthread_mutex_unlock(&lock);
-  return 0;
+    pthread_mutex_lock(&lock);
+    EXEC_GET_UINT8(GET_MIRROR, mirror);
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
+
 int8_t get_image_zoom(uint8_t *zoom)
 {
-  pthread_mutex_lock(&lock);
-  std::string output = exec(GET_ZOOM);
-  *zoom = atoi(output.c_str());
-  pthread_mutex_unlock(&lock);
-  return 0;
+    pthread_mutex_lock(&lock);
+    EXEC_GET_UINT8(GET_ZOOM, zoom);
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
 
 int8_t get_day_mode(uint8_t *day_mode)
 {
-  pthread_mutex_lock(&lock);
-
-  std::string output = exec(GET_DAY_MODE);
-  *day_mode = atoi(output.c_str());
-
-  pthread_mutex_unlock(&lock);
-
-  return 0;
+    pthread_mutex_lock(&lock);
+    EXEC_GET_UINT8(GET_DAY_MODE, day_mode);
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
 
 int8_t get_gyro_reader(uint8_t *gyro_reader)
 {
-  pthread_mutex_lock(&lock);
-
-  std::string output = exec(GET_GYRO_READER);
-  *gyro_reader = atoi(output.c_str());
-
-  pthread_mutex_unlock(&lock);
-
-  return 0;
+    pthread_mutex_lock(&lock);
+    EXEC_GET_UINT8(GET_GYRO_READER, gyro_reader);
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
 
 int8_t get_image_misc(uint8_t *misc)
 {
-  pthread_mutex_lock(&lock);
-  std::string output = exec(GET_MISC);
-  *misc = atoi(output.c_str());
-  pthread_mutex_unlock(&lock);
-  return 0;
+    pthread_mutex_lock(&lock);
+    EXEC_GET_UINT8(GET_MISC, misc);
+    pthread_mutex_unlock(&lock);
+    return 0;
 }
 
 int8_t get_ir_cutfilter(OnOff *on_off)
