@@ -5,8 +5,6 @@
 #include <cstdio>
 #include <vector>
 #include <memory>
-#include <cstddef>
-#include <print>
 #include <openssl/rand.h>
 
 static const size_t SESSION_TOKEN_LENGTH = 32;  // 256-bit session tokens
@@ -14,22 +12,20 @@ static const char HEX_CHARS[] = "0123456789ABCDEF";
 
 namespace {
 
-std::string generate_session_token() {
-    std::byte random_bytes[SESSION_TOKEN_LENGTH];
-    if (RAND_bytes(reinterpret_cast<unsigned char*>(random_bytes), SESSION_TOKEN_LENGTH) != 1) {
-        return "";
+bool generate_session_token(char* buffer, size_t length) {
+    if (length < SESSION_TOKEN_LENGTH*2 + 1) return false;
+    
+    unsigned char random_bytes[SESSION_TOKEN_LENGTH];
+    if (RAND_bytes(random_bytes, SESSION_TOKEN_LENGTH) != 1) {
+        return false;
     }
     
-    std::string token;
-    token.reserve(SESSION_TOKEN_LENGTH * 2);
-    
-    for (size_t i = 0; i < SESSION_TOKEN_LENGTH; i++) {
-        auto byte_value = std::to_integer<unsigned char>(random_bytes[i]);
-        token += HEX_CHARS[(byte_value >> 4) & 0x0F];
-        token += HEX_CHARS[byte_value & 0x0F];
+    for (int i = 0; i < SESSION_TOKEN_LENGTH; i++) {
+        buffer[i*2]   = HEX_CHARS[(random_bytes[i] >> 4) & 0x0F];
+        buffer[i*2+1] = HEX_CHARS[random_bytes[i] & 0x0F];
     }
-    
-    return token;
+    buffer[SESSION_TOKEN_LENGTH*2] = '\0';
+    return true;
 }
 
 } // anonymous namespace
@@ -68,20 +64,14 @@ bool session_create(SessionManager* manager, const SessionContext* context,
         return false;
     }
     
-    std::string token = generate_session_token();
-    if (token.empty()) {
-        return false;
-    }
-    
-    std::strncpy(session_token_out, token.c_str(), token_buf_size - 1);
-    session_token_out[token_buf_size - 1] = '\0';
+    generate_session_token(session_token_out, token_buf_size);
     
     auto cached_context = std::make_unique<SessionContext>(*context);
     
 
     
     auto now = std::chrono::system_clock::now();
-    std::print("time now: {}\\n", std::chrono::system_clock::to_time_t(now));
+    printf("time now: %ld\n", std::chrono::system_clock::to_time_t(now));
     cached_context->created_at = now;
     cached_context->last_accessed = now;
     
@@ -101,10 +91,10 @@ bool session_force_logout(SessionManager* manager,const char* session_token)
   }
 
   SessionContext *context_value=nullptr;
-  std::print("manager time : {}\\n", manager->config.session_timeout);
+  printf("manager time : %lu\n",manager->config.session_timeout);
 
     if(!lru_get(manager->sessions_cache,session_token,context_value)){
-    std::print("Session not found for token: {}\\n", session_token);
+    printf("Session not found for token: %s\n",session_token);
     return false;
   }
 
@@ -116,7 +106,7 @@ bool session_force_logout(SessionManager* manager,const char* session_token)
             return false;
         }
         context_value->last_accessed = now;
-        std::print("time now: {}\\n", std::chrono::system_clock::to_time_t(context_value->last_accessed));
+        printf("time now: %ld\n", std::chrono::system_clock::to_time_t(context_value->last_accessed));
     }
 
 
@@ -130,10 +120,10 @@ bool session_validate(SessionManager* manager, const char* session_token,
     if (!manager || !session_token || !context_out) return false;
 
     SessionContext *context_value=nullptr;
-    std::print("manager time : {}\\n", manager->config.session_timeout);
+    printf("manager time : %lu\n", manager->config.session_timeout);
 
     if (!lru_get(manager->sessions_cache, session_token, context_value)) {
-        std::print("Session not found for token: {}\\n", session_token);
+        printf("Session not found for token: %s\n", session_token);
         return false;
     }
     
@@ -148,7 +138,7 @@ bool session_validate(SessionManager* manager, const char* session_token,
             return false;
         }
         context_value->last_accessed = now;
-        std::print("time now: {}\\n", std::chrono::system_clock::to_time_t(context_value->last_accessed));
+        printf("time now: %ld\n", std::chrono::system_clock::to_time_t(context_value->last_accessed));
     }
 
     return true;
@@ -299,7 +289,7 @@ void session_logout_all_others(SessionManager* manager, const char* exclude_toke
     
     // Invalidate all collected sessions
     for (const auto& token : session_tokens) {
-        std::print("Invalidating session: {}\\n", token);
+        printf("Invalidating session: %s\n", token.c_str());
         session_invalidate(manager, token.c_str());
     }
 }

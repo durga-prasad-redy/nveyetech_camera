@@ -3,7 +3,6 @@
 #include <functional>
 #include <cstring>
 #include <memory>
-#include <print>
 
 // --- Internal utility functions ---
 static unsigned int hash_function(const std::string &key)
@@ -262,7 +261,7 @@ void lru_evict_all(LRUCache *cache, const std::string &key, SessionContext *valu
     CacheNode *node = hash_get(cache, key);
     if (!node)
     {
-        std::print("node with the key:{} dosent exist\\n", key);
+        printf("node with the key:%s dosent exist\n", key.c_str());
         return;
     }
 
@@ -274,7 +273,7 @@ void lru_evict_all(LRUCache *cache, const std::string &key, SessionContext *valu
         CacheNode *tail = pop_tail(cache);
         if (!tail)
             break;
-        std::print("evicting key:{}\\n", tail->key);
+        printf("evicting key:%s\n", tail->key.c_str());
         evict_and_destroy_node(cache, tail, CRITICAL_ACTION);
     }
 }

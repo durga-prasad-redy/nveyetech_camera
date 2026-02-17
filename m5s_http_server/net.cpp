@@ -25,7 +25,7 @@
 #include <cstring>
 #include <errno.h>
 #include <memory>
-#include <print>
+#include <memory>
 #include "include/fw.h"
 #include "include/motocam_api_l1.h"
 
@@ -50,7 +50,9 @@ constexpr char IR_SOCK_PATH[] = "/tmp/ir_change.sock";
 
 } // anonymous namespace
 
+const char current_login_pin[18] = {0};
 
+// constexpr char valid_pin[] = current_login_pin;
 
 constexpr char s_unauthorized_response[] =
     "{\"error\": \"Unauthorized\", \"message\": \"Missing or invalid session\"}\n";
@@ -172,14 +174,14 @@ static void handle_proxy_request(struct mg_connection *conn, const struct mg_req
         host = url;
     }
 
-    std::print("Proxying request to: {}:{}{}\\n", host, port, target_path);
+    printf("Proxying request to: %s:%d%s\n", host.c_str(), port, target_path);
 
     // Create client connection to backend
     std::string error_buffer(256, '\0');
     struct mg_connection *backend_conn = mg_connect_client(host.c_str(), port, 0, &error_buffer[0], error_buffer.size());
     if (!backend_conn)
     {
-        std::print("Failed to connect to backend {}:{}: {}\\n", host, port, error_buffer);
+        printf("Failed to connect to backend %s:%d: %s\n", host.c_str(), port, error_buffer.c_str());
         mg_printf(conn, "HTTP/1.1 502 Bad Gateway\r\n"
                         "Content-Type: application/json\r\n\r\n"
                         "{\"error\": \"Bad Gateway\", \"message\": \"Cannot connect to backend service\"}\n");
@@ -216,7 +218,7 @@ static void handle_proxy_request(struct mg_connection *conn, const struct mg_req
     // Send request to backend
     if (mg_write(backend_conn, request.c_str(), request.length()) < 0)
     {
-        std::print("Failed to send request to backend\\n");
+        printf("Failed to send request to backend\n");
         mg_close_connection(backend_conn);
         mg_printf(conn, "HTTP/1.1 502 Bad Gateway\r\n"
                         "Content-Type: application/json\r\n\r\n"
@@ -233,7 +235,7 @@ static void handle_proxy_request(struct mg_connection *conn, const struct mg_req
         {
             if (mg_write(backend_conn, buffer.data(), bytes_read) < 0)
             {
-                std::print("Failed to forward POST body to backend\\n");
+                printf("Failed to forward POST body to backend\n");
                 break;
             }
         }
@@ -245,7 +247,7 @@ static void handle_proxy_request(struct mg_connection *conn, const struct mg_req
 
     if (response_status < 0)
     {
-        std::print("Failed to get response from backend: {}\\n", response_error_buffer);
+        printf("Failed to get response from backend: %s\n", response_error_buffer.c_str());
         mg_close_connection(backend_conn);
         mg_printf(conn, "HTTP/1.1 502 Bad Gateway\r\n"
                         "Content-Type: application/json\r\n\r\n"
@@ -253,7 +255,7 @@ static void handle_proxy_request(struct mg_connection *conn, const struct mg_req
         return;
     }
 
-    std::print("Response status from backend: {}\\n", response_status);
+    printf("Response status from backend: %d\n", response_status);
 
     // Send HTTP response headers to client
     mg_printf(conn, "HTTP/1.1 %d OK\r\n", response_status);
@@ -279,7 +281,7 @@ static void handle_proxy_request(struct mg_connection *conn, const struct mg_req
     if (total_bytes > 0)
     {
         response_buffer[total_bytes] = '\0'; // Null terminate
-        std::print("Response body from backend ({} bytes): {}\\n", total_bytes, response_buffer.c_str());
+        printf("Response body from backend (%d bytes): %s\n", total_bytes, response_buffer.c_str());
 
         // Send content length header
         mg_printf(conn, "Content-Length: %d\r\n\r\n", total_bytes);
@@ -289,7 +291,7 @@ static void handle_proxy_request(struct mg_connection *conn, const struct mg_req
     }
     else
     {
-        std::print("No response body from backend\\n");
+        printf("No response body from backend\n");
         mg_printf(conn, "Content-Length: 0\r\n\r\n");
     }
 
@@ -300,7 +302,7 @@ static void handle_proxy_request(struct mg_connection *conn, const struct mg_req
 
 static int handle_login(struct mg_connection *conn, const struct mg_request_info *ri)
 {
-    std::print("Login request received\\n");
+    printf("Login request received\n");
     if (strcmp(ri->request_method, "POST") != 0)
     {
         const char *body = "{\"error\": \"Method not allowed\"}\n";
@@ -316,7 +318,7 @@ static int handle_login(struct mg_connection *conn, const struct mg_request_info
     if (data_len > 0) { 
         post_data[data_len] = '\0';
     }
-    std::print("Received POST data (length: {}): {}\\n", data_len, post_data.c_str());
+    printf("Received POST data (length: %d): %s\n", data_len, post_data.c_str());
     if (data_len <= 0)
     {
         const char *body = "{\"error\": \"No data received\"}\n";
@@ -360,7 +362,7 @@ static int handle_login(struct mg_connection *conn, const struct mg_request_info
     // print res_bytes
     for (int i = 0; i < res_bytes_size; i++)
     {
-        std::print("res_bytes[{}]=0x{:02X}\\n", i, res_bytes[i]);
+        printf("res_bytes[%d]=0x%02X\n", i, res_bytes[i]);
     }
 
     if (res_bytes[4] == 0)
@@ -478,7 +480,7 @@ static int handle_force_logout_others(struct mg_connection *conn, const struct m
     }
     post_data[data_len] = '\0';
 
-    std::print("Received force_logout data (length: {}): {}\\n", data_len, post_data.c_str());
+    printf("Received force_logout data (length: %d): %s\n", data_len, post_data.c_str());
 
     uint8_t byteArray[256];
     int byteArrayLen = 0;
@@ -579,7 +581,7 @@ static int handle_motocam_api(struct mg_connection *conn, const struct mg_reques
     }
     post_data[data_len] = '\0';
 
-    std::print("Received data (length: {}): {}\\n", data_len, post_data.c_str());
+    printf("Received data (length: %d): %s\n", data_len, post_data.c_str());
 
     uint8_t byteArray[256];
     int byteArrayLen = 0;
@@ -634,7 +636,7 @@ static int handle_reset_pin(struct mg_connection *conn, const struct mg_request_
     }
     post_data[data_len] = '\0';
 
-    std::print("Received data (length: {}): {}\\n", data_len, post_data.c_str());
+    printf("Received data (length: %d): %s\n", data_len, post_data.c_str());
 
     uint8_t byteArray[256];
     int byteArrayLen = 0;
@@ -695,7 +697,7 @@ static int handle_firmware_version(struct mg_connection *conn, const struct mg_r
     }
     post_data[data_len] = '\0';
 
-    std::print("Received data (length: {}): {}\\n", data_len, post_data.c_str());
+    printf("Received data (length: %d): %s\n", data_len, post_data.c_str());
 
     uint8_t byteArray[256];
     int byteArrayLen = 0;
@@ -807,7 +809,7 @@ static int handle_provision_device(struct mg_connection *conn, const struct mg_r
         return 1;
     }
     post_data[data_len] = '\0';
-    std::print("Received provisioning data (length: {}): {}\\n", data_len, post_data.c_str());
+    printf("Received provisioning data (length: %d): %s\n", data_len, post_data.c_str());
 
     std::string mac_address = extract_json_string_field(post_data, "mac_address");
     std::string serial_number = extract_json_string_field(post_data, "serial_number");
@@ -856,13 +858,13 @@ int field_found_with_size_check(const char *key,
 {
     if (filename && *filename)
     {
-        std::print("Field found: key={}, filename={}\\n", key, filename);
+        printf("Field found: key=%s, filename=%s\n", key, filename);
         // Only allow files starting with ota.tar.gz
         const char *required_prefix = "ota.tar.gz";
         size_t prefix_len = strlen(required_prefix);
         if (strncmp(filename, required_prefix, prefix_len) != 0)
         {
-            std::print("ERROR: Filename does not start with ota.tar.gz, rejecting upload.\\n");
+            printf("ERROR: Filename does not start with ota.tar.gz, rejecting upload.\n");
             // Send HTTP error response if possible
             auto *conn = (struct mg_connection *)user_data;
             if (conn)
@@ -882,49 +884,49 @@ int field_found_with_size_check(const char *key,
             mkdir(upload_dir, 0775);
         }
         int n = snprintf(path, pathlen, "%s/%s", upload_dir, filename);
-        std::print("Upload path: {} (len={}, max={})\\n", path, n, pathlen);
+        printf("Upload path: %s (len=%d, max=%zu)\n", path, n, pathlen);
         if (n < 0 || (size_t)n >= pathlen)
         {
-            std::print("ERROR: Upload path too long, fallback to /tmp\\n");
+            printf("ERROR: Upload path too long, fallback to /tmp\n");
             snprintf(path, pathlen, "/tmp/%s", filename);
         }
         return MG_FORM_FIELD_STORAGE_STORE;
     }
-    std::print("Field skipped: key={} (no filename)\\n", key);
+    printf("Field skipped: key=%s (no filename)\n", key);
     return MG_FORM_FIELD_STORAGE_SKIP;
 }
 
 int field_get_with_size_check(const char *key, const char *value, size_t valuelen, void *user_data)
 {
     (void)user_data;
-    std::print("Received form field: {} = {:.{}}\\n", key, value, static_cast<int>(valuelen));
+    printf("Received form field: %s = %.*s\n", key, (int)valuelen, value);
     return MG_FORM_FIELD_HANDLE_NEXT;
 }
 
 int field_store_with_size_check(const char *path, long long file_size, void *user_data)
 {
     (void)user_data;
-    std::print("File stored: {} ({} bytes)\\n", path, file_size);
+    printf("File stored: %s (%lld bytes)\n", path, file_size);
     // Check if file is in the correct directory
     if (strncmp(path, "/mnt/flash/vienna/firmware/ota/", 30) != 0)
     {
-        std::print("WARNING: File not stored in /mnt/flash/vienna/firmware/ota!\\n");
+        printf("WARNING: File not stored in /mnt/flash/vienna/firmware/ota!\n");
     }
 
     // Check if file size exceeds the limit
     if (file_size > MAX_FILE_SIZE_BYTES)
     {
-        std::print("File size exceeded limit: {} bytes > {} bytes ({:.1f} MB)\\n",
+        printf("File size exceeded limit: %lld bytes > %lld bytes (%.1f MB)\n",
                file_size, MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB);
 
         // Delete the uploaded file since it's too large
         if (remove(path) == 0)
         {
-            std::print("Deleted oversized file: {}\\n", path);
+            printf("Deleted oversized file: %s\n", path);
         }
         else
         {
-            std::print("Failed to delete oversized file: {}\\n", path);
+            printf("Failed to delete oversized file: %s\n", path);
         }
 
         // Return error to indicate file size exceeded
@@ -937,7 +939,7 @@ int field_store_with_size_check(const char *path, long long file_size, void *use
 // Modified request handler for the upload endpoint with size checking
 int upload_handler(struct mg_connection *conn, const struct mg_request_info *req_info)
 {
-    std::print("Handling request: {} {}\\n",
+    printf("Handling request: %s %s\n",
            req_info->request_method,
            req_info->request_uri);
 
@@ -948,7 +950,7 @@ int upload_handler(struct mg_connection *conn, const struct mg_request_info *req
         long long content_length = strtoll(content_length_str, nullptr, 10);
         if (content_length > MAX_FILE_SIZE_BYTES)
         {
-            std::print("Request too large: Content-Length {} exceeds limit {}\\n",
+            printf("Request too large: Content-Length %lld exceeds limit %lld\n",
                    content_length, MAX_FILE_SIZE_BYTES);
 
             const char *error_response = "<!DOCTYPE html>"
@@ -977,7 +979,7 @@ int upload_handler(struct mg_connection *conn, const struct mg_request_info *req
     int ret = mg_handle_form_request(conn, &fdh);
     if (ret < 0)
     {
-        std::print("Error processing upload: {}\\n", ret);
+        printf("Error processing upload: %d\n", ret);
         // Check if it's a file size error (our custom abort)
         if (ret == MG_FORM_FIELD_HANDLE_ABORT)
         {
@@ -1002,7 +1004,7 @@ int upload_handler(struct mg_connection *conn, const struct mg_request_info *req
     // If no fields were processed, assume error already sent (e.g., invalid filename)
     if (ret == 0)
     {
-        std::print("No valid fields processed, likely due to filename check. No further response sent.\\n");
+        printf("No valid fields processed, likely due to filename check. No further response sent.\n");
         return 400;
     }
     // Send success response
@@ -1018,10 +1020,10 @@ int upload_handler(struct mg_connection *conn, const struct mg_request_info *req
     size_t response_len = response.size();
 
     int sent = mg_send_http_ok(conn, "text/html", response_len);
-    std::print("mg_send_http_ok returned: {}\\n", sent);
+    printf("mg_send_http_ok returned: %d\n", sent);
 
     sent = mg_write(conn, response.c_str(), response_len);
-    std::print("mg_write sent {} bytes for upload response\\n", sent);
+    printf("mg_write sent %d bytes for upload response\n", sent);
 
     return 200;
 }
@@ -1031,7 +1033,7 @@ static int request_handler(struct mg_connection *conn)
 {
     const struct mg_request_info *ri = mg_get_request_info(conn);
 
-    std::print("Request: {} {}\\n", ri->request_method, ri->local_uri);
+    printf("Request: %s %s\n", ri->request_method, ri->local_uri);
 
     // If it's a WebSocket upgrade request, let CivetWeb handle it
     const char *upgrade = mg_get_header(conn, "Upgrade");
@@ -1063,7 +1065,6 @@ static int request_handler(struct mg_connection *conn)
                  case 1: reason_str = "CAPACITY_LIMIT"; break;
                  case 2: reason_str = "CRITICAL_ACTION"; break;
                  case 3: reason_str = "MANUAL"; break;
-                 default: reason_str = "UNKNOWN"; break;
              }
              std::string body = std::string("{\"error\": \"Unauthorized\", \"message\": \"Session evicted\", \"reason\": \"") + reason_str + "\"}\n";
              
@@ -1199,7 +1200,7 @@ static int ws_connect_handler(const struct mg_connection *conn, void *user_data)
 {
     (void)user_data; /* unused */
     const struct mg_request_info *ri = mg_get_request_info(conn);
-    std::print("Client connecting with subprotocol: {}\\n", ri->acceptedWebSocketSubprotocol);
+    printf("Client connecting with subprotocol: %s\n", ri->acceptedWebSocketSubprotocol);
     return 0; // Accept connection
 }
 
@@ -1208,13 +1209,13 @@ static void ws_ready_handler(struct mg_connection *conn, void *user_data)
     auto *server = (WebServer *)user_data;
     server->add_client(conn);
 
-    std::print("Client ready and added to broadcast list\\n");
+    printf("Client ready and added to broadcast list\n");
 }
 
 static int ws_data_handler(struct mg_connection *conn, int opcode, char *data, size_t datasize, void *user_data)
 {
     (void)user_data;
-    std::print("Received {} bytes from client\\n", static_cast<unsigned long>(datasize));
+    printf("Received %lu bytes from client\n", (unsigned long)datasize);
     return 1; // Keep connection open
 }
 
@@ -1222,7 +1223,7 @@ static void ws_close_handler(const struct mg_connection *conn, void *user_data)
 {
     auto *server = (WebServer *)user_data;
     server->remove_client(conn);
-    std::print("Client closed connection\\n");
+    printf("Client closed connection\n");
 }
 
 // --- WebServer Implementation ---
@@ -1335,19 +1336,19 @@ bool WebServer::init()
         "enable_directory_listing", "no",
         nullptr};
 
-    std::print("Starting server with document_root: {}\\n", document_root);
-    std::print("Ports: {} \\n", HTTP_PORT);
+    printf("Starting server with document_root: %s\n", document_root.c_str());
+    printf("Ports: %s \n", HTTP_PORT);
 
     // Check if SSL files exist
     FILE *cert_file = fopen("server.crt", "r");
     if (!cert_file)
     {
-        std::print("Warning: server.crt not found\\n");
+        printf("Warning: server.crt not found\n");
     }
     else
     {
         fclose(cert_file);
-        std::print("SSL certificate found\\n");
+        printf("SSL certificate found\n");
     }
 
     struct mg_callbacks callbacks;
@@ -1358,7 +1359,7 @@ bool WebServer::init()
 
     if (!ctx)
     {
-        std::print("mg_start failed - check if ports are available\\n");
+        printf("mg_start failed - check if ports are available\n");
         return false;
     }
 
@@ -1379,7 +1380,7 @@ bool WebServer::init()
     misc_socket_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (misc_socket_fd < 0) {
         perror("socket");
-        std::print("Warning: Failed to create Unix socket for misc events\\n");
+        printf("Warning: Failed to create Unix socket for misc events\n");
     } else {
         struct sockaddr_un addr;
         memset(&addr, 0, sizeof(addr));
@@ -1394,9 +1395,9 @@ bool WebServer::init()
             perror("bind");
             close(misc_socket_fd);
             misc_socket_fd = -1;
-            std::print("Warning: Failed to bind Unix socket for misc events\\n");
+            printf("Warning: Failed to bind Unix socket for misc events\n");
         } else {
-            std::print("Unix socket listening on {}\\n", MISC_SOCK_PATH);
+            printf("Unix socket listening on %s\n", MISC_SOCK_PATH);
         }
     }
 
@@ -1404,7 +1405,7 @@ bool WebServer::init()
     ir_socket_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (ir_socket_fd < 0) {
         perror("socket");
-        std::print("Warning: Failed to create Unix socket for IR brightness events\\n");
+        printf("Warning: Failed to create Unix socket for IR brightness events\n");
     } else {
         struct sockaddr_un addr;
         memset(&addr, 0, sizeof(addr));
@@ -1417,9 +1418,9 @@ bool WebServer::init()
             perror("bind");
             close(ir_socket_fd);
             ir_socket_fd = -1;
-            std::print("Warning: Failed to bind Unix socket for IR brightness events\\n");
+            printf("Warning: Failed to bind Unix socket for IR brightness events\n");
         } else {
-            std::print("Unix socket listening on {}\\n", IR_SOCK_PATH);
+            printf("Unix socket listening on %s\n", IR_SOCK_PATH);
         }
     }
 
@@ -1427,7 +1428,7 @@ bool WebServer::init()
     stop_broadcast = false;
     broadcast_thread = std::thread(&WebServer::broadcast_loop, this);
 
-    std::print("WebSocket server registered on /ws\\n");
+    printf("WebSocket server registered on /ws\n");
 
     return true;
 }
@@ -1486,7 +1487,7 @@ bool web_init()
         session_manager_destroy);
     if (!manager)
     {
-        std::print("Failed to create session manager\\n");
+        printf("Failed to create session manager\n");
         return false;
     }
     g_session_manager = std::move(manager);
@@ -1495,12 +1496,12 @@ bool web_init()
     g_web_server = std::make_unique<WebServer>();
     if (!g_web_server->init())
     {
-        std::print("Failed to start web server\\n");
+        printf("Failed to start web server\n");
         g_web_server.reset();
         return false;
     }
 
-    std::print("Web server started on port {} (HTTP & WS)\\n", HTTP_PORT);
+    printf("Web server started on port %s (HTTP & WS)\n", HTTP_PORT);
     return true;
 }
 

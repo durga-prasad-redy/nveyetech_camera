@@ -22,7 +22,6 @@
 
 #include <memory>
 #include <string>
-#include <print>
 
 static const char HTTP_PORT[] = "80";
 static const char HTTPS_PORT[] = "443";
@@ -47,6 +46,12 @@ struct proxy_data {
   size_t original_body_len;
 };
 
+// Event log entry
+struct ui_event {
+  uint8_t type, prio;
+  unsigned long timestamp;
+  char text[10];
+};
 
 // CivetWeb context wrapper
 // WebServer class definition
@@ -85,7 +90,7 @@ private:
 
 inline bool response_body_prefix_check(const uint8_t *req_bytes, const uint8_t req_bytes_size, const uint8_t *prefix, const uint8_t prefix_size)
 {
-  std::print("do_processing req_bytes=");
+  printf("do_processing req_bytes=");
   int i;
   if(req_bytes_size < 3 || prefix_size < 3)
   {
