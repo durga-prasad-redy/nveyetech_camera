@@ -43,7 +43,8 @@
 
 float mode[4] = {DAY_LL, LOW_LIGHT_NIGHT, NIGHT_DAY, LOW_LIGHT_D};
 
-int8_t is_ir_temp_state, is_sensor_temp_state;
+int8_t is_ir_temp_state;
+int8_t is_sensor_temp_state;
 
 static int minute_counter_ir = 0;
 
@@ -104,7 +105,9 @@ void control_ir(void)
     static uint8_t ir_val = 0;
     int8_t ir_tmp_ctl;
 
-    uint8_t isp_temp, ir_temp, sensor_temp;
+    uint8_t isp_temp;
+    uint8_t ir_temp;
+    uint8_t sensor_temp;
 
     if (is_sensor_temp_state==1)
         get_sensor_temp(&sensor_temp);
@@ -175,7 +178,8 @@ void process_auto_day_night(void)
     float gain_value = 0;
 
     int8_t day_mode;
-    float gain_thr, gain_thr_1;
+    float gain_thr;
+    float gain_thr_1;
 
     day_mode = get_mode();
     if (!day_mode)

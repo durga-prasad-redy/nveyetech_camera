@@ -15,7 +15,8 @@
 #define BUFFER_SIZE 1024
 
 int main() {
-    int sock = 0, valread;
+    int sock = 0;
+    int valread;
     struct sockaddr_in serv_addr;
     char buffer[BUFFER_SIZE] = {0};
 
