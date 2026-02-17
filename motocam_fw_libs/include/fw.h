@@ -1,10 +1,6 @@
 #ifndef FW_H
 #define FW_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "gpio.h"
 #include "log.h"
 
@@ -20,11 +16,6 @@ extern "C" {
 #include <stddef.h>
 #include <ctype.h>
 #include <pthread.h>
-
-/*
-// #define GET_CPU_USAGE "grep '^cpu ' /proc/stat | awk '{total = $2 + $3 + $4 + $5 + $6 + $7 + $8 + $9 + $10 + $11;idle = $5;print 100 * (total - idle) / total " \
-//                       "}'"
-*/
 
 #define CONFIG_PATH "/mnt/flash/vienna/config"
 #define RES_PATH "/mnt/flash/vienna"
@@ -190,9 +181,5 @@ int8_t set_haptic_motor(int duty_cycle, int duration);
 
 int8_t set_uboot_env_chars(const char *key, const char *value);
 void kill_all_processes();
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // FW_H
