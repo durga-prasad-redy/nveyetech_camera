@@ -98,7 +98,7 @@ int8_t set_wifi_client_config(const char *ssid, const uint8_t encryption_type,
   char cmd[500];
   sprintf(cmd, "%s runtime switch_to_device %s %s %s", SET_WIFI, ssid,
           encryption_key, ip_address);
-  // exec(cmd);
+  
   char background_cmd[600];
   snprintf(background_cmd, sizeof(background_cmd),
            "%s < /dev/null > /dev/null 2>&1 &", cmd);
@@ -133,7 +133,7 @@ int8_t set_wifi_dhcp_client_config(const char *ssid,
   sprintf(cmd, "%s runtime switch_to_device %s %s", SET_WIFI, ssid,
           encryption_key);
   printf("dhcp  command:%s\n", cmd);
-  // exec(cmd);
+  
   char background_cmd[600];
   snprintf(background_cmd, sizeof(background_cmd),
            "%s < /dev/null > /dev/null 2>&1 &", cmd);
@@ -356,7 +356,6 @@ int8_t set_ethernet_dhcp_config()
   snprintf(background_cmd, sizeof(background_cmd),
            "%s < /dev/null > /dev/null 2>&1 &", cmd);
   system(background_cmd);
-  // exec(cmd);
 
   pthread_mutex_unlock(&lock);
   return 0;
@@ -368,7 +367,6 @@ int8_t set_onvif_interface(const uint8_t interface)
   pthread_mutex_lock(&lock);
   if (interface == 0)
   {
-    // exec(SET_ONVIF_INTERFACE_ETHERNET);
 
     if (is_running(ONVIF_SERVER_PROCESS_NAME))
     {
@@ -380,14 +378,6 @@ int8_t set_onvif_interface(const uint8_t interface)
     char background_cmd[600];
     snprintf(background_cmd, sizeof(background_cmd), "%s < /dev/null > /dev/null 2>&1 &", SET_ONVIF_INTERFACE_ETHERNET);
     system(background_cmd);
-    /* if (check_onvif_interface_status(&interface) != 1)
-    {
-      LOG_DEBUG("Onvif interface change to ethernet failed\n");
-      pthread_mutex_unlock(&lock);
-
-      return -3;
-    }
-     */
 
     uint8_t count_onvif_server_process = 0;
 
@@ -420,18 +410,10 @@ int8_t set_onvif_interface(const uint8_t interface)
 
     }
 
-    // exec(SET_ONVIF_INTERFACE_WIFI);
     set_uboot_env_chars("onvif_itrf", "wifi");
     char background_cmd[600];
     snprintf(background_cmd, sizeof(background_cmd), "%s < /dev/null > /dev/null 2>&1 &", SET_ONVIF_INTERFACE_WIFI);
     system(background_cmd);
-    /*  if (check_onvif_interface_status(&interface) != 1)
-     {
-       LOG_DEBUG("Onvif interface change to wifi failed\n");
-       pthread_mutex_unlock(&lock);
-
-       return -3;
-     } */
 
     uint8_t count_onvif_server_process = 0;
 
@@ -488,7 +470,6 @@ int8_t set_wifi_hotspot_config(const char *ssid, const uint8_t encryption_type,
   set_uboot_env_chars("hotspot_encryption_key", encryption_key);
   set_uboot_env_chars("hotspot_ipaddress", ip_address);
   set_uboot_env_chars("hotspot_subnetmask", subnetmask);
-  // exec(cmd);
 
   char background_cmd[600];
   snprintf(background_cmd, sizeof(background_cmd),

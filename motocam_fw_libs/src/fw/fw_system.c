@@ -173,15 +173,12 @@ int8_t ota_update()
 
   printf("executing ota update command");
   set_uboot_env_chars(OTA_STATUS, "update_started");
-  // Sleep for 1 second
+  
   kill_all_processes();
 
   sleep(1);
 
-  // Flush file system buffers
   sync();
-
-  // Update the camera
 
   char output[256];
 
@@ -203,9 +200,7 @@ int8_t ota_update()
 int8_t set_camera_name(const char *camera_name)
 {
   pthread_mutex_lock(&lock);
-  // char cmd[100];
-  // sprintf(cmd, "%s %s", SET_CAMERA_NAME, camera_name);
-  // exec(cmd);
+  
   set_uboot_env_chars(SET_CAMERA_NAME, camera_name);
   pthread_mutex_unlock(&lock);
   return 0;
@@ -216,16 +211,11 @@ int8_t set_login(const char *login_pin, const char *dob)
 
   pthread_mutex_lock(&lock);
   
-  // Validate DOB
   if (dob_validation != 0) {
     pthread_mutex_unlock(&lock);
     return dob_validation; // Return -6 or -7
   }
   
-  
-  // char cmd[100];
-  // sprintf(cmd, "%s %s", SET_CURRENT_LOGIN_PIN, login_pin);
-  // exec(cmd);
   set_uboot_env_chars(SET_LOGIN_PIN, login_pin);
   pthread_mutex_unlock(&lock);
   return 0;
@@ -588,25 +578,6 @@ int8_t get_cpu_usage(uint8_t *cpu_usage)
   return 0;
 }
 
-// int8_t get_cpu_usage(uint8_t *cpu_usage)
-// {
-//     std::string output = exec(GET_CPU_USAGE);
-//     if (output.empty())
-//     {
-//         LOG_ERROR("Failed to get CPU usage");
-//         pthread_mutex_unlock(&lock);
-//         return -1;
-//     }
-//     printf("CPU Usage: %s\n", output.c_str());
-//     *cpu_usage = (uint8_t)atoi(output.c_str());
-//     return 0;
-// }
-
-//-----------------------------------------------------------------------------------------------------------------------
-
-//---------------------------------------------------------------------------------------------------------------------
-
-
 int8_t get_process_status(const char *process_name, uint8_t *status)
 {
   pthread_mutex_lock(&lock);
@@ -614,9 +585,6 @@ int8_t get_process_status(const char *process_name, uint8_t *status)
   pthread_mutex_unlock(&lock);
   return 0;
 }
-//---------------------------------------------------------CPU
-// USAGE------------------------------------------------------------
-
 
 int8_t set_user_dob(const char *dob) {
     pthread_mutex_lock(&lock);
