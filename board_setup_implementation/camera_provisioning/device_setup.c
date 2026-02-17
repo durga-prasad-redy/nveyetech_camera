@@ -153,7 +153,9 @@ int validate_date(const char *date) {
     regfree(&regex);
     if (ret != 0) return 0;
 
-    int year, month, day;
+    int year;
+    int month;
+    int day;
     if (sscanf(date, "%4d-%2d-%2d", &year, &month, &day) != 3)
         return 0;
     if (month < 1 || month > 12 || day < 1 || day > 31)

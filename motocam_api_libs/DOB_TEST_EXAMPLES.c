@@ -295,7 +295,6 @@ int main() {
     
     printf("\n\n=== EDGE CASE TESTS ===\n");
     printf("NOTE: Comment out test_operations_before_dob_set() if DOB is already set\n");
-    // test_operations_before_dob_set();  // Uncomment to test on fresh system
     
     printf("\n\n");
     printf("╔════════════════════════════════════════════════════════════╗\n");

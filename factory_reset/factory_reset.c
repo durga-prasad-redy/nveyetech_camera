@@ -77,8 +77,8 @@ void load_snapshot()
         if (!eq) continue;
         *eq = 0;
 
-        char *key = line;
-        char *val = eq + 1;
+        const char *key = line;
+        const char *val = eq + 1;
 	char *newline = strchr(val, '\n');
 	if (newline)
 		*newline = '\0';

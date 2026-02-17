@@ -62,12 +62,9 @@ int exec_return(const char *cmd)
 
     status = pclose(pipe);
 
-    if (status != -1)
+    if ((status != -1) && (WIFEXITED(status)))
     {
-        if (WIFEXITED(status))
-        {
-            exitCode = WEXITSTATUS(status);
-        }
+        exitCode = WEXITSTATUS(status);
     }
 
     return exitCode;
@@ -192,7 +189,8 @@ int8_t set_uboot_env(const char *key, uint8_t value)
 
 int8_t set_uboot_env_chars(const char *key, const char *value)
 {
-  char tmp_path[256], file_path[256];
+  char tmp_path[256];
+  char file_path[256];
   snprintf(file_path, sizeof(file_path), "%s/%s", M5S_CONFIG_DIR, key);
   snprintf(tmp_path, sizeof(tmp_path), "%s/%s.tmp", M5S_CONFIG_DIR, key);
 
@@ -500,13 +498,10 @@ uint8_t access_file(const char *path)
 // Utility: Remove file or symlink if it exists
 void safe_remove(const char *path)
 {
-  if (access(path, F_OK) == 0)
-  {
-    if (remove(path) != 0)
+    if ((access(path, F_OK) == 0) && (remove(path) != 0))
     {
-      perror(path);
+        perror(path);
     }
-  }
 }
 
 // Utility: Create symbolic link after safely removing existing
