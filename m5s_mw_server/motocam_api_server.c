@@ -79,4 +79,5 @@ int main() {
     while (1) {
         pause(); // Wait for signals
     }
+    return 0;
 }

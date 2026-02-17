@@ -31,6 +31,7 @@
 
 #define DAY_LL 8
 #define LOW_LIGHT_NIGHT 12
+#define LOW_LIGHT_D 3
 #define NIGHT_DAY 2
 #define MAX_COUNT 8
 #define MAX_COUNT_TEST 5
@@ -38,8 +39,9 @@
 #define DAY 0
 #define LOW_LIGHT 1
 #define NIGHT 2
+#define LOW_LIGHT_DAY 3
 
-float mode[3] = {DAY_LL,LOW_LIGHT_NIGHT,NIGHT_DAY};
+float mode[4] = {DAY_LL, LOW_LIGHT_NIGHT, NIGHT_DAY, LOW_LIGHT_D};
 
 int8_t is_ir_temp_state, is_sensor_temp_state;
 
@@ -71,9 +73,10 @@ static void load_mode_thresholds_from_config(void)
         const char *file;
         int row;
     } cfg[] = {
-        { "day_ll",     DAY,     },
+        { "day_ll",     DAY},
         { "ll_night",   LOW_LIGHT},
-        { "night_day",  NIGHT   },
+        { "night_day",  NIGHT},
+        { "ll_day",   LOW_LIGHT_DAY},
     };
 
     char path[128];
@@ -97,7 +100,6 @@ static void load_mode_thresholds_from_config(void)
 
 void control_ir(void)
 {
-    static uint8_t ir_state = 0;
     static uint8_t isp_state = 0;
     static uint8_t ir_val = 0;
     int8_t ir_tmp_ctl;
@@ -173,7 +175,7 @@ void process_auto_day_night(void)
     float gain_value = 0;
 
     int8_t day_mode;
-    float gain_thr;
+    float gain_thr, gain_thr_1;
 
     day_mode = get_mode();
     if (!day_mode)
@@ -189,8 +191,11 @@ void process_auto_day_night(void)
             low_light_count++;
     } else if (misc_val > 4 && misc_val < 9) {
         gain_thr = mode[LOW_LIGHT];
+        gain_thr_1 = mode[LOW_LIGHT_DAY];
         if (gain_value > gain_thr)
             night_count++;
+        else if (gain_value < gain_thr_1)
+            day_count++;
     } else { 
         gain_thr = mode[NIGHT]; 
         if (gain_value < gain_thr)
