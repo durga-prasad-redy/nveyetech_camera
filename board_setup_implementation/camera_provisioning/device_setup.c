@@ -292,7 +292,6 @@ int main(int argc, char *argv[]) {
              epoch_time);
     if (system(command_buffer) != 0) {
         fprintf(stderr, "Failed to set epoch time.\n");
-        //return 1;
     } else {
         printf("Successfully set Epoch time to %s\n",epoch_time);
     }

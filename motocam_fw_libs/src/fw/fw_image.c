@@ -369,10 +369,6 @@ void set_misc(uint8_t misc)
 
   if (misc == DAY_EIS_ON_WDR_ON || misc == NIGHT_EIS_ON_WDR_ON)
   {
-    // std::string output = exec(GET_WEBRTC_ENABLED);
-    // uint8_t webrtc_enabled = atoi(output.c_str());
-    // if (webrtc_enabled == 0)
-    //   return;
     if (is_running(SIGNALING_SERVER_PROCESS_NAME))
       stop_process(SIGNALING_SERVER_PROCESS_NAME);
     if (is_running(PORTABLE_RTC_PROCESS_NAME))
@@ -387,7 +383,6 @@ void set_misc(uint8_t misc)
 
     while (!is_running(STREAMER_PROCESS_NAME))
       ;
-    // sleep(3);
   }
 }
 
@@ -856,8 +851,6 @@ int8_t get_ir_cutfilter(OnOff *on_off)
   uint8_t value;
   pthread_mutex_lock(&lock);
 
-  // std::string output = exec(GET_IRCUT_FILTER);
-  // value = atoi(output.c_str());
 
   value = get_ir_cut_filter();
 

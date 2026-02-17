@@ -97,8 +97,7 @@ void load_snapshot()
 void camera_configuration_reset()
 {
     load_snapshot();
-    int i;
-    for (i = 0; i < entry_count; i++)
+    for (int i = 0; i < entry_count; i++)
     {
         char dst[256];
         snprintf(dst, sizeof(dst), "%s/%s", CONFIG_DIR, entries[i].key);

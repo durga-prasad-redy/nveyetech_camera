@@ -166,7 +166,8 @@ int8_t get_ir_tmp_ctl(void)
 
 int8_t set_uboot_env(const char *key, uint8_t value)
 {
-  char tmp_path[256], file_path[256];
+  char tmp_path[256];
+  char file_path[256];
   snprintf(file_path, sizeof(file_path), "%s/%s", M5S_CONFIG_DIR, key);
   snprintf(tmp_path, sizeof(tmp_path), "%s/%s.tmp", M5S_CONFIG_DIR, key);
 
