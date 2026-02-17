@@ -53,7 +53,6 @@ int8_t get_memory_usage(uint8_t *memory_usage)
         output[0] == '\0')
     {
         LOG_ERROR("Failed to get memory usage");
-        pthread_mutex_unlock(&lock);
         return -1;
     }
 
