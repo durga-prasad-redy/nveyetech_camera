@@ -244,7 +244,11 @@ static void *timer_worker(void *arg)
             }
             process_auto_day_night();
         }
-        usleep(10000); // 10 ms
+        struct timespec ts;
+        ts.tv_sec  = 0;
+        ts.tv_nsec = 10 * 1000 * 1000; // 10 ms
+
+        (void)nanosleep(&ts, NULL);
     }
     return NULL;
 }

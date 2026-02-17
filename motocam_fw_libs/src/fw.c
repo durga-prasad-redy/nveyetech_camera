@@ -3,6 +3,7 @@
 //
 #include "fw.h"
 #include <dirent.h>
+#include <time.h>
 
 pthread_mutex_t lock;
 
@@ -460,7 +461,10 @@ int8_t outdu_update_brightness(uint8_t val)
   fprintf(pwm5_fp, "%s\n", pwm5_val);
   fclose(pwm5_fp);
 
-  usleep(100000); // sleep 0.1s
+  struct timespec ts;
+  ts.tv_sec = 0;
+  ts.tv_nsec = 100 * 1000 * 1000; // 100 ms
+  (void)nanosleep(&ts, NULL);
 
   // Write to /dev/pwmdev-4
   FILE *pwm4_fp = fopen(PWM4_FILE, "w");

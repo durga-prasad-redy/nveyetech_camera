@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
 #include <pthread.h>
 #include <sys/inotify.h>
 #include <fcntl.h>
@@ -250,7 +251,10 @@ static void run_led_pattern(const led_step_t *pattern, int steps)
             pattern[i].blue
         );
 
-        usleep(pattern[i].duration_ms * 1000);
+        struct timespec ts;
+        ts.tv_sec  = pattern[i].duration_ms / 1000;
+        ts.tv_nsec = (pattern[i].duration_ms % 1000) * 1000 * 1000;
+        (void)nanosleep(&ts, NULL);
     }
 }
 
