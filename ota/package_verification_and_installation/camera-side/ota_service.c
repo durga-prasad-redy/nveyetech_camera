@@ -15,9 +15,6 @@
 static inline int ota_return_with_status(e_OTA_RESULT result) {
     int status = 0;
     status = set_ota_status_env_from_result(result);
-    if (status != e_OTA_SUCCESS) {
-        return status;
-    }
     return status;
 }
 

@@ -164,13 +164,13 @@ unsigned char* base64_decode(const char *b64_input, size_t *out_len) {
 }
 
 int extract_json_field(const char *data, const char *key, char *output, size_t max_len) {
-    char *found = strstr(data, key);
+    const char *found = strstr(data, key);
     if (!found) return -1;
     found = strchr(found, ':');
     if (!found) return -1;
     found += 1;
     while (*found == ' ' || *found == '\"') found++;
-    char *end = strchr(found, '\"');
+    const char *end = strchr(found, '\"');
     if (!end) end = strchr(found, ',');
     if (!end) return -1;
     size_t len = end - found;
@@ -181,7 +181,7 @@ int extract_json_field(const char *data, const char *key, char *output, size_t m
     return 0;
 }
 
-int version_check(char *json) {
+int version_check(const char *json) {
     char new_version[128];
     char compatible_version[128];
 
@@ -268,7 +268,8 @@ int main() {
         return 24;
     }
 
-    char hash_hex[128], sig_b64[4096];
+    char hash_hex[128];
+    char sig_b64[4096];
     if (extract_json_field(json, "hash", hash_hex, sizeof(hash_hex)) ||
         extract_json_field(json, "signature", sig_b64, sizeof(sig_b64))) {
         fprintf(stderr, "Failed to extract fields from manifest\n");

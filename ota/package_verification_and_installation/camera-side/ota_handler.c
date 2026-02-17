@@ -94,7 +94,9 @@ int backup_files_from_list() {
             path[len] = 0;
         if (strlen(path) == 0) continue;
 
-        char src[e_SIZE_512], dst[e_SIZE_512], mkdir_cmd[e_SIZE_512];
+        char src[e_SIZE_512];
+        char dst[e_SIZE_512];
+        char mkdir_cmd[e_SIZE_512];
         snprintf(src, sizeof(src), "%s/%s", VIENNA_DIR, path);
         snprintf(dst, sizeof(dst), "%s/%s", BACKUP_DIR, path);
 
@@ -145,7 +147,8 @@ int rollback_partial() {
             path[len] = 0;
         if (strlen(path) == 0) continue;
 
-        char src[e_SIZE_512], dst[e_SIZE_512];
+        char src[e_SIZE_512];
+        char dst[e_SIZE_512];
         snprintf(src, sizeof(src), "%s/%s", BACKUP_DIR, path);
         snprintf(dst, sizeof(dst), "%s/%s", VIENNA_DIR, path);
 
@@ -177,10 +180,8 @@ int is_ota_in_progress() {
 
     while (fgets(line, sizeof(line), fp)) {
         int pid;
-        if (sscanf(line, "%d", &pid) == 1) {
-            if (pid != self_pid) {
-                count++;
-            }
+        if ((sscanf(line, "%d", &pid) == 1) && (pid != self_pid)) {
+            count++;
         }
     }
 
@@ -298,7 +299,7 @@ int verify_and_extract_ota_archive() {
     strtok_r(full_path, "\n", &saveptr);  // Remove newline
 
     // Step 2: Extract hash from filename
-    char *dot = strrchr(full_path, '.');
+    const char *dot = strrchr(full_path, '.');
     if (!dot || strlen(dot + 1) != 64) {
         log_msg("Invalid OTA filename format.");
         return e_OTA_ERR_INVALID_HASH_FRMT;
