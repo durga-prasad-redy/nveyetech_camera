@@ -47,11 +47,10 @@ uint16_t get_sysfs_read_val(const char *module_name)
 
 uint8_t find_temperature(uint16_t target_sensor_value)
 {
-  size_t i;
   uint8_t closest_temp =
       tempSensorTable[0].temperature; // Sentinel for "Not Found"
 
-  for (i = 0; i < tempSensorTableSize; ++i)
+  for (size_t i = 0; i < tempSensorTableSize; ++i)
   {
     uint16_t sensor_val = tempSensorTable[i].sensorlevel;
 

@@ -528,7 +528,8 @@ unsigned long get_idle_time(const cpu_stats_t *stats)
 
 int8_t get_cpu_usage(uint8_t *cpu_usage)
 {
-  cpu_stats_t stats1, stats2;
+  cpu_stats_t stats1;
+  cpu_stats_t stats2;
 
   // Read first measurement
   if (read_cpu_stats(&stats1) != 0)

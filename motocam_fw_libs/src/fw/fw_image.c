@@ -389,7 +389,6 @@ void set_misc(uint8_t misc)
 int8_t set_image_zoom(uint8_t image_zoom)
 {
   char command[256];
-  const char *command_template = "streamer_msg_sender -C 0 -s 0 -z %s";
   const char *value = NULL;
   int status;
 
@@ -418,7 +417,7 @@ int8_t set_image_zoom(uint8_t image_zoom)
 
   set_uboot_env(ZOOM, image_zoom);
 
-  snprintf(command, sizeof(command), command_template, value);
+  snprintf(command, sizeof(command), "streamer_msg_sender -C 0 -s 0 -z %s", value);
   status = system(command);
   if (status != 0)
   {

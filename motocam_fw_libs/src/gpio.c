@@ -48,10 +48,6 @@ typedef struct {
 
 
 // define patterns for RGB LED
-static const led_step_t PATTERN_ALL_OK[] = {
-    {0, 1, 0, 1000},
-};
-
 static const led_step_t PATTERN_OTA_PROGRESS[] = {
     {0, 0, 1, 1000},
     {0, 0, 0, 1000},
@@ -273,7 +269,7 @@ static int read_ircut_state(void)
     return state;
 }
 
-static void decide_and_run_led(system_state_t *st)
+static void decide_and_run_led(const system_state_t *st)
 {
     if (st->ota == SUBSYS_IN_PROGRESS) {
         run_led_pattern(PATTERN_OTA_PROGRESS,
@@ -464,6 +460,7 @@ static subsys_state_t check_ota(char *status_buf, size_t len)
 
 static void *system_led_watcher(void *arg)
 {
+    (void)arg;
     system_state_t st;
     char ota_status[64];
 

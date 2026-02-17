@@ -18,7 +18,6 @@ static int start_process_with_name(const char *process_name)
     snprintf(background_cmd, sizeof(background_cmd),
              "%s < /dev/null > /dev/null 2>&1 &", process_name);
     system(background_cmd);
-    // system(process_name);
     while (retries > 0)
     {
       printf("[DEBUG] Attempt %d...\n", 21 - retries);
@@ -219,8 +218,8 @@ int get_ini_value(const char *filename,
             if (eq)
             {
                 *eq = '\0';
-                char *current_key = trim(trimmed);
-                char *value_str = trim(eq + 1);
+                const char *current_key = trim(trimmed);
+                const char *value_str = trim(eq + 1);
 
                 if (strcmp(current_key, key) == 0)
                 {
