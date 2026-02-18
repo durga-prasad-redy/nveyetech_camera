@@ -8,6 +8,8 @@
 
 #define DELETED_FILES        "/mnt/flash/vienna/deleted_files.txt"
 #define EXTRA_FILE_TO_DELETE "/mnt/flash/generate_ota_package.sh"
+#define EXTRA_FILE_TO_DELETE_1 "/mnt/flash/vienna/firmware/ota/fw_package.tar.gz"
+#define EXTRA_FILE_TO_DELETE_2 "/mnt/flash/vienna/firmware/ota/manifest.json"
 #define MAX_PATH_LENGTH      1024
 #define BACKUP_DIR_PATH      "/mnt/flash/backup"
 
@@ -103,6 +105,12 @@ int main() {
 
     printf("[INFO] Checking and deleting extra file: %s\n", EXTRA_FILE_TO_DELETE);
     delete_file_if_exists(EXTRA_FILE_TO_DELETE);
+
+    printf("[INFO] Checking and deleting extra file: %s\n", EXTRA_FILE_TO_DELETE_1);
+    delete_file_if_exists(EXTRA_FILE_TO_DELETE_1);
+
+    printf("[INFO] Checking and deleting extra file: %s\n", EXTRA_FILE_TO_DELETE_2);
+    delete_file_if_exists(EXTRA_FILE_TO_DELETE_2);
 
     if (delete_directory_if_exists(BACKUP_DIR_PATH) == 0) {
         printf("Operation completed successfully. delete_directory_if_exists: %s\n", BACKUP_DIR_PATH);

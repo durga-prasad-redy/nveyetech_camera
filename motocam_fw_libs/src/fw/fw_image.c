@@ -41,7 +41,6 @@ static int ir_sock = -1;
 
 static int misc_sock = -1;
 static uint8_t last_misc = 0;
-static int misc_initialized = 0;
 static int first_set_done = 0;
 
 typedef struct
@@ -638,11 +637,8 @@ int8_t set_image_eis(uint8_t eis)
   return 0;
 }
 
-static void init_last_misc_if_needed(void)
+static void init_last_misc(void)
 {
-  if (misc_initialized)
-    return;
-
   uint8_t misc = 0;
   if (get_image_misc(&misc) == 0)
   {
@@ -654,8 +650,6 @@ static void init_last_misc_if_needed(void)
     LOG_ERROR("misc init failed, defaulting to 0\n");
     last_misc = 0;
   }
-
-  misc_initialized = 1;
 }
 
 static void init_misc_socket_if_needed(void)
@@ -700,7 +694,7 @@ snprintf(addr.sun_path, sizeof(addr.sun_path),
 
 int8_t set_image_misc(uint8_t misc)
 {
-  init_last_misc_if_needed();
+  init_last_misc();
 
   /* No-op if misc is unchanged */
   if (first_set_done && misc == last_misc)
@@ -727,24 +721,17 @@ int8_t set_image_misc(uint8_t misc)
   }
 
   /* Notify what will change change */
-  if (misc_initialized)
-  {
-    LOG_INFO("misc changed: %u -> %u\n", last_misc, misc);
-    send_misc_event(last_misc, misc);
-  }
+  LOG_INFO("misc changed: %u -> %u\n", last_misc, misc);
+  send_misc_event(last_misc, misc);
 
   set_uboot_env(SET_MISC, misc);
   set_misc(misc);
   pthread_mutex_unlock(&lock);
 
   /* Notify AFTER successful change */
-  if (misc_initialized)
-  {
-    LOG_INFO("misc changed: %u -> %u\n", last_misc, misc);
-    send_misc_event(0, 0);
-  }
+  LOG_INFO("misc changed: %u -> %u\n", last_misc, misc);
+  send_misc_event(0, 0);
 
-  last_misc = misc;
   first_set_done = 1;
   return 0;
 }

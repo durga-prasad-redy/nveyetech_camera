@@ -89,28 +89,10 @@ static const led_step_t PATTERN_WIFI_ONVIF_FAIL[] = {
     {1, 1, 0, 800},
 };
 
-static const led_step_t PATTERN_OTA_ONVIF_FAIL[] = {
-    {1, 1, 0, 800},
-    {0, 0, 1, 700},
-};
-
-static const led_step_t PATTERN_ALL_FAIL[] = {
-    {1, 0, 0, 600},
-    {1, 1, 0, 600},
-    {0, 0, 1, 600},
-};
-
-static const led_step_t PATTERN_WIFI_FAIL_OTA_PASSED[] = {
-    {1, 0, 0, 500},
-    {0, 0, 1, 500},
-    {0, 0, 1, 500},
-};
-
-
 static int is_ota_failed_state(const char *status)
 {
     /* Explicit known failures */
-    if (!strcmp(status, "compatible-mismatch"))
+    if (!strcmp(status, "compatible-mismatch-24"))
         return 1;
 
     /* Generic failure detection */
@@ -281,38 +263,21 @@ static void decide_and_run_led(const system_state_t *st)
         return;
     }
 
-    if (st->ota == SUBSYS_FAIL &&
-        st->wifi == SUBSYS_FAIL &&
-        st->onvif == SUBSYS_FAIL) {
-        run_led_pattern(PATTERN_ALL_FAIL,
-                        ARRAY_SIZE(PATTERN_ALL_FAIL));
-        return;
-    }
-
     if (st->wifi == SUBSYS_FAIL && st->ota == SUBSYS_FAIL) {
         run_led_pattern(PATTERN_WIFI_OTA_FAIL,
                         ARRAY_SIZE(PATTERN_WIFI_OTA_FAIL));
         return;
     }
 
-    if (st->wifi == SUBSYS_FAIL && st->ota_passed_not_rebooted) {
-        run_led_pattern(PATTERN_WIFI_FAIL_OTA_PASSED,
-                        ARRAY_SIZE(PATTERN_WIFI_FAIL_OTA_PASSED));
-        return;
-    }
-
-    if (st->ota_passed_not_rebooted &&
-            st->wifi == SUBSYS_OK &&
-            st->onvif == SUBSYS_OK) {
+    if (st->ota_passed_not_rebooted) {
         run_led_pattern(PATTERN_OTA_PASS_NO_REBOOT,
                 ARRAY_SIZE(PATTERN_OTA_PASS_NO_REBOOT));
         return;
     }
 
-    if (st->ota == SUBSYS_FAIL &&
-            st->onvif == SUBSYS_FAIL) {
-        run_led_pattern(PATTERN_OTA_ONVIF_FAIL,
-                        ARRAY_SIZE(PATTERN_OTA_ONVIF_FAIL));
+    if (st->ota == SUBSYS_FAIL) {
+        run_led_pattern(PATTERN_OTA_FAIL,
+                        ARRAY_SIZE(PATTERN_OTA_FAIL));
         return;
     }
 
@@ -320,12 +285,6 @@ static void decide_and_run_led(const system_state_t *st)
             st->onvif == SUBSYS_FAIL) {
         run_led_pattern(PATTERN_WIFI_ONVIF_FAIL,
                         ARRAY_SIZE(PATTERN_WIFI_ONVIF_FAIL));
-        return;
-    }
-
-    if (st->ota == SUBSYS_FAIL) {
-        run_led_pattern(PATTERN_OTA_FAIL,
-                        ARRAY_SIZE(PATTERN_OTA_FAIL));
         return;
     }
 
@@ -453,7 +412,7 @@ static subsys_state_t check_ota(char *status_buf, size_t len)
     if (strstr(status_buf, "in-progress"))
         return SUBSYS_IN_PROGRESS;
 
-    if (!strcmp(status_buf, "ota-successful"))
+    if (!strcmp(status_buf, "ota-successful-90"))
         return SUBSYS_OK;
 
     if (is_ota_failed_state(status_buf))
@@ -478,7 +437,7 @@ static void *system_led_watcher(void *arg)
         if (st.wifi == SUBSYS_OK && read_wifi_state() == 1 && !ap_has_connected_sta()) {
            st.wifi_ap_no_client = 1;
         }
-        if (!strcmp(ota_status, "ota-successful"))
+        if (!strcmp(ota_status, "ota-successful-90"))
             st.ota_passed_not_rebooted = 1;
 
         decide_and_run_led(&st);
