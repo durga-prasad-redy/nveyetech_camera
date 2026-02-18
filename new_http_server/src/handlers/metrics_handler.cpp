@@ -1,5 +1,6 @@
 #include "metrics_handler.h"
 #include "http_utils.h"
+#include <array>
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
@@ -22,28 +23,6 @@ const std::string FACTORY_RESET_STATUS_FILE =
 const std::string VERSION_FILE = "/mnt/flash/jffs2_version";
 
 } // anonymous namespace
-
-// // Helper function to read file content
-// static std::string read_file_content(const std::string &path) {
-//   std::ifstream file(path);
-//   if (!file.is_open())
-//     return "";
-
-//   std::string content;
-//   std::string line;
-//   while (std::getline(file, line)) {
-//     content += line;
-//     if (!file.eof())
-//       content += "\n";
-//   }
-//   file.close();
-
-//   // Remove trailing newline if present
-//   if (!content.empty() && content.back() == '\n')
-//     content.pop_back();
-
-//   return content;
-// }
 
 // Helper function to check if file exists
 static bool file_exists(const std::string &path) {
@@ -274,7 +253,9 @@ static bool match_proc_comm(const char *pid_dir, const std::string &name) {
   fclose(f);
 
   // Strip trailing newline
-  size_t len = strcspn(buf.c_str(), "\n");
+  //   size_t len = strcspn(buf.c_str(), "\n");
+  size_t pos = buf.find_first_of("\n");
+  size_t len = (pos == std::string::npos) ? buf.length() : pos;
   std::string comm(buf.c_str(), len);
 
   // Check exact match
@@ -547,20 +528,27 @@ static void append_system_cpu_count(std::ostringstream &json) {
 }
 
 static void append_system_processes(std::ostringstream &json) {
-  static const std::string processes[] = {
+  // Using std::array for fixed-size compile-time lists
+  static const std::array<std::string, 13> processes = {
       "m5s_mw_server",    "m5s_http_server", "onvif_netlink_monitor",
       "multionvifserver", "rtsps",           "streamer",
       "violet",           "daemon_gyro",     "wpa_supplicant",
       "xinetd",           "syslogd",         "klogd"};
-  const size_t num_processes = sizeof(processes) / sizeof(processes[0]);
+
   json << "    \"processes\": {\n";
-  for (size_t i = 0; i < num_processes; i++) {
-    json << "      \"" << processes[i]
-         << "\": " << (is_process_running(processes[i]) ? "true" : "false");
-    if (i < num_processes - 1)
+
+  for (auto it = processes.begin(); it != processes.end(); ++it) {
+    bool is_running = is_process_running(*it);
+
+    json << "      \"" << *it << "\": " << (is_running ? "true" : "false");
+
+    // Add a comma if it's not the last element
+    if (std::next(it) != processes.end()) {
       json << ",";
+    }
     json << "\n";
   }
+
   json << "    },\n";
 }
 

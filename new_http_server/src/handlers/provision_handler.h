@@ -3,12 +3,6 @@
 
 #include "civetweb.h"
 #include "fw_system.h"
-// External declaration
-// extern "C" {
-// __int8_t provisioning_mode(const char *mac_address, const char
-// *serial_number,
-//                            const char *manufacture_date);
-// }
 
 class ProvisionHandler {
 public:
