@@ -211,21 +211,21 @@ int get_ini_value(const char *filename,
             continue;
         }
 
-        /* key=value */
-        if (in_section)
-        {
-            char *eq = strchr(trimmed, '=');
-            if (eq)
-            {
-                *eq = '\0';
-                const char *current_key = trim(trimmed);
-                const char *value_str = trim(eq + 1);
+        /* Not in target section → skip */
+        if (!in_section)
+            continue;
 
-                if (strcmp(current_key, key) == 0)
-                {
-                    fclose(file);
-                    return atoi(value_str);
-                }
+        char *eq = strchr(trimmed, '=');
+        if (eq)
+        {
+            *eq = '\0';
+            const char *current_key = trim(trimmed);
+            const char *value_str = trim(eq + 1);
+
+            if (strcmp(current_key, key) == 0)
+            {
+                fclose(file);
+                return atoi(value_str);
             }
         }
     }
