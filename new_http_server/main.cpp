@@ -8,8 +8,8 @@
 #include <string.h>
 
 // Global flag for graceful shutdown
-const static volatile bool g_running = true;
-const bool g_log_enabled = false;
+volatile bool g_running = true;
+bool g_log_enabled = false;
 
 // Signal handler for graceful shutdown
 static void signal_handler(int sig) {

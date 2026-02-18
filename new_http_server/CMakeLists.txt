@@ -5,18 +5,18 @@ project(M5S_HTTP_SERVER)
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     message("====== Debug mode ======")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -Wall -Wextra -g -fasynchronous-unwind-tables -DEPOLL -D_POSIX_C_SOURCE=200809L -D_DEFAULT_SOURCE")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -g -fasynchronous-unwind-tables -DEPOLL")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Wextra -g -fasynchronous-unwind-tables -DEPOLL")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -rdynamic")
     add_definitions("-DDEBUG")
 elseif (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     message("====== RelWithDebInfo mode ======")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -O3 -Wall -Wextra -DEPOLL -D_POSIX_C_SOURCE=200809L -D_DEFAULT_SOURCE")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -Wall -Wextra -DEPOLL")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O3 -Wall -Wextra -DEPOLL")
     add_definitions("-DDEBUG")
 else ()
     message("====== Release mode ======")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -O3 -Wall -Wextra -DEPOLL -D_POSIX_C_SOURCE=200809L -D_DEFAULT_SOURCE")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -Wall -Wextra -DEPOLL")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O3 -Wall -Wextra -DEPOLL")
     add_definitions("-DNDEBUG")
 endif ()
 
@@ -43,6 +43,7 @@ ENDIF(CMAKE_CROSSCOMPILING)
 
 
 include_directories(
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/src/main
         ${CMAKE_CURRENT_SOURCE_DIR}/src/handlers
@@ -54,6 +55,7 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/../motocam_api_libs/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../motocam_api_libs/include/l1
         ${CMAKE_CURRENT_SOURCE_DIR}/../motocam_api_libs/include/l2
+        ${CMAKE_CURRENT_SOURCE_DIR}/../motocam_api_libs/include/fw
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../cryptographic/install_temp_open_src_3rd/include
 
@@ -81,6 +83,8 @@ set(SRC_LIST
 
 link_directories(${CMAKE_CURRENT_SOURCE_DIR}/../cryptographic/install_temp_open_src_3rd/lib)
 set(MOTOCAM_APIS_LIB "${CMAKE_CURRENT_SOURCE_DIR}/../motocam_api_libs/build_vienna/libmotocam_apis.a")
+set(MOTOCAM_FW_LIB "${CMAKE_CURRENT_SOURCE_DIR}/../motocam_fw_libs/build_vienna/libmotocam_fw.a")
+
 set(CIVETWEB_LIB     "${CMAKE_CURRENT_SOURCE_DIR}/lib/libcivetweb.a")
 
 
@@ -89,6 +93,12 @@ if (NOT MOTOCAM_APIS_LIB)
 else ()
     message(STATUS "Found MOTOCAM_APIS_LIB at: ${MOTOCAM_APIS_LIB}")
 endif ()
+
+if (NOT MOTOCAM_FW_LIB)
+    message(FATAL_ERROR "Could not find MOTOCAM_FW_LIB shared library")
+else ()
+    message(STATUS "Found MOTOCAM_FW_LIB at: ${MOTOCAM_FW_LIB}")
+endif ()
 if (NOT CIVETWEB_LIB)
     message(FATAL_ERROR "Could not find CIVETWEB_LIB shared library")
 else ()
@@ -96,4 +106,4 @@ else ()
 endif ()
 # Create executable
 add_executable(m5s_http_server ${SRC_LIST})
-target_link_libraries(m5s_http_server ${MOTOCAM_APIS_LIB} ${CIVETWEB_LIB} pthread ssl crypto)
+target_link_libraries(m5s_http_server ${MOTOCAM_APIS_LIB} ${MOTOCAM_FW_LIB} ${CIVETWEB_LIB} pthread ssl crypto)
