@@ -6,61 +6,99 @@
 #include <sys/stat.h>
 #include <unistd.h> // for remove, mkdir
 
-// Callbacks for form handling
 static int field_found_with_size_check(const char *key,
-                                const char *filename,
-                                char *path,
-                                size_t pathlen,
-                                void *user_data)
+                                       const char *filename,
+                                       char *path,
+                                       size_t pathlen,
+                                       void *user_data)
 {
     if (filename && *filename)
     {
         printf("Field found: key=%s, filename=%s\n", key, filename);
-        // Only allow files starting with ota.tar.gz
+
+        /* Only allow files starting with ota.tar.gz */
         const char *required_prefix = "ota.tar.gz";
         size_t prefix_len = strlen(required_prefix);
+
         if (strncmp(filename, required_prefix, prefix_len) != 0)
         {
             printf("ERROR: Filename does not start with ota.tar.gz, rejecting upload.\n");
-            // Send HTTP error response if possible
-            auto *conn = (struct mg_connection *)user_data;
+
+            struct mg_connection *conn = (struct mg_connection *)user_data;
             if (conn)
             {
-                const char *body = "{\"error\":\"Invalid file name. Must start with ota.tar.gz\"}\n";
-                mg_printf(conn, "HTTP/1.1 400 Bad Request\r\nContent-Type: application/json\r\nContent-Length: %zu\r\n\r\n%s", strlen(body), body);
+                const char *body =
+                    "{\"error\":\"Invalid file name. Must start with ota.tar.gz\"}\n";
+
+                mg_printf(conn,
+                          "HTTP/1.1 400 Bad Request\r\n"
+                          "Content-Type: application/json\r\n"
+                          "Content-Length: %zu\r\n\r\n%s",
+                          strlen(body), body);
             }
+
             return MG_FORM_FIELD_STORAGE_SKIP;
         }
-        // Ensure upload directory exists
-        struct stat st;
-        memset(&st, 0, sizeof(st));
 
         const char *upload_dir = "/mnt/flash/vienna/firmware/ota";
-        if (stat(upload_dir, &st) == -1)
+
+        /*
+         * Remove TOCTOU:
+         * Do NOT stat() first.
+         * Directly call mkdir() and handle EEXIST.
+         */
+        if (mkdir(upload_dir, 0775) == -1)
         {
-            if (mkdir(upload_dir, 0775) == -1) 
+            if (errno != EEXIST)
             {
-                if (errno != EEXIST) 
-                {
-                    // A real error occurred (e.g., permission denied or path doesn't exist)
-                    printf("ERROR: Failed to create upload directory: %s\n", strerror(errno));
-                    // Handle error (perhaps return MG_FORM_FIELD_STORAGE_SKIP)
-                }
-            }       
+                printf("ERROR: Failed to create upload directory: %s\n",
+                       strerror(errno));
+                return MG_FORM_FIELD_STORAGE_SKIP;
+            }
         }
+
+        /*
+         * Now verify safely that the path exists
+         * and is a real directory (not a symlink).
+         */
+        struct stat st;
+        if (lstat(upload_dir, &st) == -1)
+        {
+            printf("ERROR: lstat failed on upload directory: %s\n",
+                   strerror(errno));
+            return MG_FORM_FIELD_STORAGE_SKIP;
+        }
+
+        if (!S_ISDIR(st.st_mode))
+        {
+            printf("ERROR: Upload path exists but is not a directory!\n");
+            return MG_FORM_FIELD_STORAGE_SKIP;
+        }
+
+        /*
+         * Build final path
+         */
         int n = snprintf(path, pathlen, "%s/%s", upload_dir, filename);
         printf("Upload path: %s (len=%d, max=%zu)\n", path, n, pathlen);
+
         if (n < 0 || (size_t)n >= pathlen)
         {
             printf("ERROR: Upload path too long, fallback to /tmp\n");
-            snprintf(path, pathlen, "/tmp/%s", filename);
+
+            n = snprintf(path, pathlen, "/tmp/%s", filename);
+            if (n < 0 || (size_t)n >= pathlen)
+            {
+                printf("ERROR: Fallback path too long\n");
+                return MG_FORM_FIELD_STORAGE_SKIP;
+            }
         }
+
         return MG_FORM_FIELD_STORAGE_STORE;
     }
+
     printf("Field skipped: key=%s (no filename)\n", key);
     return MG_FORM_FIELD_STORAGE_SKIP;
 }
-
 static int field_get_with_size_check(const char *key, const char *value, size_t valuelen, void *user_data)
 {
     (void)user_data;
