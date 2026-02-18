@@ -43,19 +43,33 @@ std::string get_session_token(struct mg_connection *conn)
 std::string extract_json_string_field(const std::string &post_data, const char *key)
 {
     std::string pattern = std::string("\"") + key + "\":";
-    const char *start = strstr(post_data.c_str(), pattern.c_str());
-    if (!start)
+    
+    // Replace strstr with find
+    size_t pos = post_data.find(pattern);
+
+    if (pos == std::string::npos)
         return std::string();
-    start += pattern.size();
-    while (*start == ' ' || *start == '\t')
-        start++;
-    if (*start != '"')
+
+    // Advance position past the pattern
+    pos += pattern.size();
+
+    // Skip whitespace using the string's index
+    while (pos < post_data.size() && (post_data[pos] == ' ' || post_data[pos] == '\t'))
+        pos++;
+
+    // Ensure we are at the start of a quoted string
+    if (pos >= post_data.size() || post_data[pos] != '"')
         return std::string();
-    start++;
-    const char *end = strchr(start, '"');
-    if (!end)
+
+    pos++; // Move past the opening quote
+
+    // Find the closing quote
+    size_t end_pos = post_data.find('"', pos);
+
+    if (end_pos == std::string::npos)
         return std::string();
-    return std::string(start, end - start);
+
+    return post_data.substr(pos, end_pos - pos);
 }
 
 bool is_valid_mac_address(const std::string &mac)

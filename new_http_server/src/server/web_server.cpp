@@ -200,8 +200,8 @@ bool WebServer::is_authorized(struct mg_connection *conn, const struct mg_reques
     std::string session_token = get_session_token(conn);
     SessionContext context;
     if (session_token.empty() || !session_manager->validate_session(session_token, context)) {
-        const char *body = R"({"error": "Unauthorized", "message": "Missing or invalid session"})" "\n";
-        send_json_response(conn, 401, "Unauthorized", body);
+    const char *body = R"({"error": "Unauthorized", "message": "Missing or invalid session"}
+)";        send_json_response(conn, 401, "Unauthorized", body);
         return false;
     }
 

@@ -30,7 +30,7 @@ private:
     const size_t SESSION_TOKEN_LENGTH = 32;  // 256-bit session tokens
     const char HEX_CHARS[] = "OUTDU-NVEYETECH-CAMERA-0123456789ABCDEF";
 public:
-    SessionManager(const SessionConfig& config) : config(config) {}
+    explicit SessionManager(const SessionConfig& config) : config(config) {}
     ~SessionManager() = default;
     bool create_session(const SessionContext& context, std::string& session_token);
     bool validate_session(const std::string& session_token, SessionContext& context);

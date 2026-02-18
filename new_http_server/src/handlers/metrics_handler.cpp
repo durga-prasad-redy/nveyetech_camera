@@ -126,22 +126,21 @@ static std::string json_escape(const std::string& str)
     {
         switch (c)
         {
-            case '"':  escaped += "\\\""; break;
-            case '\\': escaped += "\\\\"; break;
-            case '\b': escaped += "\\b";  break;
-            case '\f': escaped += "\\f";  break;
-            case '\n': escaped += "\\n";  break;
-            case '\r': escaped += "\\r";  break;
-            case '\t': escaped += "\\t";  break;
+            // Using raw string literals R"(...)"
+            case '"':  escaped += R"(\")"; break;
+            case '\\': escaped += R"(\\)"; break;
+            case '\b': escaped += R"(\b)"; break;
+            case '\f': escaped += R"(\f)"; break;
+            case '\n': escaped += R"(\n)"; break;
+            case '\r': escaped += R"(\r)"; break;
+            case '\t': escaped += R"(\t)"; break;
 
             default:
                 if (c < 0x20 || c > 0x7E)
                 {
-                    escaped += "\\u";
+                    escaped += R"(\u00)";
                     escaped += hex[(c >> 4) & 0xF];
                     escaped += hex[c & 0xF];
-                    escaped.insert(escaped.end() - 2, '0');
-                    escaped.insert(escaped.end() - 2, '0');
                 }
                 else
                 {
@@ -153,8 +152,6 @@ static std::string json_escape(const std::string& str)
 
     return escaped;
 }
-
-
 // Count files in directory
 static int count_files_in_dir(const std::string &path)
 {
@@ -340,7 +337,7 @@ static bool is_process_running(const std::string &name)
     if (!dp)
         return false;
 
-    struct dirent *e;
+    const struct dirent *e;
     while ((e = readdir(dp)) != nullptr)
     {
         if (!isdigit(static_cast<unsigned char>(e->d_name[0])))
@@ -375,14 +372,18 @@ static std::string format_uptime(double seconds)
         oss << minutes << " minutes";
     return oss.str();
 }
-
 static void append_factory_reset(std::ostringstream &json)
 {
     std::string reset_status = read_file_content(FACTORY_RESET_STATUS_FILE);
+
     if (reset_status.empty())
         reset_status = "unknown";
+
     json << "  \"factory_reset\": {\n";
-    json << "    \"status\": \"" << json_escape(reset_status) << "\",\n";
+    
+    // Converted to a raw string literal R"(...)"
+    json << R"(    "status": ")" << json_escape(reset_status) << R"(",)" << "\n";
+
     json << "    \"status_file_exists\": " << (file_exists(FACTORY_RESET_STATUS_FILE) ? "true" : "false") << "\n";
     json << "  },\n";
 }
@@ -390,21 +391,29 @@ static void append_factory_reset(std::ostringstream &json)
 static void append_configuration(std::ostringstream &json)
 {
     json << "  \"configuration\": {\n";
-    json << "    \"config_dir\": \"" << CONFIG_DIR << "\",\n";
+
+    // Converted to raw string literal R"(...)"
+    json << R"(    "config_dir": ")" << CONFIG_DIR << R"(",)" << "\n";
+
     json << "    \"config_dir_exists\": " << (dir_exists(CONFIG_DIR) ? "true" : "false") << ",\n";
+
     if (dir_exists(CONFIG_DIR))
         json << "    \"config_files_count\": " << count_files_in_dir(CONFIG_DIR) << ",\n";
-    json << "    \"snapshot_file\": \"" << SNAPSHOT_FILE << "\",\n";
+
+    json << R"(    "snapshot_file": ")" << SNAPSHOT_FILE << R"(",)"<<"\n";
+
     json << "    \"snapshot_file_exists\": " << (file_exists(SNAPSHOT_FILE) ? "true" : "false");
+
     if (file_exists(SNAPSHOT_FILE))
         json << ",\n    \"snapshot_file_size\": " << get_file_size(SNAPSHOT_FILE);
+
     json << "\n  },\n";
 }
 
 static void append_factory_backup(std::ostringstream &json)
 {
     json << "  \"factory_backup\": {\n";
-    json << "    \"backup_dir\": \"" << FACTORY_BACKUP_DIR << "\",\n";
+    json << R"(    "backup_dir": ")" << FACTORY_BACKUP_DIR << R"(",)" <<",\n";
     json << "    \"backup_dir_exists\": " << (dir_exists(FACTORY_BACKUP_DIR) ? "true" : "false");
     if (!dir_exists(FACTORY_BACKUP_DIR))
     {
@@ -430,7 +439,7 @@ static void append_system_uptime(std::ostringstream &json)
         return;
     double uptime_seconds = atof(uptime_str.c_str());
     json << "    \"uptime_seconds\": " << uptime_seconds << ",\n";
-    json << "    \"uptime_formatted\": \"" << json_escape(format_uptime(uptime_seconds)) << "\",\n";
+    json << R"(    "uptime_formatted": ")" << json_escape(format_uptime(uptime_seconds)) << R"(",)" << ",\n";
 }
 
 static void append_system_cpu_temp_firmware(std::ostringstream &json)
@@ -438,10 +447,13 @@ static void append_system_cpu_temp_firmware(std::ostringstream &json)
     int cpu_usage = get_cpu_usage();
     if (cpu_usage >= 0)
         json << "    \"cpu_usage_percent\": " << cpu_usage << ",\n";
+
     int temperature = get_temperature();
     if (temperature >= 0)
         json << "    \"temperature_celsius\": " << temperature << ",\n";
-    json << "    \"firmware_version\": \"" << json_escape(get_firmware_version()) << "\",\n";
+
+    // Converted to a proper raw string literal R"(...)"
+    json << R"(    "firmware_version": ")" << json_escape(get_firmware_version()) << R"(",)" << "\n";
 }
 
 struct MemInfo
@@ -493,7 +505,9 @@ static void append_system_memory(std::ostringstream &json, const MemInfo &mem)
 
 static void append_system_disk(std::ostringstream &json)
 {
-    long long disk_total = -1, disk_available = -1, disk_used = -1;
+    long long disk_total = -1;
+    long long disk_availab  le = -1;
+    long long disk_used = -1;
     get_disk_space("/mnt/flash", &disk_total, &disk_available, &disk_used);
     if (disk_total <= 0)
         return;
@@ -515,7 +529,9 @@ static void append_system_disk(std::ostringstream &json)
 static void append_system_loadavg(std::ostringstream &json)
 {
     std::string loadavg = read_file_content("/proc/loadavg");
-    double load1, load5, load15;
+    double load1;
+    double  load5;
+    double load15;
     if (loadavg.empty() || sscanf(loadavg.c_str(), "%lf %lf %lf", &load1, &load5, &load15) != 3)
         return;
     json << "    \"load_average\": {\n";
