@@ -54,7 +54,6 @@ bool SessionManager::create_session(const SessionContext & context,std::string &
     session_context->last_accessed=now;
     
     sessions_cache->put(session_token, session_context);
-    // session_context.release(); // Removed: ownership is shared
     return true;
 }
 

@@ -161,7 +161,6 @@ int UploadHandler::handle_upload(struct mg_connection *conn, const struct mg_req
         }
         else
         {
-            // mg_send_http_error(conn, 500, "Error processing upload");
             mg_printf(conn, "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\n\r\nError processing upload");
             return 500;
         }
