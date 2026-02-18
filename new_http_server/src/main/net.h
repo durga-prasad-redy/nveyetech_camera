@@ -20,8 +20,7 @@
 #include <memory>
 #include <string>
 
-static const char HTTP_PORT[] = "80";
-static const char HTTPS_PORT[] = "443";
+
 
 enum class MiscEventType {
     STARTED_STREAMING,
@@ -42,12 +41,11 @@ enum class MiscEventType {
 inline bool response_body_prefix_check(const uint8_t *req_bytes, const uint8_t req_bytes_size, const uint8_t *prefix, const uint8_t prefix_size)
 {
   printf("do_processing req_bytes=");
-  int i;
   if(req_bytes_size < 3 || prefix_size < 3)
   {
     return false;
   }
-  for (i = 0; i < 3; i++)
+  for (int i = 0; i < 3; i++)
   {
     if(req_bytes[i] != prefix[i])
     {

@@ -19,7 +19,7 @@ struct CacheNode {
     std::shared_ptr<SessionContext> value;
 
 };
-enum EvictionReason {
+enum class EvictionReason {
     EXPIRED,
     CAPACITY_LIMIT,
     CRITICAL_ACTION,
@@ -28,7 +28,7 @@ enum EvictionReason {
     MANUAL
 };
 
-enum SessionStorageType {
+enum class SessionStorageType {
     LRU,
     QUEUE
 };
@@ -44,11 +44,11 @@ class EvictionQueue {
 private:
     std::forward_list<EvictedItem> queue;
     size_t queue_max_size;
-    size_t current_size;
+    size_t current_size{0};
 
 public:
-    EvictionQueue(size_t max_size)
-        : queue_max_size(max_size), current_size(0) {}
+    explicit EvictionQueue(size_t max_size)
+        : queue_max_size(max_size) {}
 
     void push(const EvictedItem& item) {
 

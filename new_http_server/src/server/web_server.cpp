@@ -20,22 +20,31 @@ extern "C" {
 }
 
 // Subprotocols
-static const char subprotocol_bin[] = "Company.ProtoName.bin";
-static const char subprotocol_json[] = "Company.ProtoName.json";
-const static  char *subprotocols[] = {subprotocol_bin, subprotocol_json, nullptr};
-static struct mg_websocket_subprotocols wsprot = {2, subprotocols};
-
-/* MUST match sender structure exactly */
-typedef struct {
+static const char subprotocol_bin[] = "Outdu.Nveyetech_camera.bin";
+static const char subprotocol_json[] = "Outdu.Nveyetech_camera.json";
+static constexpr std::array<const char*, 3> subprotocol_list = {
+    subprotocol_bin,
+    subprotocol_json,
+    nullptr // CivetWeb still expects a null terminator in the pointer array
+};
+// Update the struct to use the data() pointer from the array
+static struct mg_websocket_subprotocols wsprot = {
+    static_cast<int>(subprotocol_list.size() - 1), // Number of protocols (excluding null)
+    subprotocol_list.data()                        // Pointer to the underlying C-array
+};
+// MUST match sender structure exactly for binary compatibility
+struct misc_event {
     uint8_t old_misc;
     uint8_t new_misc;
-} misc_event_t;
+};
+using misc_event_t = misc_event;
 
-/* MUST match sender structure exactly */
-typedef struct {
+// MUST match sender structure exactly
+struct ir_event {
     uint8_t old_ir_brightness;
     uint8_t new_ir_brightness;
-} ir_event_t;
+};
+using ir_event_t = ir_event;
 
 enum class MiscEventType {
     STARTED_STREAMING,
@@ -57,9 +66,9 @@ static const char* misc_event_type_to_string(MiscEventType type) {
 #define LOG_DEBUG(fmt, ...) printf(fmt "\n", ##__VA_ARGS__)
 
 WebServer::WebServer(std::shared_ptr<SessionManager> mgr) 
-    : ctx(nullptr), session_manager(mgr), document_root("dist"), stop_broadcast(false), misc_socket_fd(-1), ir_socket_fd(-1) 
+    : ctx(nullptr), 
+      session_manager(mgr) 
 {}
-
 WebServer::~WebServer()
 {
     shutdown();
@@ -101,9 +110,10 @@ void WebServer::handle_misc_event()
             ? MiscEventType::STARTED_STREAMING
             : MiscEventType::CHANGING_MISC;
 
-        std::string json_msg = "{\"old_misc\":" + std::to_string(evt.old_misc) +
-                 ",\"new_misc\":" + std::to_string(evt.new_misc) +
-                 ",\"event_type\":\"" + misc_event_type_to_string(event_type) + "\"}";
+        std::string json_msg = R"({"old_misc":)" + std::to_string(evt.old_misc) +
+                               R"(,"new_misc":)" + std::to_string(evt.new_misc) +
+                               R"(,"event_type":")" + misc_event_type_to_string(event_type) + 
+                               R"("})";
 
         broadcast_message(json_msg.c_str());
     }
@@ -121,9 +131,9 @@ void WebServer::handle_ir_event()
         LOG_DEBUG("IR brightness event received: old_ir_brightness=%u, new_ir_brightness=%u",
                   evt.old_ir_brightness, evt.new_ir_brightness);
 
-        std::string json_msg = "{\"old_ir_brightness\":" + std::to_string(evt.old_ir_brightness) +
-                 ",\"new_ir_brightness\":" + std::to_string(evt.new_ir_brightness) +
-                 ",\"event_type\":\"ir brightness changed\"}";
+        std::string json_msg = R"({"old_ir_brightness":)" + std::to_string(evt.old_ir_brightness) +
+                               R"(,"new_ir_brightness":)" + std::to_string(evt.new_ir_brightness) +
+                               R"(,"event_type":"ir brightness changed"})";
 
         broadcast_message(json_msg.c_str());
     }
@@ -139,102 +149,99 @@ void WebServer::broadcast_loop()
     }
 }
 
-// Request Handler
 int WebServer::request_handler(struct mg_connection *conn, void *cbdata)
 {
-    WebServer *self = static_cast<WebServer *>(cbdata);
+    auto *self = static_cast<WebServer *>(cbdata);
     const struct mg_request_info *ri = mg_get_request_info(conn);
 
     printf("Request: %s %s\n", ri->request_method, ri->local_uri);
 
-    // WebSocket Upgrade
+    // 1. Handle WebSocket Upgrade (Low complexity exit)
     const char *upgrade = mg_get_header(conn, "Upgrade");
     if (upgrade && strcasecmp(upgrade, "websocket") == 0)
     {
-        return 0; // Let CivetWeb handle it
+        return 0; 
     }
 
-    // Auth Check
-    bool needs_auth = (strncmp(ri->local_uri, "/api/getdeviceid", 16) == 0 ||
-                       strncmp(ri->local_uri, "/api/getsignalserver", 20) == 0 ||
-                       strncmp(ri->local_uri, "/api/upload", 11) == 0 ||
-                       strncmp(ri->local_uri, "/api/motocam_api", 16) == 0);
-
-    if (needs_auth)
+    // 2. Extracted Auth Logic
+    if (!self->is_authorized(conn, ri))
     {
-        // Skip auth check if it's login endpoint? No, checks above are specific.
-        // What about if session manager unavailable?
-        if (!self->session_manager) {
-            mg_printf(conn, "HTTP/1.1 500 Internal Server Error\r\n\r\n");
-            return 1;
-        }
+        return 1; // Response already sent by helper
+    }
 
-        std::string session_token = get_session_token(conn);
-        SessionContext context;
-        if (session_token.empty() || !self->session_manager->validate_session(session_token, context))
-        {
-             // Check eviction reason if needed (omitted for brevity, can implement using check_in_evicted_sessions)
-            
-             // Simple unauthorized
-             const char *body = "{\"error\": \"Unauthorized\", \"message\": \"Missing or invalid session\"}\n";
-             send_json_response(conn, 401, "Unauthorized", body);
-             return 1;
+    // 3. Routing (Flattened)
+    return self->route_request(conn, ri);
+}
+
+
+
+bool WebServer::is_authorized(struct mg_connection *conn, const struct mg_request_info *ri)
+{
+    // Define protected routes
+    static const std::array<const char*, 4> protected_routes = {
+        "/api/getdeviceid", "/api/getsignalserver", "/api/upload", "/api/motocam_api"
+    };
+
+    bool needs_auth = false;
+    for (const auto* route : protected_routes) {
+        if (strncmp(ri->local_uri, route, strlen(route)) == 0) {
+            needs_auth = true;
+            break;
         }
     }
 
-    // Routing
-    if (strcmp(ri->local_uri, "/api/login") == 0) return AuthHandler::handle_login(conn, ri, self->session_manager);
-    if (strcmp(ri->local_uri, "/api/logout") == 0) return AuthHandler::handle_logout(conn, ri, self->session_manager);
-    if (strcmp(ri->local_uri, "/api/force_logout") == 0) return AuthHandler::handle_force_logout_others(conn, ri, self->session_manager);
+    if (!needs_auth) return true;
+
+    if (!session_manager) {
+        mg_printf(conn, "HTTP/1.1 500 Internal Server Error\r\n\r\n");
+        return false;
+    }
+
+    std::string session_token = get_session_token(conn);
+    SessionContext context;
+    if (session_token.empty() || !session_manager->validate_session(session_token, context)) {
+        const char *body = R"({"error": "Unauthorized", "message": "Missing or invalid session"})" "\n";
+        send_json_response(conn, 401, "Unauthorized", body);
+        return false;
+    }
+
+    return true;
+}
+
+int WebServer::route_request(struct mg_connection *conn, const struct mg_request_info *ri)
+{
+    // Auth
+    if (strcmp(ri->local_uri, "/api/login") == 0) return AuthHandler::handle_login(conn, ri, session_manager);
+    if (strcmp(ri->local_uri, "/api/logout") == 0) return AuthHandler::handle_logout(conn, ri, session_manager);
     
+    // Device/System
     if (strcmp(ri->local_uri, "/api/motocam_api") == 0) return DeviceHandler::handle_motocam_api(conn, ri);
-    if (strcmp(ri->local_uri, "/api/reset_pin") == 0) return DeviceHandler::handle_reset_pin(conn, ri);
-    if (strcmp(ri->local_uri, "/api/firmware_version") == 0) return DeviceHandler::handle_firmware_version(conn, ri);
-    
     if (strcmp(ri->local_uri, "/api/provision_device") == 0) return ProvisionHandler::handle_provision_device(conn, ri);
-    if (strcmp(ri->local_uri, "/api/upload") == 0) return UploadHandler::handle_upload(conn, ri);
-    
     if (strcmp(ri->local_uri, "/api/metrics") == 0) return handle_metrics_api(conn, ri);
-    
+
+    // Proxy
     if (strncmp(ri->local_uri, "/getdeviceid", 12) == 0) {
         ProxyHandler::handle_proxy_request(conn, ri, "http://127.0.0.1:8083", "/getdeviceid");
         return 1;
     }
-    if (strncmp(ri->local_uri, "/getsignalserver", 16) == 0) {
-        ProxyHandler::handle_proxy_request(conn, ri, "http://127.0.0.1:8083", "/getsignalserver");
-        return 1;
-    }
 
-    // Static Files / SPA
-    std::string file_path = "dist" + std::string(ri->local_uri);
-    struct stat st;
-
-    if (stat(file_path.c_str(), &st) == 0 && S_ISREG(st.st_mode))
-    {
-        return 0; // Let CivetWeb serve
-    }
-    else
-    {
-        std::string index_content = read_file_content("dist/index.html");
-        if (!index_content.empty())
-        {
-            mg_printf(conn, "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: %zu\r\n\r\n%s",
-                      index_content.length(), index_content.c_str());
-        }
-        else
-        {
-            mg_printf(conn, "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\n\r\nindex.html not found");
-        }
-        return 1;
-    }
+    // Fallback to static files
+    return serve_static_or_spa(conn, ri);
 }
 
 // WebSocket Callbacks
 int WebServer::ws_connect_handler(const struct mg_connection *conn, void *user_data)
 {
-    (void)user_data;
-    const struct mg_request_info *ri = mg_get_request_info(conn);
-    printf("Client connecting with subprotocol: %s\n", ri->acceptedWebSocketSubprotocol);
+    // Cast to the specific class type to provide context and meaning
+    auto *self = static_cast<WebServer *>(user_data);
+    
+    // Now 'self' can be used to access WebServer members if needed
+    const auto *ri = mg_get_request_info(conn);
+    
+    printf("Client connecting to server [%p] with subprotocol: %s\n", 
+            static_cast<void*>(self), 
+            ri->acceptedWebSocketSubprotocol);
+            
     return 0;
 }
 
@@ -263,13 +270,14 @@ bool WebServer::init()
 {
     mg_init_library(0);
 
-    const char *options[] = {
+    const std::array<const char*, 11> options = {{
         "listening_ports", ServerConfig::HTTP_PORT,
         "document_root", document_root.c_str(),
         "num_threads", "10",
         "request_timeout_ms", "60000",
         "enable_directory_listing", "no",
-        nullptr};
+        nullptr // Maintain null termination for the C API
+    }};
 
     printf("Starting server with document_root: %s\n", document_root.c_str());
     
@@ -277,7 +285,7 @@ bool WebServer::init()
     memset(&callbacks, 0, sizeof(callbacks));
     callbacks.begin_request = request_handler;
 
-    ctx = mg_start(&callbacks, this, options); // Pass 'this' as user_data
+    ctx = mg_start(&callbacks, this, options.data()); // Pass 'this' as user_data
 
     if (!ctx)
     {

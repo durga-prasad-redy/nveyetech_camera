@@ -11,11 +11,11 @@ namespace ServerConfig {
 }
 
 // Global instances
-static std::unique_ptr<WebServer> g_web_server;
+static conststd::unique_ptr<WebServer> g_web_server;
 // g_session_manager is needed to be created and passed to WebServer.
 // We can keep a static reference here if needed, but WebServer owns a shared_ptr to it.
 // However, `web_cleanup` requires us to reset it.
-static std::shared_ptr<SessionManager> g_session_manager;
+static const std::shared_ptr<SessionManager> g_session_manager;
 
 bool web_init()
 {

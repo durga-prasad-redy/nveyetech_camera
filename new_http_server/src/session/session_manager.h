@@ -8,7 +8,7 @@
 #include <openssl/rand.h>
 #include "session_storage.h"
 // Session configuration structure
-typedef struct SessionConfig {
+using SessionConfig = struct  {
     size_t max_sessions;
     size_t eviction_queue_size;
     time_t session_timeout;  // in seconds (0 means no timeout)
@@ -18,7 +18,7 @@ typedef struct SessionConfig {
     const char* cookie_path;
     bool secure_cookies;
     bool http_only_cookies;
-} SessionConfig;
+};
 
 
 
@@ -31,7 +31,7 @@ private:
     const char HEX_CHARS[] = "OUTDU-NVEYETECH-CAMERA-0123456789ABCDEF";
 public:
     SessionManager(const SessionConfig& config) : config(config) {}
-    ~SessionManager() {}
+    ~SessionManager() = default;
     bool create_session(const SessionContext& context, std::string& session_token);
     bool validate_session(const std::string& session_token, SessionContext& context);
     bool invalidate_session(const std::string& session_token,EvictionReason reason);

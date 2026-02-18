@@ -15,7 +15,7 @@ struct mg_connection;
 
 class WebServer {
 public:
-    WebServer(std::shared_ptr<SessionManager> session_manager);
+    explicit WebServer(std::shared_ptr<SessionManager> session_manager);
     ~WebServer();
 
     bool init();
@@ -27,6 +27,12 @@ public:
     void broadcast_message(const char *json_msg);
 
 private:
+
+    int misc_socket_fd{-1};
+    int ir_socket_fd{-1};
+    bool stop_broadcast{false};
+    std::string document_root{"dist"};
+
     struct mg_context *ctx;
     std::shared_ptr<SessionManager> session_manager;
     std::string document_root;
@@ -47,6 +53,8 @@ private:
 
     // Static request handlers routed to instance
     static int request_handler(struct mg_connection *conn, void *cbdata);
+    bool is_authorized(struct mg_connection *conn, const struct mg_request_info *ri);
+    int route_request(struct mg_connection *conn, const struct mg_request_info *ri);
     
     // WebSocket handlers
     static int ws_connect_handler(const struct mg_connection *conn, void *user_data);

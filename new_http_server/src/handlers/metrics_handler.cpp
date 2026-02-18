@@ -14,11 +14,11 @@
 
 namespace {
 
-static const std::string CONFIG_DIR = "/mnt/flash/vienna/m5s_config";
-static const std::string SNAPSHOT_FILE = "/mnt/flash/vienna/default_snapshot.txt";
-static const std::string FACTORY_BACKUP_DIR = "/mnt/flash/vienna/factory_backup";
-static const std::string FACTORY_RESET_STATUS_FILE = "/mnt/flash/vienna/m5s_config/factory_reset_status";
-static const std::string VERSION_FILE = "/mnt/flash/jffs2_version";
+const std::string CONFIG_DIR = "/mnt/flash/vienna/m5s_config";
+const std::string SNAPSHOT_FILE = "/mnt/flash/vienna/default_snapshot.txt";
+const std::string FACTORY_BACKUP_DIR = "/mnt/flash/vienna/factory_backup";
+const std::string FACTORY_RESET_STATUS_FILE = "/mnt/flash/vienna/m5s_config/factory_reset_status";
+const std::string VERSION_FILE = "/mnt/flash/jffs2_version";
 
 } // anonymous namespace
 
@@ -114,28 +114,34 @@ static void get_disk_space(const std::string &path, long long *total, long long 
     }
 }
 
-// Helper function to escape JSON string
-static std::string json_escape(const std::string &str)
+
+static std::string json_escape(const std::string& str)
 {
+    static const char hex[] = "0123456789ABCDEF";
+
     std::string escaped;
-    for (char c : str)
+    escaped.reserve(str.size() * 2);
+
+    for (unsigned char c : str)
     {
         switch (c)
         {
-            case '"': escaped += "\\\""; break;
+            case '"':  escaped += "\\\""; break;
             case '\\': escaped += "\\\\"; break;
-            case '\b': escaped += "\\b"; break;
-            case '\f': escaped += "\\f"; break;
-            case '\n': escaped += "\\n"; break;
-            case '\r': escaped += "\\r"; break;
-            case '\t': escaped += "\\t"; break;
+            case '\b': escaped += "\\b";  break;
+            case '\f': escaped += "\\f";  break;
+            case '\n': escaped += "\\n";  break;
+            case '\r': escaped += "\\r";  break;
+            case '\t': escaped += "\\t";  break;
+
             default:
                 if (c < 0x20 || c > 0x7E)
                 {
-                    std::string buf(7, '\0');
-                    snprintf(&buf[0], buf.size(), "\\u%04x", (unsigned char)c);
-                    buf.resize(6);
-                    escaped += buf;
+                    escaped += "\\u";
+                    escaped += hex[(c >> 4) & 0xF];
+                    escaped += hex[c & 0xF];
+                    escaped.insert(escaped.end() - 2, '0');
+                    escaped.insert(escaped.end() - 2, '0');
                 }
                 else
                 {
@@ -144,8 +150,10 @@ static std::string json_escape(const std::string &str)
                 break;
         }
     }
+
     return escaped;
 }
+
 
 // Count files in directory
 static int count_files_in_dir(const std::string &path)
@@ -155,7 +163,7 @@ static int count_files_in_dir(const std::string &path)
         return -1;
     
     int count = 0;
-    struct dirent *entry;
+    const struct dirent *entry;
     while ((entry = readdir(dir)) != nullptr)
     {
         if (entry->d_name[0] != '.')
@@ -172,8 +180,24 @@ static int get_cpu_usage()
 {
     FILE *f;
     std::string buf(256, '\0');
-    unsigned long u1, n1, s1, i1, uw1, irq1, si1, st1;
-    unsigned long u2, n2, s2, i2, uw2, irq2, si2, st2;
+
+    unsigned long u1;
+    unsigned long n1;
+    unsigned long s1;
+    unsigned long i1;
+    unsigned long uw1;
+    unsigned long irq1;
+    unsigned long si1;
+    unsigned long st1;
+
+    unsigned long u2;
+    unsigned long n2;
+    unsigned long s2;
+    unsigned long i2;
+    unsigned long uw2;
+    unsigned long irq2;
+    unsigned long si2;
+    unsigned long st2;
 
     f = fopen("/proc/stat", "r");
     if (!f)
@@ -197,7 +221,8 @@ static int get_cpu_usage()
 
     unsigned long t1 = u1 + n1 + s1 + i1 + uw1 + irq1 + si1 + st1;
     unsigned long t2 = u2 + n2 + s2 + i2 + uw2 + irq2 + si2 + st2;
-    unsigned long idle1 = i1, idle2 = i2;
+    unsigned long idle1 = i1;
+    unsigned long idle2 = i2;
     unsigned long diff_total = t2 - t1;
     unsigned long diff_idle = idle2 - idle1;
 
