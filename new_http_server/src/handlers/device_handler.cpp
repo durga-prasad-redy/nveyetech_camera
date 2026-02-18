@@ -45,13 +45,10 @@ static int handle_common_post_processing(struct mg_connection *conn, const struc
         token = strtok_r(nullptr, " ", &saveptr);
     }
     
-    if (prefix_check && prefix_len > 0)
+    if (prefix_check && prefix_len > 0 && !response_body_prefix_check(byteArray, byteArrayLen, prefix_check, prefix_len))
     {
-        if(!response_body_prefix_check(byteArray, byteArrayLen, prefix_check, prefix_len))
-        {
-            send_json_response(conn, 400, "Bad Request", "");
-            return 1;
-        }
+        send_json_response(conn, 400, "Bad Request", "");
+        return 1;
     }
 
     uint8_t *res_bytes = nullptr;
