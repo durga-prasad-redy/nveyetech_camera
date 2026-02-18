@@ -38,7 +38,15 @@ static int field_found_with_size_check(const char *key,
         const char *upload_dir = "/mnt/flash/vienna/firmware/ota";
         if (stat(upload_dir, &st) == -1)
         {
-            mkdir(upload_dir, 0775);
+            if (mkdir(upload_dir, 0775) == -1) 
+            {
+                if (errno != EEXIST) 
+                {
+                    // A real error occurred (e.g., permission denied or path doesn't exist)
+                    printf("ERROR: Failed to create upload directory: %s\n", strerror(errno));
+                    // Handle error (perhaps return MG_FORM_FIELD_STORAGE_SKIP)
+                }
+            }       
         }
         int n = snprintf(path, pathlen, "%s/%s", upload_dir, filename);
         printf("Upload path: %s (len=%d, max=%zu)\n", path, n, pathlen);
