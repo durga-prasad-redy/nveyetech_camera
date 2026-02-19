@@ -506,7 +506,11 @@ static int read_wifi_status_once(void)
 
     fclose(file);
 
-    status[strcspn(status, "\n")] = '\0';
+    size_t len = strcspn(status, "\n");
+    if (len < sizeof(status))
+    {
+        status[len] = '\0';
+    }
     printf("[DEBUG] Read status: '%s'\n", status);
 
     if (strcmp(status, "0") == 0)
