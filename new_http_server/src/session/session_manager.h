@@ -44,7 +44,7 @@ public:
                            SessionContext &context);
 
   std::vector<EvictedItem> get_evicted_sessions();
-  std::string generate_session_token(size_t length);
+  const std::string generate_session_token(size_t length);
 
   void clear_evicted_sessions();
   void invalidate_all_sessions(const std::string &except_token = "");

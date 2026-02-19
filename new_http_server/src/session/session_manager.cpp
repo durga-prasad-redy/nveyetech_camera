@@ -19,7 +19,7 @@ SessionManager::SessionManager(const SessionConfig &session_config)
   sessions_cache->print_session();
 }
 
-std::string SessionManager::generate_session_token(size_t length) {
+const std::string SessionManager::generate_session_token(size_t length) {
   if (length != 32)
     return {};
 
@@ -101,7 +101,7 @@ void SessionManager::cleanup_expired_sessions() {
 
   auto now = std::chrono::system_clock::now();
   auto sessions = sessions_cache->get_cache();
-  for (auto &session : sessions) {
+  for (const auto &session : sessions) {
     auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
                        now - session.value->last_accessed)
                        .count();

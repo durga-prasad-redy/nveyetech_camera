@@ -1,11 +1,12 @@
+#include "include/log.h"
 #include "include/motocam_api_l2.h"
 #include "net.h"
-#include "include/log.h"
 #include <chrono>
 #include <iostream>
+#include <net.h>
 #include <signal.h>
-#include <thread>
 #include <string.h>
+#include <thread>
 
 // Global flag for graceful shutdown
 volatile bool g_running = true;
@@ -24,6 +25,7 @@ int main(int argc, char *argv[]) {
       break;
     }
   }
+  Net g_net;
 
   LOG_INFO("Starting embedded web server...");
 
@@ -34,7 +36,7 @@ int main(int argc, char *argv[]) {
   init_motocam_configs();
 
   // Initialize the web server
-  if (!web_init()) {
+  if (!g_net.init()) {
     LOG_ERROR("Failed to initialize web server");
     return 1;
   }
@@ -49,7 +51,7 @@ int main(int argc, char *argv[]) {
   LOG_INFO("Shutting down web server...");
 
   // Cleanup
-  web_cleanup();
+  g_net.cleanup();
 
   LOG_INFO("Server stopped.");
   return 0;

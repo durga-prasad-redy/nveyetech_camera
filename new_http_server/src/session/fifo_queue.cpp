@@ -27,7 +27,7 @@ FIFOQueue::FIFOQueue(int cap) : storage_capacity(cap) {
   if (dir == nullptr)
     return;
 
-  struct dirent *entry;
+  const struct dirent *entry;
   std::vector<CacheNode> all_found_sessions;
 
   // 1. Scan directory for "stream_" files

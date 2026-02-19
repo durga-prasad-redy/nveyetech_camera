@@ -307,10 +307,10 @@ bool WebServer::init() {
     return false;
   }
 
-  char subprotocol_bin[] = "Outdu.Nveyetech_camera.bin";
-  char subprotocol_json[] = "Outdu.Nveyetech_camera.json";
-  std::array<const char *, 3> subprotocol_list = {subprotocol_bin,
-                                                  subprotocol_json, nullptr};
+  std::string subprotocol_bin = "Outdu.Nveyetech_camera.bin";
+  std::string subprotocol_json = "Outdu.Nveyetech_camera.json";
+  std::array<const char *, 3> subprotocol_list = {
+      subprotocol_bin.c_str(), subprotocol_json.c_str(), nullptr};
 
   struct mg_websocket_subprotocols wsprot = {
       static_cast<int>(subprotocol_list.size() - 1), subprotocol_list.data()};
