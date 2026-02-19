@@ -486,59 +486,59 @@ int8_t set_wifi_hotspot_config(const char *ssid, const uint8_t encryption_type,
   return 0;
 }
 
+static int read_wifi_status_once(void)
+{
+    char status[256];
+
+    FILE *file = fopen(WIFI_RUNTIME_RESULT, "r");
+    if (!file)
+    {
+        printf("[ERROR] Failed to open file: %s\n", WIFI_RUNTIME_RESULT);
+        return 0;
+    }
+
+    if (!fgets(status, sizeof(status), file))
+    {
+        printf("[WARN] File is empty or read failed.\n");
+        fclose(file);
+        return 0;
+    }
+
+    fclose(file);
+
+    status[strcspn(status, "\n")] = '\0';
+    printf("[DEBUG] Read status: '%s'\n", status);
+
+    if (strcmp(status, "0") == 0)
+    {
+        printf("[INFO] Wi-Fi status indicates success.\n");
+        return 1;
+    }
+
+    printf("[INFO] Wi-Fi status not ready yet: '%s'\n", status);
+    return 0;
+}
 
 static int check_wifi_status_with_retry(void)
 {
-  int retries = 20;
-  char status[256];
+    int retries = 20;
 
-  printf("[INFO] Checking Wi-Fi status with %d retries...\n", retries);
+    printf("[INFO] Checking Wi-Fi status with %d retries...\n", retries);
 
-  while (retries > 0)
-  {
-    printf("[DEBUG] Attempt %d...\n", 11 - retries);
-
-    FILE *file = fopen(WIFI_RUNTIME_RESULT, "r");
-    if (file)
+    for (int attempt = 1; attempt <= retries; attempt++)
     {
-      printf("[DEBUG] Opened file: %s\n", WIFI_RUNTIME_RESULT);
+        printf("[DEBUG] Attempt %d...\n", attempt);
 
-      if (fgets(status, sizeof(status), file) != NULL)
-      {
-        // Remove trailing newline if present
-        status[strcspn(status, "\n")] = 0;
-        printf("[DEBUG] Read status: '%s'\n", status);
-
-        fclose(file);
-
-        // Check if status is empty (I think you intended strcmp(status, "") instead of 0)
-        if (strcmp(status, "0") == 0)
+        if (read_wifi_status_once())
         {
-          printf("[INFO] Wi-Fi status indicates success.\n");
-          return 1; // Success
+            return 1;
         }
-        else
-        {
-          printf("[INFO] Wi-Fi status is not empty: '%s'\n", status);
-        }
-      }
-      else
-      {
-        printf("[WARN] File is empty or read failed.\n");
-        fclose(file);
-      }
-    }
-    else
-    {
-      printf("[ERROR] Failed to open file: %s\n", WIFI_RUNTIME_RESULT);
+
+        sleep(1);
     }
 
-    sleep(1); // Wait for 1 second before retry
-    retries--;
-  }
-
-  printf("[ERROR] Wi-Fi status check failed after all retries.\n");
-  return 0; // Failure after all retries
+    printf("[ERROR] Wi-Fi status check failed after all retries.\n");
+    return 0;
 }
 
 // TBD

@@ -91,63 +91,76 @@ snprintf(addr.sun_path, sizeof(addr.sun_path),"%s", IR_SOCK_PATH);
     }
 }
 
-void start_wdr_eis_mode(uint8_t day_mode)
+static void handle_linear_mode(uint8_t day_mode,
+                               uint8_t eis,
+                               uint8_t stream1_resolution)
 {
-  uint8_t eis=0;
-  uint8_t wdr=0;
-  uint8_t stream1_resolution=0;
-
-  char output[64];
-
-  if (exec_cmd(GET_EIS, output, sizeof(output)) == 0)
-      eis = atoi(output);
-
-  if (exec_cmd(GET_WDR, output, sizeof(output)) == 0)
-      wdr = atoi(output);
-
-  if (exec_cmd(GET_STREAM1_RESOLUTION, output, sizeof(output)) == 0)
-      stream1_resolution = atoi(output);
-
-  safe_remove(RES_PATH "/Resource");
-
-  if (wdr)
-  {
-    safe_symlink(RES_PATH "/Resource.Fusion", RES_PATH "/Resource");
-    safe_remove(RES_PATH "/Resource/AutoScene/autoscene_conf.cfg");
-    if (day_mode == DAY_M)
-      safe_symlink(RES_PATH "/Resource/AutoScene/autoscene_conf.cfg.day", RES_PATH "/Resource/AutoScene/autoscene_conf.cfg");
-    else if (day_mode == NIGHT_M)
-      safe_symlink(RES_PATH "/Resource/AutoScene/autoscene_conf.cfg.night", RES_PATH "/Resource/AutoScene/autoscene_conf.cfg");
-
-    fusion_eis_off();
-  }
-  else
-  {
     if (day_mode == 0)
     {
-      safe_symlink(RES_PATH "/Resource.Lowlight", RES_PATH "/Resource");
-      linear_lowlight_on();
+        safe_symlink(RES_PATH "/Resource.Lowlight", RES_PATH "/Resource");
+        linear_lowlight_on();
+        return;
+    }
+
+    safe_symlink(RES_PATH "/Resource.Linear", RES_PATH "/Resource");
+
+    if (stream1_resolution == 3)
+    {
+        linear_4k_on();
+        return;
+    }
+
+    if (eis)
+    {
+        linear_eis_on();
     }
     else
     {
-      safe_symlink(RES_PATH "/Resource.Linear", RES_PATH "/Resource");
-      if (stream1_resolution == 3)
-      {
-        linear_4k_on();
-      }
-      else
-      {
-        if (eis)
-        {
-          linear_eis_on();
-        }
-        else
-        {
-          linear_eis_off();
-        }
-      }
+        linear_eis_off();
     }
-  }
+}
+
+void start_wdr_eis_mode(uint8_t day_mode)
+{
+    uint8_t eis = 0;
+    uint8_t wdr = 0;
+    uint8_t stream1_resolution = 0;
+    char output[64];
+
+    if (exec_cmd(GET_EIS, output, sizeof(output)) == 0)
+        eis = atoi(output);
+
+    if (exec_cmd(GET_WDR, output, sizeof(output)) == 0)
+        wdr = atoi(output);
+
+    if (exec_cmd(GET_STREAM1_RESOLUTION, output, sizeof(output)) == 0)
+        stream1_resolution = atoi(output);
+
+    safe_remove(RES_PATH "/Resource");
+
+    if (wdr)
+    {
+        safe_symlink(RES_PATH "/Resource.Fusion", RES_PATH "/Resource");
+        safe_remove(RES_PATH "/Resource/AutoScene/autoscene_conf.cfg");
+
+        if (day_mode == DAY_M)
+        {
+            safe_symlink(
+                RES_PATH "/Resource/AutoScene/autoscene_conf.cfg.day",
+                RES_PATH "/Resource/AutoScene/autoscene_conf.cfg");
+        }
+        else if (day_mode == NIGHT_M)
+        {
+            safe_symlink(
+                RES_PATH "/Resource/AutoScene/autoscene_conf.cfg.night",
+                RES_PATH "/Resource/AutoScene/autoscene_conf.cfg");
+        }
+
+        fusion_eis_off();
+        return;
+    }
+
+    handle_linear_mode(day_mode, eis, stream1_resolution);
 }
 
 void do_action_for_1()
