@@ -20,14 +20,6 @@ int handle_metrics_api(struct mg_connection *conn,
                        const struct mg_request_info *ri);
 }
 
-// Subprotocols
-static const char subprotocol_bin[] = "Outdu.Nveyetech_camera.bin";
-static const char subprotocol_json[] = "Outdu.Nveyetech_camera.json";
-static std::array<const char *, 3> subprotocol_list = {
-    subprotocol_bin, subprotocol_json, nullptr};
-
-static struct mg_websocket_subprotocols wsprot = {
-    static_cast<int>(subprotocol_list.size() - 1), subprotocol_list.data()};
 // MUST match sender structure exactly for binary compatibility
 struct misc_event {
   uint8_t old_misc;
@@ -234,11 +226,22 @@ int WebServer::route_request(struct mg_connection *conn,
     return ProvisionHandler::handle_provision_device(conn, ri);
   if (strcmp(ri->local_uri, "/api/metrics") == 0)
     return handle_metrics_api(conn, ri);
-
+  if (strcmp(ri->local_uri, "/api/upload") == 0)
+    return UploadHandler::handle_upload(conn, ri);
+  if (strcmp(ri->local_uri, "/api/firmware_version") == 0)
+    return DeviceHandler::handle_firmware_version(conn, ri);
+  if (strcmp(ri->local_uri, "/api/reset_pin") == 0)
+    return DeviceHandler::handle_reset_pin(conn, ri);
   // Proxy
   if (strncmp(ri->local_uri, "/getdeviceid", 12) == 0) {
     ProxyHandler::handle_proxy_request(conn, ri, "http://127.0.0.1:8083",
                                        "/getdeviceid");
+    return 1;
+  }
+
+  if (strncmp(ri->local_uri, "/getsignalserver", 16) == 0) {
+    ProxyHandler::handle_proxy_request(conn, ri, "http://127.0.0.1:8083",
+                                       "/getsignalserver");
     return 1;
   }
 
@@ -303,6 +306,14 @@ bool WebServer::init() {
     printf("mg_start failed\n");
     return false;
   }
+
+  char subprotocol_bin[] = "Outdu.Nveyetech_camera.bin";
+  char subprotocol_json[] = "Outdu.Nveyetech_camera.json";
+  std::array<const char *, 3> subprotocol_list = {subprotocol_bin,
+                                                  subprotocol_json, nullptr};
+
+  struct mg_websocket_subprotocols wsprot = {
+      static_cast<int>(subprotocol_list.size() - 1), subprotocol_list.data()};
 
   mg_set_websocket_handler_with_subprotocols(
       ctx, "/wsURL", &wsprot, ws_connect_handler, ws_ready_handler,
