@@ -57,12 +57,12 @@ private:
 
   // WebSocket handlers
   static int ws_connect_handler(const struct mg_connection *conn,
-                                void *user_data);
-  static void ws_ready_handler(struct mg_connection *conn, void *user_data);
+                                WebServer *self);
+  static void ws_ready_handler(struct mg_connection *conn, WebServer *self);
   static int ws_data_handler(struct mg_connection *conn, int opcode, char *data,
-                             size_t datasize, void *user_data);
+                             size_t datasize, WebServer *self);
   static void ws_close_handler(const struct mg_connection *conn,
-                               void *user_data);
+                               WebServer *self);
 };
 
 #endif // WEB_SERVER_H

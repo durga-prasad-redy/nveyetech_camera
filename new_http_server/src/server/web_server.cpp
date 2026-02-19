@@ -48,7 +48,6 @@ static const char *misc_event_type_to_string(MiscEventType type) {
 }
 
 // Log macro wrapper
-#define LOG_DEBUG(fmt, ...) printf(fmt "\n", ##__VA_ARGS__)
 
 WebServer::WebServer(std::shared_ptr<SessionManager> mgr)
     : ctx(nullptr), session_manager(mgr) {}
@@ -251,10 +250,7 @@ int WebServer::route_request(struct mg_connection *conn,
 
 // WebSocket Callbacks
 int WebServer::ws_connect_handler(const struct mg_connection *conn,
-                                  void *user_data) {
-  // Cast to the specific class type to provide context and meaning
-  auto *self = static_cast<WebServer *>(user_data);
-
+                                  WebServer *self) {
   // Now 'self' can be used to access WebServer members if needed
   const auto *ri = mg_get_request_info(conn);
 
@@ -264,23 +260,21 @@ int WebServer::ws_connect_handler(const struct mg_connection *conn,
   return 0;
 }
 
-void WebServer::ws_ready_handler(struct mg_connection *conn, void *user_data) {
-  auto *server = (WebServer *)user_data;
-  server->add_client(conn);
+void WebServer::ws_ready_handler(struct mg_connection *conn, WebServer *self) {
+  self->add_client(conn);
   printf("Client ready and added to broadcast list\n");
 }
 
 int WebServer::ws_data_handler(struct mg_connection *conn, int opcode,
-                               char *data, size_t datasize, void *user_data) {
-  (void)user_data;
+                               char *data, size_t datasize, WebServer *self) {
+  (void)self;
   printf("Received %lu bytes from client\n", (unsigned long)datasize);
   return 1;
 }
 
 void WebServer::ws_close_handler(const struct mg_connection *conn,
-                                 void *user_data) {
-  auto *server = (WebServer *)user_data;
-  server->remove_client(conn);
+                                 WebServer *self) {
+  self->remove_client(conn);
   printf("Client closed connection\n");
 }
 
@@ -316,8 +310,12 @@ bool WebServer::init() {
       static_cast<int>(subprotocol_list.size() - 1), subprotocol_list.data()};
 
   mg_set_websocket_handler_with_subprotocols(
-      ctx, "/wsURL", &wsprot, ws_connect_handler, ws_ready_handler,
-      ws_data_handler, ws_close_handler, this);
+      ctx, "/wsURL", &wsprot,
+      (int (*)(const struct mg_connection *, void *))ws_connect_handler,
+      (void (*)(struct mg_connection *, void *))ws_ready_handler,
+      (int (*)(struct mg_connection *, int, char *, size_t,
+               void *))ws_data_handler,
+      (void (*)(const struct mg_connection *, void *))ws_close_handler, this);
 
   // Init sockets (Misc & IR) - similar to original code
   // ... (Code omitted for brevity, assuming similar to original but using
