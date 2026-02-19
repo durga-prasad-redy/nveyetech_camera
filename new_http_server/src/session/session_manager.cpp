@@ -19,7 +19,7 @@ SessionManager::SessionManager(const SessionConfig &session_config)
   sessions_cache->print_session();
 }
 
-const std::string SessionManager::generate_session_token(size_t length) {
+std::string SessionManager::generate_session_token(size_t length) {
   if (length != 32)
     return {};
 

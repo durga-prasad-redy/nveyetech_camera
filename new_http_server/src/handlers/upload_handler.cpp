@@ -8,7 +8,7 @@
 
 static int field_found_with_size_check(const char *key, const char *filename,
                                        char *path, size_t pathlen,
-                                       void *user_data) {
+                                       struct mg_connection *conn) {
   if (filename && *filename) {
     printf("Field found: key=%s, filename=%s\n", key, filename);
 
@@ -20,7 +20,6 @@ static int field_found_with_size_check(const char *key, const char *filename,
       printf("ERROR: Filename does not start with ota.tar.gz, rejecting "
              "upload.\n");
 
-      auto *conn = (struct mg_connection *)user_data;
       if (conn) {
         const char *body =
             "{\"error\":\"Invalid file name. Must start with ota.tar.gz\"}\n";
@@ -88,15 +87,16 @@ static int field_found_with_size_check(const char *key, const char *filename,
   return MG_FORM_FIELD_STORAGE_SKIP;
 }
 static int field_get_with_size_check(const char *key, const char *value,
-                                     size_t valuelen, void *user_data) {
-  (void)user_data;
+                                     size_t valuelen,
+                                     struct mg_connection *conn) {
+  (void)conn;
   printf("Received form field: %s = %.*s\n", key, (int)valuelen, value);
   return MG_FORM_FIELD_HANDLE_NEXT;
 }
 
 static int field_store_with_size_check(const char *path, long long file_size,
-                                       void *user_data) {
-  (void)user_data;
+                                       struct mg_connection *conn) {
+  (void)conn;
   printf("File stored: %s (%lld bytes)\n", path, file_size);
   // Check if file is in the correct directory
   if (strncmp(path, "/mnt/flash/vienna/firmware/ota/", 30) != 0) {
@@ -162,10 +162,14 @@ int UploadHandler::handle_upload(struct mg_connection *conn,
   // Un-commenting call.
   remove_ota_files();
 
-  struct mg_form_data_handler fdh = {.field_found = field_found_with_size_check,
-                                     .field_get = field_get_with_size_check,
-                                     .field_store = field_store_with_size_check,
-                                     .user_data = (void *)conn};
+  struct mg_form_data_handler fdh = {
+      .field_found = (int (*)(const char *, const char *, char *, size_t,
+                              void *))field_found_with_size_check,
+      .field_get = (int (*)(const char *, const char *, size_t,
+                            void *))field_get_with_size_check,
+      .field_store =
+          (int (*)(const char *, long long, void *))field_store_with_size_check,
+      .user_data = conn};
 
   // Process the form data
   int ret = mg_handle_form_request(conn, &fdh);
