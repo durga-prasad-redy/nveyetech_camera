@@ -305,11 +305,6 @@ int8_t get_camera_health_l2(uint8_t **camera_health, uint8_t *length) {
   if (ret < 0)
     return -1;
 
-  // uint8_t ssid_len = (uint8_t)strlen(ssid);
-  // uint8_t encryption_key_len = (uint8_t)strlen(encryption_key);
-  // uint8_t ipaddress_len = (uint8_t)strlen(ipaddress);
-  // uint8_t subnetmask_len = (uint8_t)strlen(subnetmask);
-
   *length = (uint8_t)(8); // 5 bytes for status + 3 bytes for temperatures
   // 1 byte for each status and 1 byte for each temperature
   *camera_health = (uint8_t *)malloc(*length);
@@ -323,34 +318,20 @@ int8_t get_camera_health_l2(uint8_t **camera_health, uint8_t *length) {
   (*camera_health)[camera_health_idx++] = ir_temp;
   (*camera_health)[camera_health_idx++] = sensor_temp;
 
-  // printf("get_camera_health_l2 stream_status=%d, rtsp_status=%d,
-  // portableRtc_status=%d, cpu_usage=%d, memory_usage=%d, isp_temp=%d,
-  // ir_temp=%d, sensor_temp=%d\n",
-  //        stream_status, rtsp_status, portableRtc_status, cpu_usage,
-  //        memory_usage, isp_temp, ir_temp, sensor_temp);
-
   return 0;
 }
 
 int8_t login_with_pin_l2(const uint8_t pinLength, const uint8_t *loginPin,
                          uint8_t **auth_data_byte,
                          uint8_t *auth_data_bytes_size) {
-  // printf("get_system_mac_address_l2\n");
   char current_login_pin[18]; // 17 characters + null terminator
   if (get_login_pin(current_login_pin) < 0) {
     return -1; // Error getting MAC address
   }
-  // char *user_provided_pin = (char *)malloc(pinLength + 1);
-  // for (uint8_t i = 0; i < pinLength; i++)
-  // {
-  //     printf("user provided pin char %d: %d\n", i, loginPin[i]);
-  //     user_provided_pin[i] = (char)loginPin[i];
-  // }
-  // user_provided_pin[pinLength] = '\0'; // Null-terminate the string
 
   uint8_t user_pin_len_idx = 0;
   uint8_t user_pin_len = pinLength;
-  uint8_t user_pin_idx = (uint8_t)(user_pin_len_idx);
+  uint8_t user_pin_idx = user_pin_len_idx;
   const uint8_t *user_pin = &loginPin[user_pin_idx];
 
   if (user_pin_len != 4) {

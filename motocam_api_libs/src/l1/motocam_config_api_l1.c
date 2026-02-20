@@ -31,9 +31,8 @@ int8_t set_config_defaulttofactory(const uint8_t data_length,
                                    const uint8_t *data) {
   (void)data;
   if (data_length == 0) {
-    if (set_config_defaulttofactory_l2() == 0) {
-      return 0;
-    }
+
+    printf("This feature is depricated from version 1.0.0\n");
     printf("error in executing the command\n");
     return -1;
   }
@@ -45,9 +44,9 @@ int8_t set_config_defaulttocurrent(const uint8_t data_length,
                                    const uint8_t *data) {
   (void)data;
   if (data_length == 0) {
-    if (set_config_defaulttocurrent_l2() == 0) {
-      return 0;
-    }
+
+    printf("This feature is depricated from version 1.0.0\n");
+
     printf("error in executing the command\n");
     return -1;
   }
@@ -59,9 +58,9 @@ int8_t set_config_currenttofactory(const uint8_t data_length,
                                    const uint8_t *data) {
   (void)data;
   if (data_length == 0) {
-    if (set_config_currenttofactory_l2() == 0) {
-      return 0;
-    }
+
+    printf("This feature is depricated from version 1.0.0\n");
+
     printf("error in executing the command\n");
     return -1;
   }
@@ -73,9 +72,8 @@ int8_t set_config_currenttodefault(const uint8_t data_length,
                                    const uint8_t *data) {
   (void)data;
   if (data_length == 0) {
-    if (set_config_currenttodefault_l2() == 0) {
-      return 0;
-    }
+
+    printf("This feature is depricated from version 1.0.0\n");
     printf("error in executing the command\n");
     return -1;
   }
