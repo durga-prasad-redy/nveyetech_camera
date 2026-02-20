@@ -3,6 +3,7 @@
 #include "motocam_streaming_api_l1.h"
 #include "motocam_streaming_api_l2.h"
 #include "motocam_command_enums.h"
+#include <memory>
 
 int8_t set_streaming_command(const uint8_t sub_command, const uint8_t data_length, const uint8_t *data)
 {

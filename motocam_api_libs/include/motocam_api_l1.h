@@ -1,7 +1,7 @@
 
 #include <stdint.h>
-#include <fw/fw_system.h>
-#include <fw/fw_network.h>
+#include <fw_system.h>
+#include <fw_network.h>
 
 
 extern "C" {
