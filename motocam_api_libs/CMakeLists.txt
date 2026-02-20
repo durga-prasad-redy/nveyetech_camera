@@ -63,15 +63,15 @@ INCLUDE(${CMAKE_MODULE_DIR}/ConditionalAddSubDir.cmake)
 #
 
 file(GLOB SRC_L2
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/l2/motocam_*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/l2/motocam_*.c"
 )
 file(GLOB SRC_L1
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/l1/motocam_*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/l1/motocam_*.c"
 )
 
 SET(SRC_LIST
-    src/motocam_api_l2.cpp
-    src/motocam_api_l1.cpp
+    src/motocam_api_l2.c
+    src/motocam_api_l1.c
 
     ${SRC_L2}
     ${SRC_L1}

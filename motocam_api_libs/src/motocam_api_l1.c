@@ -47,13 +47,13 @@ int8_t do_processing(const uint8_t *req_bytes, const uint8_t req_bytes_size, uin
         (*res_bytes)[5] = (uint8_t)-6;                                             // err invalid CRC
         (*res_bytes)[*res_bytes_size - 1] = calc_crc(*res_bytes, *res_bytes_size); // last byte CRC
     }
-    else if (header == Header::SET)
+    else if (header == SET)
     {
         int8_t ret = set_command(command, sub_command, data_length, data);
         uint8_t res_data_bytes_size = 1;
         *res_bytes_size = packet_length_except_data + data_success_flag_size + res_data_bytes_size;
         *res_bytes = (uint8_t *)malloc(*res_bytes_size);
-        (*res_bytes)[0] = Header::ACK;
+        (*res_bytes)[0] = ACK;
         (*res_bytes)[1] = command;
         (*res_bytes)[2] = sub_command;
         (*res_bytes)[3] = data_success_flag_size + res_data_bytes_size; // DataLength
@@ -69,7 +69,7 @@ int8_t do_processing(const uint8_t *req_bytes, const uint8_t req_bytes_size, uin
         (*res_bytes)[5] = (uint8_t)ret;                                            // success / err value
         (*res_bytes)[*res_bytes_size - 1] = calc_crc(*res_bytes, *res_bytes_size); // last byte CRC
     }
-    else if (header == Header::GET)
+    else if (header == GET)
     {
         uint8_t res_data_bytes_size = 0;
         uint8_t *res_data_bytes;
@@ -78,7 +78,7 @@ int8_t do_processing(const uint8_t *req_bytes, const uint8_t req_bytes_size, uin
         {
             *res_bytes_size = packet_length_except_data + data_success_flag_size + res_data_bytes_size;
             *res_bytes = (uint8_t *)malloc(*res_bytes_size);
-            (*res_bytes)[0] = Header::RESPONSE;
+            (*res_bytes)[0] = RESPONSE;
             (*res_bytes)[1] = command;
             (*res_bytes)[2] = sub_command;
             (*res_bytes)[3] = data_success_flag_size + res_data_bytes_size; // DataLength
@@ -93,7 +93,7 @@ int8_t do_processing(const uint8_t *req_bytes, const uint8_t req_bytes_size, uin
             res_data_bytes_size = 1;
             *res_bytes_size = packet_length_except_data + data_success_flag_size + res_data_bytes_size;
             *res_bytes = (uint8_t *)malloc(*res_bytes_size);
-            (*res_bytes)[0] = Header::RESPONSE;
+            (*res_bytes)[0] = RESPONSE;
             (*res_bytes)[1] = command;
             (*res_bytes)[2] = sub_command;
             (*res_bytes)[3] = data_success_flag_size + res_data_bytes_size;            // DataLength

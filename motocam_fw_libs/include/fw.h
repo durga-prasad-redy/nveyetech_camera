@@ -17,27 +17,25 @@
 #include <ctype.h>
 #include <pthread.h>
 
-static const char CONFIG_PATH[] = "/mnt/flash/vienna/config";
-static const char RES_PATH[]    = "/mnt/flash/vienna";
-static const char BIN_RES_PATH[] = "/mnt/flash/vienna/bin";
+#define CONFIG_PATH "/mnt/flash/vienna/config"
+#define RES_PATH "/mnt/flash/vienna"
+#define BIN_RES_PATH "/mnt/flash/vienna/bin"
+#define PWM5_FILE "/dev/pwmdev-5"
+#define PWM4_FILE "/dev/pwmdev-4"
+#define PWM7_FILE "/dev/pwmdev-7"
+#define LOCK_FILE "/tmp/pwmdev.lock"
+#define M5S_CONFIG_DIR "/mnt/flash/vienna/m5s_config"
 
-static const char PWM5_FILE[] = "/dev/pwmdev-5";
-static const char PWM4_FILE[] = "/dev/pwmdev-4";
-static const char PWM7_FILE[] = "/dev/pwmdev-7";
-
-static const char LOCK_FILE[] = "/tmp/pwmdev.lock";
-static const char M5S_CONFIG_DIR[] = "/mnt/flash/vienna/m5s_config";
-static const char DEVICE_SETUP_FILE[] =
-    "/mnt/flash/vienna/firmware/board_setup/device_setup";
-
-static const char IR[] = "ir_led_brightness";
+#define DEVICE_SETUP_FILE "/mnt/flash/vienna/firmware/board_setup/device_setup"
 
 #define GET_MISC "cat " M5S_CONFIG_DIR "/misc"
+
 
 #define GET_DAY_MODE "cat " M5S_CONFIG_DIR "/day_mode"
 #define GET_IR_TEMP_CTL "cat " M5S_CONFIG_DIR "/ir_tmp_ctl"
 #define GET_WDR      "cat " M5S_CONFIG_DIR "/wdr"
 #define GET_EIS      "cat " M5S_CONFIG_DIR "/eis"
+#define IR           "ir_led_brightness"
 
 #define GET_IS_IR_TEMP      "cat " M5S_CONFIG_DIR "/is_ir_temp"
 #define GET_IS_SENSOR_TEMP  "cat " M5S_CONFIG_DIR "/is_sensor_temp"
@@ -45,38 +43,32 @@ static const char IR[] = "ir_led_brightness";
 #define GET_STREAMING_STATE \
   "cat " M5S_CONFIG_DIR "/stream_state" // 1:Started, 0:Stopped
 
-typedef enum
-{
-    LOW_LIGHT_M = 0,
-    DAY_M       = 1,
-    NIGHT_M     = 2
-} day_mode_t;
+#define NIGHT_M 2
+#define DAY_M 1
+#define LOW_LIGHT_M 0
 
-enum
-{
-    IR_OFF = 0,
-    LOW    = 2,
-    MEDIUM = 4,
-    HIGH   = 6,
-    MAX    = 8,
-    ULTRA  = 10
-};
+#define ULTRA 10
+#define MAX 8
+#define HIGH 6
+#define MEDIUM 4
+#define LOW 2
+#define IR_OFF 0
 
-static const char IR_0[]  = "1000000,1000000";
-static const char IR_10[] = "1000000,900000";
-static const char IR_30[] = "1000000,700000";
-static const char IR_40[] = "1000000,600000";
-static const char IR_60[] = "1000000,400000";
-static const char IR_80[] = "1000000,200000";
-static const char IR_90[] = "1000000,100000";
+#define IR_0 "1000000,1000000"
+#define IR_10 "1000000,900000"
+#define IR_30 "1000000,700000"
+#define IR_40 "1000000,600000"
+#define IR_60 "1000000,400000"
+#define IR_80 "1000000,200000"
+#define IR_90 "1000000,100000"
 
-static const char STREAMER_PROCESS_NAME[] = "streamer";
-static const char SIGNALING_SERVER_PROCESS_NAME[] = "signalserver";
-static const char PORTABLE_RTC_PROCESS_NAME[] = "portablertc";
-static const char ONVIF_SERVER_PROCESS_NAME[] = "multionvifserver";
-static const char CAMERA_MONITOR_PROCESS_NAME[] = "camera_monitor";
-static const char RTSP_SERVER_PROCESS_NAME[] = "rtsps";
-static const char STREAM_RESTART_SERVICE_PROCESS_NAME[] = "start.sh";
+#define STREAMER_PROCESS_NAME "streamer"
+#define SIGNALING_SERVER_PROCESS_NAME "signalserver"
+#define PORTABLE_RTC_PROCESS_NAME "portablertc"
+#define ONVIF_SERVER_PROCESS_NAME "multionvifserver"
+#define CAMERA_MONITOR_PROCESS_NAME "camera_monitor"
+#define RTSP_SERVER_PROCESS_NAME "rtsps"
+#define STREAM_RESTART_SERVICE_PROCESS_NAME "start.sh"
 
 #define EXEC_GET_UINT8(cmd, out_ptr)        \
 do {                                       \
@@ -85,8 +77,7 @@ do {                                       \
         *(out_ptr) = (uint8_t)atoi(_buf);  \
 } while (0)
 
-static const char WIFI_RUNTIME_RESULT[] =
-    "/mnt/flash/vienna/m5s_config/wifi_runtime_result";
+#define WIFI_RUNTIME_RESULT "/mnt/flash/vienna/m5s_config/wifi_runtime_result" // Replace with actual file path
 
 typedef enum encoder_type
 {
