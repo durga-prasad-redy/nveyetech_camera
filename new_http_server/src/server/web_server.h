@@ -23,7 +23,7 @@ public:
 
   // WebSocket management
   void add_client(struct mg_connection *conn);
-  void remove_client(const struct mg_connection *conn);
+  void disable_client(const struct mg_connection *conn);
   void broadcast_message(const char *json_msg);
   int serve_static_or_spa(struct mg_connection *conn,
                           const struct mg_request_info *ri);
