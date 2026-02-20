@@ -8,20 +8,25 @@ extern "C" {
 #include <stdint.h>
 #include "fw.h"
 
-#define DAY_EIS_OFF_WDR_OFF 1
-#define DAY_EIS_ON_WDR_OFF 2
-#define DAY_EIS_OFF_WDR_ON 3
-#define DAY_EIS_ON_WDR_ON 4 // using for 4k resolution
-#define LOWLIGHT_EIS_OFF_WDR_OFF 5
-#define LOWLIGHT_EIS_ON_WDR_OFF 6
-#define LOWLIGHT_EIS_OFF_WDR_ON 7
-#define LOWLIGHT_EIS_ON_WDR_ON 8
-#define NIGHT_EIS_OFF_WDR_OFF 9
-#define NIGHT_EIS_ON_WDR_OFF 10
-#define NIGHT_EIS_OFF_WDR_ON 11
-#define NIGHT_EIS_ON_WDR_ON 12 // using for 4k resolution
+typedef enum
+{
+    DAY_EIS_OFF_WDR_OFF       = 1,
+    DAY_EIS_ON_WDR_OFF        = 2,
+    DAY_EIS_OFF_WDR_ON        = 3,
+    DAY_EIS_ON_WDR_ON         = 4,  /* using for 4k resolution */
 
-#define WEBRTC_ENABLED "webrtc_enabled"
+    LOWLIGHT_EIS_OFF_WDR_OFF  = 5,
+    LOWLIGHT_EIS_ON_WDR_OFF   = 6,
+    LOWLIGHT_EIS_OFF_WDR_ON   = 7,
+    LOWLIGHT_EIS_ON_WDR_ON    = 8,
+
+    NIGHT_EIS_OFF_WDR_OFF     = 9,
+    NIGHT_EIS_ON_WDR_OFF      = 10,
+    NIGHT_EIS_OFF_WDR_ON      = 11,
+    NIGHT_EIS_ON_WDR_ON       = 12  /* using for 4k resolution */
+} image_mode_t;
+
+static const char WEBRTC_ENABLED[] = "webrtc_enabled";
 
 #define GET_WEBRTC_ENABLED "cat " M5S_CONFIG_DIR "/webrtc_enabled"
 

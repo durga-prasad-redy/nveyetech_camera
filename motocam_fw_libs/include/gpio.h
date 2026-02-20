@@ -8,24 +8,31 @@ extern "C" {
 
 #include <stdint.h>
 // GPIO Pin Definitions
-#define GPIO_PIN_IR_INIT_0   0
-#define GPIO_PIN_IR_INIT_4   4
-#define GPIO_PIN_IR_INIT_5   5
-#define GPIO_PIN_IR_INIT_33  33
 
-#define GPIO_PIN_IR_CUT_59   59
-#define GPIO_PIN_IR_CUT_60   60
+typedef enum
+{
+    GPIO_PIN_IR_INIT_0  = 0,
+    GPIO_PIN_IR_INIT_4  = 4,
+    GPIO_PIN_IR_INIT_5  = 5,
+    GPIO_PIN_IR_INIT_33 = 33,
 
-#define GPIO_PIN_B_LED       1
-#define GPIO_PIN_G_LED       2
-#define GPIO_PIN_R_LED       3
+    GPIO_PIN_IR_CUT_59  = 59,
+    GPIO_PIN_IR_CUT_60  = 60,
+
+    GPIO_PIN_B_LED      = 1,
+    GPIO_PIN_G_LED      = 2,
+    GPIO_PIN_R_LED      = 3
+} gpio_pin_t;
 
 // GPIO Direction Macros
-#define GPIO_DIRECTION_OUT   "out"
+static const char GPIO_DIRECTION_OUT[] = "out";
 
 // GPIO Value Macros
-#define SET_GPIO 1
-#define CLEAR_GPIO 0
+typedef enum
+{
+    CLEAR_GPIO = 0,
+    SET_GPIO   = 1
+} gpio_value_t;
 
 // Function Declarations
 int gpio_init();
