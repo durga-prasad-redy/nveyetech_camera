@@ -1,17 +1,74 @@
 #ifndef CMD_ENUMS_H
 #define CMD_ENUMS_H
-enum Header{SET = 1, GET, ACK, RESPONSE};
-enum Commands{STREAMING = 1, NETWORK, CONFIG, IMAGE, AUDIO, SYSTEM};
-enum StreamingGetSubCommands{STREAM_STATE = 1, WEBRTC_STREAMING_STATUS};
-enum StreamingSetSubCommands{START_STREAMING = 1, STOP_STREAMING,START_WEBRTC_STREAMING,STOP_WEBRTC_STREAMING}; 
+enum Header { SET = 1, GET, ACK, RESPONSE };
+enum Commands { STREAMING = 1, NETWORK, CONFIG, IMAGE, AUDIO, SYSTEM };
+enum StreamingGetSubCommands { STREAM_STATE = 1, WEBRTC_STREAMING_STATUS };
+enum StreamingSetSubCommands {
+  START_STREAMING = 1,
+  STOP_STREAMING,
+  START_WEBRTC_STREAMING,
+  STOP_WEBRTC_STREAMING
+};
 
-enum NetworkSubCommands{WifiHotspot = 1, WifiClient, WifiState,ETHERNET,Onvif,ETHERNET_DHCP};
-enum ConfigSetSubCommands{DefaultToFactory = 9, DefaultToCurrent = 11, CurrentToFactory = 13, CurrentToDefault = 14};
-enum ConfigGetSubCommands{Factory = 4, Default = 8, Current = 12,StreamingConfig=10};
-enum ImageSubCommands{ZOOM = 1, ROTATION, IRCUTFILTER, IRBRIGHTNESS, DAYMODE, RESOLUTION, MIRROR, FLIP, TILT, WDR, EIS, GYROREADER, MISC,MID_IRBRIGHTNESS,SIDE_IRBRIGHTNESS};
-enum AudioSubCommands{MIC = 1};
-// enum SystemSubCommands{SHUTDOWN = 1,LOGIN, CAMERANAME,FIRMWAREVERSION,MACADDRESS,FACTORY_RESET};
-enum SystemGetSubCommands{GETCAMERANAME = 1, FIRMWAREVERSION, MACADDRESS,LOGIN,OTA_UPDATE_STATUS,HEALTH_CHECK, GET_USER_DOB,FACTORY_RESET_STATUS};
-enum SystemSetSubCommands{SETCAMERANAME = 1, SET_LOGIN, FACTORY_RESET,SHUTDOWN,OTA_UPDATE,PROVISION_DEVICE, SET_USER_DOB,CONFIG_RESET,SET_TIME,HAPTIC_MOTOR};
+enum NetworkSubCommands {
+  WifiHotspot = 1,
+  WifiClient,
+  WifiState,
+  ETHERNET,
+  Onvif,
+  ETHERNET_DHCP
+};
+enum ConfigSetSubCommands {
+  DefaultToFactory = 9,
+  DefaultToCurrent = 11,
+  CurrentToFactory = 13,
+  CurrentToDefault = 14
+};
+enum ConfigGetSubCommands {
+  Factory = 4,
+  Default = 8,
+  Current = 12,
+  StreamingConfig = 10
+};
+enum ImageSubCommands {
+  ZOOM = 1,
+  ROTATION,
+  IRCUTFILTER,
+  IRBRIGHTNESS,
+  DAYMODE,
+  RESOLUTION,
+  MIRROR,
+  FLIP,
+  TILT,
+  WDR,
+  EIS,
+  GYROREADER,
+  MISC,
+  MID_IRBRIGHTNESS,
+  SIDE_IRBRIGHTNESS
+};
+enum AudioSubCommands { MIC = 1 };
+enum SystemGetSubCommands {
+  GETCAMERANAME = 1,
+  FIRMWAREVERSION,
+  MACADDRESS,
+  LOGIN,
+  OTA_UPDATE_STATUS,
+  HEALTH_CHECK,
+  GET_USER_DOB,
+  FACTORY_RESET_STATUS
+};
+enum SystemSetSubCommands {
+  SETCAMERANAME = 1,
+  SET_LOGIN,
+  FACTORY_RESET,
+  SHUTDOWN,
+  OTA_UPDATE,
+  PROVISION_DEVICE,
+  SET_USER_DOB,
+  CONFIG_RESET,
+  SET_TIME,
+  HAPTIC_MOTOR
+};
 
 #endif

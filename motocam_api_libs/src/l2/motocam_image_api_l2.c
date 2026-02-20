@@ -11,7 +11,6 @@ int8_t set_image_zoom_l2(const uint8_t zoom) {
     return -1;
   }
   current_config.zoom = zoom;
-  // writeConfigFile(motocam_current_config_file, &current_config);
   return 0;
 }
 int8_t set_image_rotation_l2(const uint8_t rotation) {
@@ -20,7 +19,6 @@ int8_t set_image_rotation_l2(const uint8_t rotation) {
     return -1;
   }
   current_config.rotation = rotation;
-  // writeConfigFile(motocam_current_config_file, &current_config);
   return 0;
 }
 int8_t set_image_ircutfilter_l2(const uint8_t ircutfilter) {
@@ -32,7 +30,6 @@ int8_t set_image_ircutfilter_l2(const uint8_t ircutfilter) {
       return -1;
     }
     current_config.ircutfilter = ircutfilter;
-    // writeConfigFile(motocam_current_config_file, &current_config);
     return 0;
   }
   if (ircutfilter == 0) {
@@ -40,7 +37,6 @@ int8_t set_image_ircutfilter_l2(const uint8_t ircutfilter) {
       return -1;
     }
     current_config.ircutfilter = ircutfilter;
-    // writeConfigFile(motocam_current_config_file, &current_config);
     return 0;
   }
   return -1;
@@ -51,7 +47,6 @@ int8_t set_image_irbrightness_l2(const uint8_t irbrightness) {
     return -1;
   }
   current_config.irledbrightness = irbrightness;
-  // writeConfigFile(motocam_current_config_file, &current_config);
   return 0;
 }
 int8_t set_image_mid_irbrightness_l2(const uint8_t irbrightness) {
@@ -59,8 +54,6 @@ int8_t set_image_mid_irbrightness_l2(const uint8_t irbrightness) {
   if (debug_pwm5_set(irbrightness) < 0) {
     return -1;
   }
-  // current_config.irledbrightness = irbrightness;
-  // writeConfigFile(motocam_current_config_file, &current_config);
   return 0;
 }
 int8_t set_image_side_irbrightness_l2(const uint8_t irbrightness) {
@@ -68,8 +61,6 @@ int8_t set_image_side_irbrightness_l2(const uint8_t irbrightness) {
   if (debug_pwm4_set(irbrightness) < 0) {
     return -1;
   }
-  // current_config.irledbrightness = irbrightness;
-  // writeConfigFile(motocam_current_config_file, &current_config);
   return 0;
 }
 int8_t set_image_daymode_l2(const uint8_t daymode) {
@@ -79,7 +70,6 @@ int8_t set_image_daymode_l2(const uint8_t daymode) {
       return -1;
     }
     current_config.daymode = daymode;
-    // writeConfigFile(motocam_current_config_file, &current_config);
     return 0;
   }
   if (daymode == 0) {
@@ -87,7 +77,6 @@ int8_t set_image_daymode_l2(const uint8_t daymode) {
       return -1;
     }
     current_config.daymode = daymode;
-    // writeConfigFile(motocam_current_config_file, &current_config);
     return 0;
   }
   return -1;
@@ -99,7 +88,6 @@ int8_t set_gyroreader_l2(const uint8_t gyroreader) {
       return -1;
     }
     current_config.gyroreader = gyroreader;
-    // writeConfigFile(motocam_current_config_file, &current_config);
     return 0;
   }
   if (gyroreader == 0) {
@@ -107,7 +95,6 @@ int8_t set_gyroreader_l2(const uint8_t gyroreader) {
       return -1;
     }
     current_config.gyroreader = gyroreader;
-    // writeConfigFile(motocam_current_config_file, &current_config);
     return 0;
   }
   return -1;
@@ -139,7 +126,6 @@ int8_t set_image_tilt_l2(const uint8_t tilt) {
     return -1;
   }
   current_config.tilt = tilt;
-  // writeConfigFile(motocam_current_config_file, &current_config);
   return 0;
 }
 int8_t set_image_wdr_l2(const uint8_t wdr) {
@@ -170,7 +156,6 @@ int8_t set_image_misc_l2(const uint8_t misc) {
     return -2;
   }
   current_config.misc = misc;
-  // writeConfigFile(motocam_current_config_file, &current_config);
   return 0;
 }
 

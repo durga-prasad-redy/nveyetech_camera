@@ -13,8 +13,7 @@
 int8_t set_network_command(const uint8_t sub_command, const uint8_t data_length,
                            const uint8_t *data) {
   switch (sub_command) {
-    //        case IPAddressSubnetMask:
-    //            return set_network_IPAddressSubnetMask(data_length, data);
+
   case WifiHotspot:
     return set_network_WifiHotspot(data_length, data);
   case WifiClient:
@@ -31,17 +30,6 @@ int8_t set_network_command(const uint8_t sub_command, const uint8_t data_length,
     return -4;
   }
 }
-
-/*int8_t set_network_IPAddressSubnetMask(const uint8_t data_length, const
-uint8_t *data) { if(data_length == 8) { if(set_ipaddress_subnetmask_l2(data) ==
-0) { return 0;
-        }
-        printf("error in executing the command\n");
-        return -1;
-    }
-    printf("invalid data/data length\n");
-    return -5;
-}*/
 
 int8_t set_network_WifiHotspot(const uint8_t data_length, const uint8_t *data) {
   if (data_length >= 13 && data_length <= 75) {
@@ -116,9 +104,7 @@ int8_t get_network_command(const uint8_t sub_command, const uint8_t data_length,
                            const uint8_t *data, uint8_t **res_data_bytes,
                            uint8_t *res_data_bytes_size) {
   switch (sub_command) {
-    //        case IPAddressSubnetMask:
-    //            return get_network_IPAddressSubnetMask(data_length, data,
-    //            res_data_bytes, res_data_bytes_size);
+
   case WifiHotspot:
     return get_network_WifiHotspot(data_length, data, res_data_bytes,
                                    res_data_bytes_size);
@@ -139,20 +125,6 @@ int8_t get_network_command(const uint8_t sub_command, const uint8_t data_length,
     return -4;
   }
 }
-// asdfasdfasdf /
-/*int8_t get_network_IPAddressSubnetMask(const uint8_t data_length, const
-uint8_t *data, uint8_t **res_data_bytes, uint8_t *res_data_bytes_size) {
-    if(data_length == 0) {
-        int8_t ret = get_ipaddress_subnetmask_l2(res_data_bytes,
-res_data_bytes_size); if(ret == 0) {
-            // return 0;
-        }
-        printf("error in executing the command\n");
-        return -1;
-    }
-    printf("invalid data/data length\n");
-    return -5;
-}*/
 
 int8_t get_network_WifiHotspot(const uint8_t data_length, const uint8_t *data,
                                uint8_t **res_data_bytes,
@@ -185,24 +157,6 @@ int8_t get_network_WifiClient(const uint8_t data_length, const uint8_t *data,
   printf("invalid data/data length\n");
   return -5;
 }
-
-// int8_t get_wifi_state(const uint8_t data_length, const uint8_t *data, uint8_t
-// **res_data_bytes, uint8_t *res_data_bytes_size) {
-//     if(data_length == 0) {
-//         int8_t wifi_state = get_wifi_state_l2(res_data_bytes,
-//         res_data_bytes_size); printf("wifi_state=%d\n", wifi_state);
-//         if(res_data_bytes > 0) {
-//             // *res_data_bytes_size = 1;
-//             // *res_data_bytes = (uint8_t *) malloc(*res_data_bytes_size);
-//             // (*res_data_bytes)[0] = (uint8_t) wifi_state;
-//             return 0;
-//         }
-//         printf("error in executing the command\n");
-//         return -1;
-//     }
-//     printf("invalid data/data length\n");
-//     return -5;
-// }
 
 int8_t get_wifi_state_l1(const uint8_t data_length, const uint8_t *data,
                          uint8_t **res_data_bytes,
