@@ -1,21 +1,22 @@
+#include "gpio.h"
+#include "fw/fw_state_machine.h"
+#include "log.h"
+#include <errno.h>
+#include <fcntl.h>
+#include <pthread.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <stdint.h>
 #include <string.h>
-#include <time.h>
-#include <pthread.h>
 #include <sys/inotify.h>
-#include <fcntl.h>
-#include <errno.h>
-#include "gpio.h"
-#include "log.h"
+#include <time.h>
+#include <unistd.h>
 
 #define GPIO_EXPORT_PATH "/sys/class/gpio/export"
 #define GPIO_DIRECTION_PATH "/sys/class/gpio/gpio%d/direction"
 #define GPIO_VALUE_PATH "/sys/class/gpio/gpio%d/value"
 
-#define OTA_WATCH_DIR   "/mnt/flash/vienna/firmware/ota/"
+#define OTA_WATCH_DIR "/mnt/flash/vienna/firmware/ota/"
 #define OTA_STATUS_FILE "/mnt/flash/vienna/m5s_config/ota_status"
 #define WIFI_STATE_PATH "/sys/class/net/wlan0/operstate"
 #define IRCUT_FILTER "ircut_filter"
@@ -26,27 +27,22 @@
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
-typedef enum {
-    SUBSYS_OK = 0,
-    SUBSYS_FAIL,
-    SUBSYS_IN_PROGRESS
-} subsys_state_t;
+typedef enum { SUBSYS_OK = 0, SUBSYS_FAIL, SUBSYS_IN_PROGRESS } subsys_state_t;
 
 typedef struct {
-    subsys_state_t wifi;
-    subsys_state_t ota;
-    subsys_state_t onvif;
-    int ota_passed_not_rebooted;
-    int wifi_ap_no_client;
+  subsys_state_t wifi;
+  subsys_state_t ota;
+  subsys_state_t onvif;
+  int ota_passed_not_rebooted;
+  int wifi_ap_no_client;
 } system_state_t;
 
 typedef struct {
-    int red;
-    int green;
-    int blue;
-    int duration_ms;
+  int red;
+  int green;
+  int blue;
+  int duration_ms;
 } led_step_t;
-
 
 // define patterns for RGB LED
 static const led_step_t PATTERN_OTA_PROGRESS[] = {
@@ -89,408 +85,380 @@ static const led_step_t PATTERN_WIFI_ONVIF_FAIL[] = {
     {1, 1, 0, 800},
 };
 
-static int is_ota_failed_state(const char *status)
-{
-    /* Explicit known failures */
-    if (!strcmp(status, "compatible-mismatch-24"))
-        return 1;
+static int is_ota_failed_state(const char *status) {
+  /* Explicit known failures */
+  if (!strcmp(status, "compatible-mismatch-24"))
+    return 1;
 
-    /* Generic failure detection */
-    if (strstr(status, "fail") || strstr(status, "err"))
-        return 1;
+  /* Generic failure detection */
+  if (strstr(status, "fail") || strstr(status, "err"))
+    return 1;
 
+  return 0;
+}
+
+static void export_gpio(int gpio_pin) {
+  FILE *export_file = fopen(GPIO_EXPORT_PATH, "w");
+
+  if (export_file == NULL) {
+    perror("Failed to export GPIO pin");
+    exit(EXIT_FAILURE);
+  }
+  fprintf(export_file, "%d", gpio_pin);
+  fclose(export_file);
+}
+
+static void set_gpio_direction(int gpio_pin, const char *direction) {
+  char direction_path[64];
+  snprintf(direction_path, sizeof(direction_path), GPIO_DIRECTION_PATH,
+           gpio_pin);
+  FILE *direction_file = fopen(direction_path, "w");
+
+  if (direction_file == NULL) {
+    perror("Failed to set GPIO direction");
+    exit(EXIT_FAILURE);
+  }
+  fprintf(direction_file, "%s", direction);
+  fclose(direction_file);
+}
+
+static void set_gpio_value(int gpio_pin, int value) {
+  char value_path[64];
+  snprintf(value_path, sizeof(value_path), GPIO_VALUE_PATH, gpio_pin);
+  FILE *value_file = fopen(value_path, "w");
+
+  if (value_file == NULL) {
+    perror("Failed to set GPIO value");
+    exit(EXIT_FAILURE);
+  }
+  fprintf(value_file, "%d", value);
+  fclose(value_file);
+}
+
+static uint8_t get_gpio_value(int gpio_pin) {
+  char value_path[64];
+  snprintf(value_path, sizeof(value_path), GPIO_VALUE_PATH, gpio_pin);
+
+  FILE *fp = fopen(value_path, "r");
+  if (!fp) {
+    perror("Failed to open GPIO value file");
+    return 2;
+  }
+
+  char value[4];
+  if (fgets(value, sizeof(value), fp) == NULL) {
+    perror("Failed to read GPIO value");
+    fclose(fp);
+    return 2;
+  }
+  fclose(fp);
+
+  size_t len = strcspn(value, "\n");
+  if (len < sizeof(value)) {
+    // Remove newline if present
+    value[len] = '\0';
+  }
+
+  if (strcmp(value, "1") == 0) {
+    return 1;
+  } else {
     return 0;
+  }
 }
 
-static void export_gpio(int gpio_pin)
-{
-    FILE *export_file = fopen(GPIO_EXPORT_PATH, "w");
-    
-    if (export_file == NULL) {
-        perror("Failed to export GPIO pin");
-        exit(EXIT_FAILURE);
-    }
-    fprintf(export_file, "%d", gpio_pin);
-    fclose(export_file);
+static void apply_rgb(int r, int g, int b) {
+  set_gpio_value(GPIO_PIN_R_LED, r ? SET_GPIO : CLEAR_GPIO);
+  set_gpio_value(GPIO_PIN_G_LED, g ? SET_GPIO : CLEAR_GPIO);
+  set_gpio_value(GPIO_PIN_B_LED, b ? SET_GPIO : CLEAR_GPIO);
 }
 
-static void set_gpio_direction(int gpio_pin, const char *direction)
-{
-    char direction_path[64];
-    snprintf(direction_path, sizeof(direction_path), GPIO_DIRECTION_PATH, gpio_pin);
-    FILE *direction_file = fopen(direction_path, "w");
+void update_ir_cut_filter_on() {
 
-    if (direction_file == NULL) {
-        perror("Failed to set GPIO direction");
-        exit(EXIT_FAILURE);
-    }
-    fprintf(direction_file, "%s", direction);
-    fclose(direction_file);
+  set_gpio_value(GPIO_PIN_IR_CUT_59, SET_GPIO);
+  set_gpio_value(GPIO_PIN_IR_CUT_60, CLEAR_GPIO);
+  sleep(2);
+  set_gpio_value(GPIO_PIN_IR_CUT_59, CLEAR_GPIO);
 }
 
-static void set_gpio_value(int gpio_pin, int value)
-{
-    char value_path[64];
-    snprintf(value_path, sizeof(value_path), GPIO_VALUE_PATH, gpio_pin);
-    FILE *value_file = fopen(value_path, "w");
-    
-    if (value_file == NULL) {
-        perror("Failed to set GPIO value");
-        exit(EXIT_FAILURE);
-    }
-    fprintf(value_file, "%d", value);
-    fclose(value_file);
+void update_ir_cut_filter_off() {
+
+  set_gpio_value(GPIO_PIN_IR_CUT_59, SET_GPIO);
+  set_gpio_value(GPIO_PIN_IR_CUT_60, SET_GPIO);
+  sleep(2);
+  set_gpio_value(GPIO_PIN_IR_CUT_59, CLEAR_GPIO);
 }
 
-static uint8_t get_gpio_value(int gpio_pin)
-{
-    char value_path[64];
-    snprintf(value_path, sizeof(value_path), GPIO_VALUE_PATH, gpio_pin);
+uint8_t get_ir_cut_filter() { return get_gpio_value(GPIO_PIN_IR_CUT_60); }
 
-    FILE *fp = fopen(value_path, "r");
-    if (!fp) {
-        perror("Failed to open GPIO value file");
-        return 2;
-    }
+static int read_ota_status(char *buf, size_t len) {
+  FILE *fp = fopen(OTA_STATUS_FILE, "r");
+  if (!fp)
+    return -1;
 
-    char value[4];
-    if (fgets(value, sizeof(value), fp) == NULL) {
-        perror("Failed to read GPIO value");
-        fclose(fp);
-        return 2;
-    }
+  if (!fgets(buf, len, fp)) {
     fclose(fp);
+    return -1;
+  }
+  size_t buf_len = strcspn(buf, "\n");
 
-    size_t len = strcspn(value, "\n");
-    if ( len < sizeof(value)) {
-        // Remove newline if present
-        value[len] = '\0';
-    }
+  if (buf_len < len)
+    buf[buf_len] = '\0';
 
-    if (strcmp(value, "1") == 0) {
-        return 1;
-    } else {
-        return 0;
-    }
+  fclose(fp);
+  return 0;
 }
 
-static void apply_rgb(int r, int g, int b)
-{
-    set_gpio_value(GPIO_PIN_R_LED, r ? SET_GPIO : CLEAR_GPIO);
-    set_gpio_value(GPIO_PIN_G_LED, g ? SET_GPIO : CLEAR_GPIO);
-    set_gpio_value(GPIO_PIN_B_LED, b ? SET_GPIO : CLEAR_GPIO);
+static void run_led_pattern(const led_step_t *pattern, int steps) {
+  for (int i = 0; i < steps; i++) {
+
+    apply_rgb(pattern[i].red, pattern[i].green, pattern[i].blue);
+
+    struct timespec ts;
+    ts.tv_sec = pattern[i].duration_ms / 1000;
+    ts.tv_nsec = (pattern[i].duration_ms % 1000) * 1000 * 1000;
+    (void)nanosleep(&ts, NULL);
+  }
 }
 
-void update_ir_cut_filter_on()
-{
+static int read_ircut_state(void) {
+  FILE *fp;
+  int state = 0;
 
-    set_gpio_value(GPIO_PIN_IR_CUT_59, SET_GPIO);
-    set_gpio_value(GPIO_PIN_IR_CUT_60, CLEAR_GPIO);
-    sleep(2);
-    set_gpio_value(GPIO_PIN_IR_CUT_59, CLEAR_GPIO);
+  fp = fopen(IRCUT_STATE_FILE, "r");
+  if (!fp)
+    return 0; // default to GREEN on error
+
+  fscanf(fp, "%d", &state);
+  fclose(fp);
+
+  return state;
 }
 
-void update_ir_cut_filter_off()
-{
+static void decide_and_run_led(const system_state_t *st) {
+  if (st->ota == SUBSYS_IN_PROGRESS) {
+    run_led_pattern(PATTERN_OTA_PROGRESS, ARRAY_SIZE(PATTERN_OTA_PROGRESS));
+    return;
+  }
 
-    set_gpio_value(GPIO_PIN_IR_CUT_59, SET_GPIO);
-    set_gpio_value(GPIO_PIN_IR_CUT_60, SET_GPIO);
-    sleep(2);
-    set_gpio_value(GPIO_PIN_IR_CUT_59, CLEAR_GPIO);
+  if (st->wifi == SUBSYS_FAIL && st->ota == SUBSYS_FAIL) {
+    run_led_pattern(PATTERN_WIFI_OTA_FAIL, ARRAY_SIZE(PATTERN_WIFI_OTA_FAIL));
+    return;
+  }
+
+  if (st->ota_passed_not_rebooted) {
+    run_led_pattern(PATTERN_OTA_PASS_NO_REBOOT,
+                    ARRAY_SIZE(PATTERN_OTA_PASS_NO_REBOOT));
+    return;
+  }
+
+  if (st->ota == SUBSYS_FAIL) {
+    run_led_pattern(PATTERN_OTA_FAIL, ARRAY_SIZE(PATTERN_OTA_FAIL));
+    return;
+  }
+
+  if (st->wifi == SUBSYS_FAIL && st->onvif == SUBSYS_FAIL) {
+    run_led_pattern(PATTERN_WIFI_ONVIF_FAIL,
+                    ARRAY_SIZE(PATTERN_WIFI_ONVIF_FAIL));
+    return;
+  }
+
+  if (st->onvif == SUBSYS_FAIL) {
+    run_led_pattern(PATTERN_ONVIF_FAIL, ARRAY_SIZE(PATTERN_ONVIF_FAIL));
+    return;
+  }
+
+  if (st->wifi_ap_no_client) {
+    run_led_pattern(PATTERN_WIFI_AP_NO_CLIENT,
+                    ARRAY_SIZE(PATTERN_WIFI_AP_NO_CLIENT));
+    return;
+  }
+
+  if (st->wifi == SUBSYS_FAIL) {
+    run_led_pattern(PATTERN_WIFI_FAIL, ARRAY_SIZE(PATTERN_WIFI_FAIL));
+    return;
+  }
+
+  int ircut = read_ircut_state();
+  if (ircut == 1) {
+    /*IR ON : Magenta */
+    apply_rgb(1, 0, 1);
+  } else {
+    /* Default: all good: green */
+    apply_rgb(0, 1, 0);
+  }
+
+  /* Non-blocking 1 s wait */
+  fw_sm_timer_t led_timer;
+  fw_sm_timer_start(&led_timer, 1000);
+  while (!fw_sm_timer_expired(&led_timer))
+    fw_sm_yield();
 }
 
-uint8_t get_ir_cut_filter()
-{
-    return get_gpio_value(GPIO_PIN_IR_CUT_60);
+static int read_wifi_state(void) {
+  FILE *fp;
+  int state = 0;
+
+  fp = fopen(WIFI_STATE_FILE, "r");
+  if (!fp)
+    return 0; // default: STA mode / disabled
+
+  fscanf(fp, "%d", &state);
+  fclose(fp);
+
+  return state;
 }
 
-static int read_ota_status(char *buf, size_t len)
-{
-    FILE *fp = fopen(OTA_STATUS_FILE, "r");
-    if (!fp)
-        return -1;
+static int ap_has_connected_sta(void) {
+  FILE *fp;
+  char buf[256];
 
-    if (!fgets(buf, len, fp)) {
-        fclose(fp);
-        return -1;
-    }
-    size_t buf_len = strcspn(buf, "\n");
-
-    if (buf_len < len)
-        buf[buf_len] = '\0';
-
-    fclose(fp);
+  fp = popen("hostapd_cli -i wlan0 all_sta 2>/dev/null", "r");
+  if (!fp)
     return 0;
+
+  while (fgets(buf, sizeof(buf), fp)) {
+    /* MAC address line starts with hex and ':' */
+    if (strchr(buf, ':')) {
+      pclose(fp);
+      return 1; // at least one client connected
+    }
+  }
+
+  pclose(fp);
+  return 0; // no client
 }
 
-static void run_led_pattern(const led_step_t *pattern, int steps)
-{
-    for (int i = 0; i < steps; i++) {
+static int wifi_has_ip(void) {
+  FILE *fp;
+  char buf[256];
 
-        apply_rgb(
-            pattern[i].red,
-            pattern[i].green,
-            pattern[i].blue
-        );
-
-        struct timespec ts;
-        ts.tv_sec  = pattern[i].duration_ms / 1000;
-        ts.tv_nsec = (pattern[i].duration_ms % 1000) * 1000 * 1000;
-        (void)nanosleep(&ts, NULL);
-    }
-}
-
-static int read_ircut_state(void)
-{
-    FILE *fp;
-    int state = 0;
-
-    fp = fopen(IRCUT_STATE_FILE, "r");
-    if (!fp)
-        return 0;   // default to GREEN on error
-
-    fscanf(fp, "%d", &state);
-    fclose(fp);
-
-    return state;
-}
-
-static void decide_and_run_led(const system_state_t *st)
-{
-    if (st->ota == SUBSYS_IN_PROGRESS) {
-        run_led_pattern(PATTERN_OTA_PROGRESS,
-                        ARRAY_SIZE(PATTERN_OTA_PROGRESS));
-        return;
-    }
-
-    if (st->wifi == SUBSYS_FAIL && st->ota == SUBSYS_FAIL) {
-        run_led_pattern(PATTERN_WIFI_OTA_FAIL,
-                        ARRAY_SIZE(PATTERN_WIFI_OTA_FAIL));
-        return;
-    }
-
-    if (st->ota_passed_not_rebooted) {
-        run_led_pattern(PATTERN_OTA_PASS_NO_REBOOT,
-                ARRAY_SIZE(PATTERN_OTA_PASS_NO_REBOOT));
-        return;
-    }
-
-    if (st->ota == SUBSYS_FAIL) {
-        run_led_pattern(PATTERN_OTA_FAIL,
-                        ARRAY_SIZE(PATTERN_OTA_FAIL));
-        return;
-    }
-
-    if (st->wifi == SUBSYS_FAIL &&
-            st->onvif == SUBSYS_FAIL) {
-        run_led_pattern(PATTERN_WIFI_ONVIF_FAIL,
-                        ARRAY_SIZE(PATTERN_WIFI_ONVIF_FAIL));
-        return;
-    }
-
-    if (st->onvif == SUBSYS_FAIL) {
-        run_led_pattern(PATTERN_ONVIF_FAIL,
-                        ARRAY_SIZE(PATTERN_ONVIF_FAIL));
-        return;
-    }
-
-    if (st->wifi_ap_no_client) {
-        run_led_pattern(PATTERN_WIFI_AP_NO_CLIENT,
-                ARRAY_SIZE(PATTERN_WIFI_AP_NO_CLIENT));
-        return;
-    }
-
-    if (st->wifi == SUBSYS_FAIL) {
-        run_led_pattern(PATTERN_WIFI_FAIL,
-                        ARRAY_SIZE(PATTERN_WIFI_FAIL));
-        return;
-    }
-
-    int ircut = read_ircut_state();
-    if (ircut == 1) {
-        /*IR ON : Magenta */
-        apply_rgb(1, 0, 1);
-    } else {
-        /* Default: all good: green */
-        apply_rgb(0, 1, 0);
-    }
-
-    sleep(1);
-}
-
-static int read_wifi_state(void)
-{
-    FILE *fp;
-    int state = 0;
-
-    fp = fopen(WIFI_STATE_FILE, "r");
-    if (!fp)
-        return 0;   // default: STA mode / disabled
-
-    fscanf(fp, "%d", &state);
-    fclose(fp);
-
-    return state;
-}
-
-static int ap_has_connected_sta(void)
-{
-    FILE *fp;
-    char buf[256];
-
-    fp = popen("hostapd_cli -i wlan0 all_sta 2>/dev/null", "r");
-    if (!fp)
-        return 0;
-
-    while (fgets(buf, sizeof(buf), fp)) {
-        /* MAC address line starts with hex and ':' */
-        if (strchr(buf, ':')) {
-            pclose(fp);
-            return 1;   // at least one client connected
-        }
-    }
-
-    pclose(fp);
-    return 0;   // no client
-}
-
-static int wifi_has_ip(void)
-{
-    FILE *fp;
-    char buf[256];
-
-    fp = popen("ifconfig wlan0", "r");
-    if (!fp)
-        return 0;
-
-    while (fgets(buf, sizeof(buf), fp)) {
-        if (strstr(buf, "inet addr:") || strstr(buf, "inet ")) {
-            pclose(fp);
-            return 1;
-        }
-    }
-
-    pclose(fp);
+  fp = popen("ifconfig wlan0", "r");
+  if (!fp)
     return 0;
+
+  while (fgets(buf, sizeof(buf), fp)) {
+    if (strstr(buf, "inet addr:") || strstr(buf, "inet ")) {
+      pclose(fp);
+      return 1;
+    }
+  }
+
+  pclose(fp);
+  return 0;
 }
 
-static subsys_state_t check_wifi(void)
-{
-    FILE *fp;
-    char buf[16];
+static subsys_state_t check_wifi(void) {
+  FILE *fp;
+  char buf[16];
 
-    fp = fopen(WIFI_STATE_PATH, "r");
-    if (!fp)
-        return SUBSYS_FAIL;
-
-    fgets(buf, sizeof(buf), fp);
-    fclose(fp);
-
-    if (strncmp(buf, "up", 2) != 0)
-        return SUBSYS_FAIL;
-
-    /* IP check */
-    if (!wifi_has_ip())
-        return SUBSYS_FAIL;
-
-    return SUBSYS_OK;
-}
-
-static subsys_state_t check_onvif(void)
-{
-    if (system("pidof multionvifserver > /dev/null") == 0)
-        return SUBSYS_OK;
-
+  fp = fopen(WIFI_STATE_PATH, "r");
+  if (!fp)
     return SUBSYS_FAIL;
+
+  fgets(buf, sizeof(buf), fp);
+  fclose(fp);
+
+  if (strncmp(buf, "up", 2) != 0)
+    return SUBSYS_FAIL;
+
+  /* IP check */
+  if (!wifi_has_ip())
+    return SUBSYS_FAIL;
+
+  return SUBSYS_OK;
 }
 
-static subsys_state_t check_ota(char *status_buf, size_t len)
-{
-    if (read_ota_status(status_buf, len) < 0)
-        return SUBSYS_OK;   // treat as idle
-
-    if (strstr(status_buf, "in-progress"))
-        return SUBSYS_IN_PROGRESS;
-
-    if (!strcmp(status_buf, "ota-successful-90"))
-        return SUBSYS_OK;
-
-    if (is_ota_failed_state(status_buf))
-        return SUBSYS_FAIL;
-
+static subsys_state_t check_onvif(void) {
+  if (system("pidof multionvifserver > /dev/null") == 0)
     return SUBSYS_OK;
+
+  return SUBSYS_FAIL;
 }
 
-static void *system_led_watcher(void *arg)
-{
-    (void)arg;
-    system_state_t st;
-    char ota_status[64];
+static subsys_state_t check_ota(char *status_buf, size_t len) {
+  if (read_ota_status(status_buf, len) < 0)
+    return SUBSYS_OK; // treat as idle
 
-    while (1) {
-        memset(&st, 0, sizeof(st));
+  if (strstr(status_buf, "in-progress"))
+    return SUBSYS_IN_PROGRESS;
 
-        st.wifi  = check_wifi();
-        st.onvif = check_onvif();
-        st.ota   = check_ota(ota_status, sizeof(ota_status));
+  if (!strcmp(status_buf, "ota-successful-90"))
+    return SUBSYS_OK;
 
-        if (st.wifi == SUBSYS_OK && read_wifi_state() == 1 && !ap_has_connected_sta()) {
-           st.wifi_ap_no_client = 1;
-        }
-        if (!strcmp(ota_status, "ota-successful-90"))
-            st.ota_passed_not_rebooted = 1;
+  if (is_ota_failed_state(status_buf))
+    return SUBSYS_FAIL;
 
-        decide_and_run_led(&st);
+  return SUBSYS_OK;
+}
+
+static void *system_led_watcher(void *arg) {
+  (void)arg;
+  system_state_t st;
+  char ota_status[64];
+
+  while (1) {
+    memset(&st, 0, sizeof(st));
+
+    st.wifi = check_wifi();
+    st.onvif = check_onvif();
+    st.ota = check_ota(ota_status, sizeof(ota_status));
+
+    if (st.wifi == SUBSYS_OK && read_wifi_state() == 1 &&
+        !ap_has_connected_sta()) {
+      st.wifi_ap_no_client = 1;
     }
+    if (!strcmp(ota_status, "ota-successful-90"))
+      st.ota_passed_not_rebooted = 1;
+
+    decide_and_run_led(&st);
+  }
 }
 
-int start_led_watcher()
-{
-    pthread_t tid;
+int start_led_watcher() {
+  pthread_t tid;
 
-    if (pthread_create(&tid, NULL, system_led_watcher, NULL) != 0) {
-        perror("pthread_create");
-        return -1;
-    }
+  if (pthread_create(&tid, NULL, system_led_watcher, NULL) != 0) {
+    perror("pthread_create");
+    return -1;
+  }
 
-    pthread_detach(tid);
-    return 0;
+  pthread_detach(tid);
+  return 0;
 }
 
-int gpio_init()
-{
+int gpio_init() {
 
-    LOG_DEBUG("gpio_init Called");
+  LOG_DEBUG("gpio_init Called");
 
-    // Initialize IR CUT FILTER pins
-    export_gpio(GPIO_PIN_IR_CUT_59);
-    set_gpio_direction(GPIO_PIN_IR_CUT_59, GPIO_DIRECTION_OUT);
-    set_gpio_value(GPIO_PIN_IR_CUT_59, SET_GPIO);
+  // Initialize IR CUT FILTER pins
+  export_gpio(GPIO_PIN_IR_CUT_59);
+  set_gpio_direction(GPIO_PIN_IR_CUT_59, GPIO_DIRECTION_OUT);
+  set_gpio_value(GPIO_PIN_IR_CUT_59, SET_GPIO);
 
-    export_gpio(GPIO_PIN_IR_CUT_60);
-    set_gpio_direction(GPIO_PIN_IR_CUT_60, GPIO_DIRECTION_OUT);
-    set_gpio_value(GPIO_PIN_IR_CUT_60, SET_GPIO);
+  export_gpio(GPIO_PIN_IR_CUT_60);
+  set_gpio_direction(GPIO_PIN_IR_CUT_60, GPIO_DIRECTION_OUT);
+  set_gpio_value(GPIO_PIN_IR_CUT_60, SET_GPIO);
 
-    set_gpio_value(GPIO_PIN_IR_CUT_59, CLEAR_GPIO);
+  set_gpio_value(GPIO_PIN_IR_CUT_59, CLEAR_GPIO);
 
-    // Initialize B LED
-    export_gpio(GPIO_PIN_B_LED);
-    set_gpio_direction(GPIO_PIN_B_LED, GPIO_DIRECTION_OUT);
-    set_gpio_value(GPIO_PIN_B_LED, CLEAR_GPIO);
+  // Initialize B LED
+  export_gpio(GPIO_PIN_B_LED);
+  set_gpio_direction(GPIO_PIN_B_LED, GPIO_DIRECTION_OUT);
+  set_gpio_value(GPIO_PIN_B_LED, CLEAR_GPIO);
 
-    // Initialize G LED
-    export_gpio(GPIO_PIN_G_LED);
-    set_gpio_direction(GPIO_PIN_G_LED, GPIO_DIRECTION_OUT);
-    set_gpio_value(GPIO_PIN_G_LED, SET_GPIO);
+  // Initialize G LED
+  export_gpio(GPIO_PIN_G_LED);
+  set_gpio_direction(GPIO_PIN_G_LED, GPIO_DIRECTION_OUT);
+  set_gpio_value(GPIO_PIN_G_LED, SET_GPIO);
 
-    // Initialize R LED
-    export_gpio(GPIO_PIN_R_LED);
-    set_gpio_direction(GPIO_PIN_R_LED, GPIO_DIRECTION_OUT);
-    set_gpio_value(GPIO_PIN_R_LED, CLEAR_GPIO);
+  // Initialize R LED
+  export_gpio(GPIO_PIN_R_LED);
+  set_gpio_direction(GPIO_PIN_R_LED, GPIO_DIRECTION_OUT);
+  set_gpio_value(GPIO_PIN_R_LED, CLEAR_GPIO);
 
-    start_led_watcher();
+  start_led_watcher();
 
-    LOG_DEBUG("Completed successfully");
+  LOG_DEBUG("Completed successfully");
 
-    return 0;
+  return 0;
 }

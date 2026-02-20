@@ -1,19 +1,22 @@
 #include "fw/fw_system.h"
+#include "fw/fw_state_machine.h"
 
-#define GET_CPU_USAGE                                         \
-  "{ head -n1 /proc/stat; sleep 1; head -n1 /proc/stat; } | " \
-  "awk 'NR==1 {u=$2; s=$4; t=$2+$3+$4+$5+$6+$7} "             \
-  "NR==2 {du=$2-u; ds=$4-s; dt=$2+$3+$4+$5+$6+$7 - t; "       \
+#define GET_CPU_USAGE                                                          \
+  "{ head -n1 /proc/stat; sleep 1; head -n1 /proc/stat; } | "                  \
+  "awk 'NR==1 {u=$2; s=$4; t=$2+$3+$4+$5+$6+$7} "                              \
+  "NR==2 {du=$2-u; ds=$4-s; dt=$2+$3+$4+$5+$6+$7 - t; "                        \
   "printf \"%.1f\\n\", (du+ds)/dt*100}'"
 
-#define GET_MEMORY_USAGE                                                \
-  "awk '/MemTotal/{total=$2} /MemFree/{free=$2} /Buffers/{buffers=$2} " \
-  "/Cached/{cached=$2} END {used=total-free-buffers-cached;printf "     \
+#define GET_MEMORY_USAGE                                                       \
+  "awk '/MemTotal/{total=$2} /MemFree/{free=$2} /Buffers/{buffers=$2} "        \
+  "/Cached/{cached=$2} END {used=total-free-buffers-cached;printf "            \
   "(used/total)*100;}' /proc/meminfo"
 
-#define SET_FACTORY_RESET "/mnt/flash/vienna/bin/factory_reset_bin camera_factory_reset"
+#define SET_FACTORY_RESET                                                      \
+  "/mnt/flash/vienna/bin/factory_reset_bin camera_factory_reset"
 
-#define SET_CONFIG_RESET "/mnt/flash/vienna/bin/factory_reset_bin camera_configuration_reset"
+#define SET_CONFIG_RESET                                                       \
+  "/mnt/flash/vienna/bin/factory_reset_bin camera_configuration_reset"
 #define SET_CAMERA_NAME "camera_name"
 #define SET_LOGIN_PIN "login_pin"
 
@@ -33,7 +36,7 @@
 #define GET_MAC_ADDRESS "cat " M5S_CONFIG_DIR "/ethaddr"
 #define GET_LOGIN_PIN "cat " M5S_CONFIG_DIR "/login_pin"
 
-#define GET_STREAMING_STATE \
+#define GET_STREAMING_STATE                                                    \
   "cat " M5S_CONFIG_DIR "/stream_state" // 1:Started, 0:Stopped
 #define START_STREAM "/mnt/flash/vienna/motocam/set/outdu_start_stream.sh"
 #define STOP_STREAM "/mnt/flash/vienna/motocam/set/outdu_stop_stream.sh"
@@ -45,28 +48,25 @@
 
 int8_t get_cpu_usage(uint8_t *cpu_usage);
 
-int8_t get_memory_usage(uint8_t *memory_usage)
-{
-    char output[64];
+int8_t get_memory_usage(uint8_t *memory_usage) {
+  char output[64];
 
-    if (exec_cmd(GET_MEMORY_USAGE, output, sizeof(output)) != 0 ||
-        output[0] == '\0')
-    {
-        LOG_ERROR("Failed to get memory usage");
-        return -1;
-    }
+  if (exec_cmd(GET_MEMORY_USAGE, output, sizeof(output)) != 0 ||
+      output[0] == '\0') {
+    LOG_ERROR("Failed to get memory usage");
+    return -1;
+  }
 
-    printf("Memory Usage: %s\n", output);
-    *memory_usage = (uint8_t)atoi(output);
+  printf("Memory Usage: %s\n", output);
+  *memory_usage = (uint8_t)atoi(output);
 
-    return 0;
+  return 0;
 }
 
 int8_t camera_health_check(uint8_t *streamer, uint8_t *rtsp,
                            uint8_t *portable_rtc, uint8_t *cpu_usage,
                            uint8_t *memory_usage, uint8_t *isp_temp,
-                           uint8_t *ir_temp, uint8_t *sensor_temp)
-{
+                           uint8_t *ir_temp, uint8_t *sensor_temp) {
   pthread_mutex_lock(&lock);
 
   // Check if the streamer is running
@@ -75,15 +75,13 @@ int8_t camera_health_check(uint8_t *streamer, uint8_t *rtsp,
   *portable_rtc = is_running("portablertc");
 
   // Get CPU usage
-  if (get_cpu_usage(cpu_usage) != 0)
-  {
+  if (get_cpu_usage(cpu_usage) != 0) {
     pthread_mutex_unlock(&lock);
     return -1;
   }
 
   // Get memory usage
-  if (get_memory_usage(memory_usage) != 0)
-  {
+  if (get_memory_usage(memory_usage) != 0) {
     pthread_mutex_unlock(&lock);
     return -1;
   }
@@ -97,13 +95,11 @@ int8_t camera_health_check(uint8_t *streamer, uint8_t *rtsp,
 }
 
 int8_t provisioning_mode(const char *mac_address, const char *serial_number,
-                         const char *manufacture_date)
-{
+                         const char *manufacture_date) {
 
   // check if macaddress, serial number and manufacture date files exist at
   // /mnt/flash/vienna/m5s_ config folder
-  if (access_file(DEVICE_SETUP_FILE) != 1)
-  {
+  if (access_file(DEVICE_SETUP_FILE) != 1) {
     printf(
         "Mac address, Serial number or Manufacture date already provisioned\n");
     return 0;
@@ -116,8 +112,7 @@ int8_t provisioning_mode(const char *mac_address, const char *serial_number,
           manufacture_date);
 
   int ret = exec_return(cmd);
-  if (ret != 0)
-  {
+  if (ret != 0) {
     printf("Device provisioning failed\n");
     return -1;
   }
@@ -125,16 +120,14 @@ int8_t provisioning_mode(const char *mac_address, const char *serial_number,
   return 1;
 }
 
-int8_t remove_ota_files()
-{
+int8_t remove_ota_files() {
   pthread_mutex_lock(&lock);
 
   // Remove all files matching ota.tar.gz*
   char cmd[256];
   snprintf(cmd, sizeof(cmd), "rm -f %sota.tar.gz*", OTA_FILE_PATH);
   int ret = system(cmd);
-  if (ret != 0)
-  {
+  if (ret != 0) {
     perror("Failed to remove OTA files");
   }
 
@@ -143,21 +136,26 @@ int8_t remove_ota_files()
   return 0;
 }
 
-
-int8_t shutdown_device()
-{
+int8_t shutdown_device() {
   pthread_mutex_lock(&lock);
 
-  // Sleep for 1 second
-  sleep(1);
+  /* Non-blocking 1 s delay before reboot */
+  delay_sm_ctx_t sm;
+  delay_sm_init(&sm, 1000);
+
+  fw_sm_status_t status;
+  do {
+    status = delay_sm_step(&sm);
+    if (status == FW_SM_RUNNING)
+      fw_sm_yield();
+  } while (status == FW_SM_RUNNING);
 
   // Flush file system buffers
   sync();
 
   // Reboot the system
   int ret = system("reboot");
-  if (ret != 0)
-  {
+  if (ret != 0) {
     perror("Failed to reboot");
   }
 
@@ -166,28 +164,33 @@ int8_t shutdown_device()
   return 0;
 }
 
-int8_t ota_update()
-{
+int8_t ota_update() {
   pthread_mutex_lock(&lock);
 
   printf("executing ota update command");
   set_uboot_env_chars(OTA_STATUS, "update_started");
-  
+
   kill_all_processes();
 
-  sleep(1);
+  /* Non-blocking 1 s delay before OTA */
+  delay_sm_ctx_t sm;
+  delay_sm_init(&sm, 1000);
+
+  fw_sm_status_t status;
+  do {
+    status = delay_sm_step(&sm);
+    if (status == FW_SM_RUNNING)
+      fw_sm_yield();
+  } while (status == FW_SM_RUNNING);
 
   sync();
 
   char output[256];
 
-  if (exec_cmd(OTA_UPDATE_COMMAND, output, sizeof(output)) == 0)
-  {
-      printf("executing ota update command %s\n", output);
-  }
-  else
-  {
-      printf("executing ota update command failed\n");
+  if (exec_cmd(OTA_UPDATE_COMMAND, output, sizeof(output)) == 0) {
+    printf("executing ota update command %s\n", output);
+  } else {
+    printf("executing ota update command failed\n");
   }
 
   pthread_mutex_unlock(&lock);
@@ -195,171 +198,156 @@ int8_t ota_update()
   return 0;
 }
 
-
-int8_t set_camera_name(const char *camera_name)
-{
+int8_t set_camera_name(const char *camera_name) {
   pthread_mutex_lock(&lock);
-  
+
   set_uboot_env_chars(SET_CAMERA_NAME, camera_name);
   pthread_mutex_unlock(&lock);
   return 0;
 }
-int8_t set_login(const char *login_pin, const char *dob)
-{
+int8_t set_login(const char *login_pin, const char *dob) {
   int8_t dob_validation = validate_user_dob(dob);
 
   pthread_mutex_lock(&lock);
-  
+
   if (dob_validation != 0) {
     pthread_mutex_unlock(&lock);
     return dob_validation; // Return -6 or -7
   }
-  
+
   set_uboot_env_chars(SET_LOGIN_PIN, login_pin);
   pthread_mutex_unlock(&lock);
   return 0;
 }
 
-int8_t get_camera_name(char *camera_name)
-{
-    char output[64];
+int8_t get_camera_name(char *camera_name) {
+  char output[64];
 
-    pthread_mutex_lock(&lock);
+  pthread_mutex_lock(&lock);
 
-    if (exec_cmd(GET_CAMERA_NAME, output, sizeof(output)) == 0)
-    {
-        /* trim trailing newline */
-        size_t len = strlen(output);
-        if (len > 0 && output[len - 1] == '\n')
-            output[len - 1] = '\0';
+  if (exec_cmd(GET_CAMERA_NAME, output, sizeof(output)) == 0) {
+    /* trim trailing newline */
+    size_t len = strlen(output);
+    if (len > 0 && output[len - 1] == '\n')
+      output[len - 1] = '\0';
 
-        snprintf(camera_name, 32, "%s", output);
-    }
+    snprintf(camera_name, 32, "%s", output);
+  }
 
-    pthread_mutex_unlock(&lock);
-    return 0;
+  pthread_mutex_unlock(&lock);
+  return 0;
 }
 
-int8_t get_firmware_version(char *firmware_version)
-{
-    char output[64];
+int8_t get_firmware_version(char *firmware_version) {
+  char output[64];
 
-    pthread_mutex_lock(&lock);
+  pthread_mutex_lock(&lock);
 
-    if (exec_cmd(GET_FIRMWARE_VERSION, output, sizeof(output)) == 0)
-    {
-        snprintf(firmware_version, 32, "%s", output);
-        printf("firmware-version %s\n", firmware_version);
-    }
+  if (exec_cmd(GET_FIRMWARE_VERSION, output, sizeof(output)) == 0) {
+    snprintf(firmware_version, 32, "%s", output);
+    printf("firmware-version %s\n", firmware_version);
+  }
 
-    pthread_mutex_unlock(&lock);
-    return 0;
+  pthread_mutex_unlock(&lock);
+  return 0;
 }
 
-int8_t get_mac_address(char *mac_address)
-{
-    char output[64];
+int8_t get_mac_address(char *mac_address) {
+  char output[64];
 
-    pthread_mutex_lock(&lock);
+  pthread_mutex_lock(&lock);
 
-    if (exec_cmd(GET_MAC_ADDRESS, output, sizeof(output)) == 0)
-    {
-        snprintf(mac_address, 18, "%s", output);
-        printf("mac-address %s\n", mac_address);
-    }
+  if (exec_cmd(GET_MAC_ADDRESS, output, sizeof(output)) == 0) {
+    snprintf(mac_address, 18, "%s", output);
+    printf("mac-address %s\n", mac_address);
+  }
 
-    pthread_mutex_unlock(&lock);
-    return 0;
+  pthread_mutex_unlock(&lock);
+  return 0;
 }
 
-int8_t get_ota_update_status(char *ota_status)
-{
-    char output[64];
+int8_t get_ota_update_status(char *ota_status) {
+  char output[64];
 
-    pthread_mutex_lock(&lock);
+  pthread_mutex_lock(&lock);
 
-    if (exec_cmd(GET_OTA_STATUS, output, sizeof(output)) == 0)
-    {
-        snprintf(ota_status, 32, "%s", output);
-        printf("ota_status %s\n", ota_status);
-    }
+  if (exec_cmd(GET_OTA_STATUS, output, sizeof(output)) == 0) {
+    snprintf(ota_status, 32, "%s", output);
+    printf("ota_status %s\n", ota_status);
+  }
 
-    pthread_mutex_unlock(&lock);
-    return 0;
+  pthread_mutex_unlock(&lock);
+  return 0;
 }
 
-int8_t get_factory_reset_status(char *factory_reset_status)
-{
-    char output[64];
+int8_t get_factory_reset_status(char *factory_reset_status) {
+  char output[64];
 
-    pthread_mutex_lock(&lock);
+  pthread_mutex_lock(&lock);
 
-    if (exec_cmd(GET_FACTORY_RESET_STATUS, output, sizeof(output)) == 0)
-    {
-        snprintf(factory_reset_status, 32, "%s", output);
-        printf("factory_reset_status %s\n", factory_reset_status);
-    }
+  if (exec_cmd(GET_FACTORY_RESET_STATUS, output, sizeof(output)) == 0) {
+    snprintf(factory_reset_status, 32, "%s", output);
+    printf("factory_reset_status %s\n", factory_reset_status);
+  }
 
-    pthread_mutex_unlock(&lock);
-    return 0;
+  pthread_mutex_unlock(&lock);
+  return 0;
 }
 
-int8_t get_login_pin(char *loginPin)
-{
-    char output[64];
+int8_t get_login_pin(char *loginPin) {
+  char output[64];
 
-    pthread_mutex_lock(&lock);
+  pthread_mutex_lock(&lock);
 
-    if (exec_cmd(GET_LOGIN_PIN, output, sizeof(output)) == 0)
-    {
-        /* trim trailing newline */
-        size_t len = strlen(output);
-        if (len > 0 && output[len - 1] == '\n')
-            output[len - 1] = '\0';
+  if (exec_cmd(GET_LOGIN_PIN, output, sizeof(output)) == 0) {
+    /* trim trailing newline */
+    size_t len = strlen(output);
+    if (len > 0 && output[len - 1] == '\n')
+      output[len - 1] = '\0';
 
-        snprintf(loginPin, 32, "%s", output);
-    }
+    snprintf(loginPin, 32, "%s", output);
+  }
 
-    pthread_mutex_unlock(&lock);
-    return 0;
+  pthread_mutex_unlock(&lock);
+  return 0;
 }
 
 // Validate DOB: Returns 0 on success, -6 if DOB not set, -7 if DOB mismatch
-int8_t validate_user_dob(const char *input_dob)
-{
+int8_t validate_user_dob(const char *input_dob) {
   char stored_dob[11];
-  
+
   // Check if DOB exists in the system
   if (get_user_dob(stored_dob) != 0) {
     LOG_ERROR("validate_user_dob: DOB not set in system\n");
     return -6; // DOB not set
   }
-    if(strlen(stored_dob) == 0) {
+  if (strlen(stored_dob) == 0) {
     LOG_ERROR("validate_user_dob: DOB not set in system\n");
     return -6; // DOB not set
   }
-  if(strlen(stored_dob) != 10) {
-    LOG_ERROR("validate_user_dob: DOB length mismatch. Expected: 10, Got: %d\n", strlen(stored_dob));
+  if (strlen(stored_dob) != 10) {
+    LOG_ERROR("validate_user_dob: DOB length mismatch. Expected: 10, Got: %d\n",
+              strlen(stored_dob));
     return -5; // DOB length mismatch
   }
-  
+
   // Validate input DOB matches stored DOB
   if (strcmp(stored_dob, input_dob) != 0) {
-    LOG_ERROR("validate_user_dob: DOB mismatch. Expected: %s, Got: %s\n", stored_dob, input_dob);
+    LOG_ERROR("validate_user_dob: DOB mismatch. Expected: %s, Got: %s\n",
+              stored_dob, input_dob);
     return -7; // DOB validation failed
   }
-  
+
   LOG_DEBUG("validate_user_dob: DOB validation successful\n");
   return 0;
 }
 
-int8_t set_factory_reset(const char *dob)
-{
+int8_t set_factory_reset(const char *dob) {
 
   int8_t dob_validation = validate_user_dob(dob);
 
   pthread_mutex_lock(&lock);
-  
+
   // Validate DOB
   if (dob_validation != 0) {
     pthread_mutex_unlock(&lock);
@@ -377,12 +365,11 @@ int8_t set_factory_reset(const char *dob)
   return 0;
 }
 
-int8_t set_config_reset(const char *dob)
-{
+int8_t set_config_reset(const char *dob) {
   int8_t dob_validation = validate_user_dob(dob);
 
   pthread_mutex_lock(&lock);
-  
+
   // Validate DOB
   if (dob_validation != 0) {
     pthread_mutex_unlock(&lock);
@@ -400,88 +387,76 @@ int8_t set_config_reset(const char *dob)
   printf("set_config_reset command:%s\n", background_cmd);
   system(background_cmd);
 
-
-
   pthread_mutex_unlock(&lock);
   return 0;
 }
 
 int8_t get_stream_resolution(enum image_resolution *resolution,
-                             uint8_t stream_number)
-{
-    char cmd[100];
-    char output[64];
+                             uint8_t stream_number) {
+  char cmd[100];
+  char output[64];
 
-    pthread_mutex_lock(&lock);
+  pthread_mutex_lock(&lock);
 
-    snprintf(cmd, sizeof(cmd),
-             "cat " M5S_CONFIG_DIR "/stream%d_resolution",
-             stream_number);
+  snprintf(cmd, sizeof(cmd), "cat " M5S_CONFIG_DIR "/stream%d_resolution",
+           stream_number);
 
-    if (exec_cmd(cmd, output, sizeof(output)) == 0)
-        *resolution = (enum image_resolution)atoi(output);
+  if (exec_cmd(cmd, output, sizeof(output)) == 0)
+    *resolution = (enum image_resolution)atoi(output);
 
-    pthread_mutex_unlock(&lock);
-    return 0;
+  pthread_mutex_unlock(&lock);
+  return 0;
 }
 
-int8_t get_stream_fps(uint8_t *fps, uint8_t stream_number)
-{
-    char cmd[100];
-    char output[64];
+int8_t get_stream_fps(uint8_t *fps, uint8_t stream_number) {
+  char cmd[100];
+  char output[64];
 
-    pthread_mutex_lock(&lock);
+  pthread_mutex_lock(&lock);
 
-    snprintf(cmd, sizeof(cmd),
-             "cat " M5S_CONFIG_DIR "/stream%d_fps",
-             stream_number);
+  snprintf(cmd, sizeof(cmd), "cat " M5S_CONFIG_DIR "/stream%d_fps",
+           stream_number);
 
-    if (exec_cmd(cmd, output, sizeof(output)) == 0)
-        *fps = (uint8_t)atoi(output);
+  if (exec_cmd(cmd, output, sizeof(output)) == 0)
+    *fps = (uint8_t)atoi(output);
 
-    pthread_mutex_unlock(&lock);
-    return 0;
+  pthread_mutex_unlock(&lock);
+  return 0;
 }
 
-int8_t get_stream_bitrate(uint8_t *bitrate, uint8_t stream_number)
-{
-    char cmd[100];
-    char output[64];
+int8_t get_stream_bitrate(uint8_t *bitrate, uint8_t stream_number) {
+  char cmd[100];
+  char output[64];
 
-    pthread_mutex_lock(&lock);
+  pthread_mutex_lock(&lock);
 
-    snprintf(cmd, sizeof(cmd),
-             "cat " M5S_CONFIG_DIR "/stream%d_bitrate",
-             stream_number);
+  snprintf(cmd, sizeof(cmd), "cat " M5S_CONFIG_DIR "/stream%d_bitrate",
+           stream_number);
 
-    if (exec_cmd(cmd, output, sizeof(output)) == 0)
-        *bitrate = (uint8_t)atoi(output);
+  if (exec_cmd(cmd, output, sizeof(output)) == 0)
+    *bitrate = (uint8_t)atoi(output);
 
-    pthread_mutex_unlock(&lock);
-    return 0;
+  pthread_mutex_unlock(&lock);
+  return 0;
 }
 
-int8_t get_stream_encoder(enum encoder_type *encoder1,
-                          uint8_t stream_number)
-{
-    char cmd[100];
-    char output[64];
+int8_t get_stream_encoder(enum encoder_type *encoder1, uint8_t stream_number) {
+  char cmd[100];
+  char output[64];
 
-    pthread_mutex_lock(&lock);
+  pthread_mutex_lock(&lock);
 
-    snprintf(cmd, sizeof(cmd),
-             "cat " M5S_CONFIG_DIR "/stream%d_encoder",
-             stream_number);
+  snprintf(cmd, sizeof(cmd), "cat " M5S_CONFIG_DIR "/stream%d_encoder",
+           stream_number);
 
-    if (exec_cmd(cmd, output, sizeof(output)) == 0)
-        *encoder1 = (enum encoder_type)atoi(output);
+  if (exec_cmd(cmd, output, sizeof(output)) == 0)
+    *encoder1 = (enum encoder_type)atoi(output);
 
-    pthread_mutex_unlock(&lock);
-    return 0;
+  pthread_mutex_unlock(&lock);
+  return 0;
 }
 
-typedef struct
-{
+typedef struct {
   unsigned long user;
   unsigned long nice;
   unsigned long system;
@@ -494,11 +469,9 @@ typedef struct
   unsigned long guest_nice;
 } cpu_stats_t;
 
-int read_cpu_stats(cpu_stats_t *stats)
-{
+int read_cpu_stats(cpu_stats_t *stats) {
   FILE *fp = fopen("/proc/stat", "r");
-  if (fp == NULL)
-  {
+  if (fp == NULL) {
     return -1;
   }
 
@@ -512,27 +485,23 @@ int read_cpu_stats(cpu_stats_t *stats)
 }
 
 // Function to calculate total CPU time
-unsigned long get_total_time(const cpu_stats_t *stats)
-{
+unsigned long get_total_time(const cpu_stats_t *stats) {
   return stats->user + stats->nice + stats->system + stats->idle +
          stats->iowait + stats->irq + stats->softirq + stats->steal +
          stats->guest + stats->guest_nice;
 }
 
 // Function to calculate idle time
-unsigned long get_idle_time(const cpu_stats_t *stats)
-{
+unsigned long get_idle_time(const cpu_stats_t *stats) {
   return stats->idle + stats->iowait;
 }
 
-int8_t get_cpu_usage(uint8_t *cpu_usage)
-{
+int8_t get_cpu_usage(uint8_t *cpu_usage) {
   cpu_stats_t stats1;
   cpu_stats_t stats2;
 
   // Read first measurement
-  if (read_cpu_stats(&stats1) != 0)
-  {
+  if (read_cpu_stats(&stats1) != 0) {
     printf("Failed to read CPU stats (first measurement)\n");
     return -1;
   }
@@ -541,8 +510,7 @@ int8_t get_cpu_usage(uint8_t *cpu_usage)
   sleep(1);
 
   // Read second measurement
-  if (read_cpu_stats(&stats2) != 0)
-  {
+  if (read_cpu_stats(&stats2) != 0) {
     printf("Failed to read CPU stats (second measurement)\n");
     return -1;
   }
@@ -557,8 +525,7 @@ int8_t get_cpu_usage(uint8_t *cpu_usage)
   unsigned long idle_diff = idle2 - idle1;
 
   // Avoid division by zero
-  if (total_diff == 0)
-  {
+  if (total_diff == 0) {
     printf("No CPU time difference detected\n");
     *cpu_usage = 0;
     return 0;
@@ -569,8 +536,7 @@ int8_t get_cpu_usage(uint8_t *cpu_usage)
 
   // Round and clamp to uint8_t range
   *cpu_usage = (uint8_t)(usage + 0.5);
-  if (usage > 100.0)
-  {
+  if (usage > 100.0) {
     *cpu_usage = 100;
   }
 
@@ -578,8 +544,7 @@ int8_t get_cpu_usage(uint8_t *cpu_usage)
   return 0;
 }
 
-int8_t get_process_status(const char *process_name, uint8_t *status)
-{
+int8_t get_process_status(const char *process_name, uint8_t *status) {
   pthread_mutex_lock(&lock);
   *status = is_running(process_name) ? 1 : 0;
   pthread_mutex_unlock(&lock);
@@ -587,55 +552,54 @@ int8_t get_process_status(const char *process_name, uint8_t *status)
 }
 
 int8_t set_user_dob(const char *dob) {
-    pthread_mutex_lock(&lock);
-    FILE *fp = fopen(USER_DOB_FILE, "w");
-    if (fp == NULL) {
-        LOG_ERROR("set_user_dob: failed to open file\n");
-        pthread_mutex_unlock(&lock);
-        return -1;
-    }
-    
-    fprintf(fp, "%s", dob);
-    fclose(fp);
+  pthread_mutex_lock(&lock);
+  FILE *fp = fopen(USER_DOB_FILE, "w");
+  if (fp == NULL) {
+    LOG_ERROR("set_user_dob: failed to open file\n");
     pthread_mutex_unlock(&lock);
-    return 0;
+    return -1;
+  }
+
+  fprintf(fp, "%s", dob);
+  fclose(fp);
+  pthread_mutex_unlock(&lock);
+  return 0;
 }
 
 int8_t get_user_dob(char *dob) {
-    pthread_mutex_lock(&lock);
-    FILE *fp = fopen(USER_DOB_FILE, "r");
-    if (fp == NULL) {
-        LOG_ERROR("get_user_dob: file not found\n");
-        pthread_mutex_unlock(&lock);
-        return -1;
-    }
-    
-    if (fgets(dob, 11, fp) != NULL) {
-        // Remove trailing newline if present, though likely handled by set logic
-        size_t len = strlen(dob);
-        if (len > 0 && dob[len-1] == '\n') dob[len-1] = '\0';
-        
-        fclose(fp);
-        pthread_mutex_unlock(&lock);
-        return 0;
-    }
-    
-    fclose(fp);
+  pthread_mutex_lock(&lock);
+  FILE *fp = fopen(USER_DOB_FILE, "r");
+  if (fp == NULL) {
+    LOG_ERROR("get_user_dob: file not found\n");
     pthread_mutex_unlock(&lock);
     return -1;
-}
+  }
 
-int8_t set_system_time(const char *epoch_time)
-{
-    char cmd[300];
-    char dummy[8];
+  if (fgets(dob, 11, fp) != NULL) {
+    // Remove trailing newline if present, though likely handled by set logic
+    size_t len = strlen(dob);
+    if (len > 0 && dob[len - 1] == '\n')
+      dob[len - 1] = '\0';
 
-    pthread_mutex_lock(&lock);
-
-    snprintf(cmd, sizeof(cmd), "%s %s", SET_TIME_COMMAND, epoch_time);
-    exec_cmd(cmd, dummy, sizeof(dummy));   /* output not needed */
-
+    fclose(fp);
     pthread_mutex_unlock(&lock);
     return 0;
+  }
+
+  fclose(fp);
+  pthread_mutex_unlock(&lock);
+  return -1;
 }
 
+int8_t set_system_time(const char *epoch_time) {
+  char cmd[300];
+  char dummy[8];
+
+  pthread_mutex_lock(&lock);
+
+  snprintf(cmd, sizeof(cmd), "%s %s", SET_TIME_COMMAND, epoch_time);
+  exec_cmd(cmd, dummy, sizeof(dummy)); /* output not needed */
+
+  pthread_mutex_unlock(&lock);
+  return 0;
+}

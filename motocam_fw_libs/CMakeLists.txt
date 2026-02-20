@@ -72,6 +72,7 @@ SET(SRC_LIST
     src/fw/fw_network.c
     src/fw/fw_streaming.c
     src/fw/fw_system.c
+    src/fw/fw_state_machine.c
 )
 # SET(LINK_LIST vmf membroker msgbroker syncringbuffer)
 
