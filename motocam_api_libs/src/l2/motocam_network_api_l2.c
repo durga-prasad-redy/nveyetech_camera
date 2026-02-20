@@ -3,50 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-/*int8_t set_ipaddress_subnetmask_l2(const uint8_t *ipaddress_subnetmask) {
-    printf("set_ipaddress_subnetmask_l2\n");
-    char ipaddress[100];
-    char subnetmask[100];
-    sprintf(ipaddress, "%d.%d.%d.%d", ipaddress_subnetmask[0],
-ipaddress_subnetmask[1], ipaddress_subnetmask[2], ipaddress_subnetmask[3]);
-    sprintf(subnetmask, "%d.%d.%d.%d", ipaddress_subnetmask[4],
-ipaddress_subnetmask[5], ipaddress_subnetmask[6], ipaddress_subnetmask[7]);
-    int8_t ret = set_ipaddress_l3(ipaddress, strlen(ipaddress));
-    if(ret < 0)
-        return ret;
-    ret = set_subnetmask_l3(subnetmask, strlen(subnetmask));
-    if(ret < 0)
-        return ret;
-    return 0;
-}
-
-int8_t get_ipaddress_subnetmask_l2(uint8_t **ipaddress_subnetmask, uint8_t
-*length) { printf("get_ipaddress_subnetmask_l2\n"); char *ipaddress; uint8_t
-ipaddress_len; int8_t ret = get_ipaddress_l3(&ipaddress, &ipaddress_len); if(ret
-< 0) return ret; char *subnetmask; uint8_t subnetmask_len; ret =
-get_subnetmask_l3(&subnetmask, &subnetmask_len); if(ret < 0) return ret;
-
-    *length = 8;
-    *ipaddress_subnetmask=malloc(*length);
-    char* ipaddress_token = strtok(ipaddress, ".");
-    uint8_t ipaddres_subnetmask_indx=0;
-    while (ipaddress_token != NULL) {
-        (*ipaddress_subnetmask)[ipaddres_subnetmask_indx]= (uint8_t)
-atoi(ipaddress_token); ipaddres_subnetmask_indx++;
-        if(ipaddres_subnetmask_indx==4) break;
-        ipaddress_token = strtok(NULL, ".");
-    }
-
-    char* subnetmask_token = strtok(subnetmask, ".");
-    while (subnetmask_token != NULL) {
-        (*ipaddress_subnetmask)[ipaddres_subnetmask_indx]= (uint8_t)
-atoi(subnetmask_token); ipaddres_subnetmask_indx++;
-        if(ipaddres_subnetmask_indx==8) break;
-        subnetmask_token = strtok(NULL, ".");
-    }
-    return 0;
-}*/
-
 uint8_t current_wifi_state;
 
 int8_t set_WifiHotspot_l2(const uint8_t wifiHotspot_len,
@@ -89,8 +45,7 @@ int8_t set_WifiHotspot_l2(const uint8_t wifiHotspot_len,
     return -1;
 
   char ssid_str[32];
-  uint8_t i;
-  for (i = 0; i < ssid_len; i++) {
+  for (uint8_t i = 0; i < ssid_len; i++) {
     ssid_str[i] = ssid[i];
   }
   ssid_str[ssid_len] = '\0';
@@ -100,19 +55,19 @@ int8_t set_WifiHotspot_l2(const uint8_t wifiHotspot_len,
   }
 
   char encryption_key_str[32];
-  for (i = 0; i < encryption_key_len; i++) {
+  for (uint8_t i = 0; i < encryption_key_len; i++) {
     encryption_key_str[i] = encryption_key[i];
   }
   encryption_key_str[encryption_key_len] = '\0';
 
   char ipaddress_str[32];
-  for (i = 0; i < ipaddress_len; i++) {
+  for (uint8_t i = 0; i < ipaddress_len; i++) {
     ipaddress_str[i] = ipaddress[i];
   }
   ipaddress_str[ipaddress_len] = '\0';
 
   char subnetmask_str[32];
-  for (i = 0; i < subnetmask_len; i++) {
+  for (uint8_t i = 0; i < subnetmask_len; i++) {
     subnetmask_str[i] = subnetmask[i];
   }
   subnetmask_str[subnetmask_len] = '\0';
@@ -128,7 +83,6 @@ int8_t set_WifiHotspot_l2(const uint8_t wifiHotspot_len,
     return ret;
 
   current_wifi_state = 1;
-  // writeState(motocam_wifi_state_file, &current_wifi_state);
   return 0;
 }
 
@@ -154,16 +108,14 @@ int8_t set_ethernet_ip_address_l2(const uint8_t ethernet_len,
   if (ethernet_len < subnetmask_idx + subnetmask_len)
     return -1;
 
-  uint8_t i;
-
   char ipaddress_str[32];
-  for (i = 0; i < ip_address_len; i++) {
+  for (uint8_t i = 0; i < ip_address_len; i++) {
     ipaddress_str[i] = ip_address[i];
   }
   ipaddress_str[ip_address_len] = '\0';
 
   char subnetmask_str[32];
-  for (i = 0; i < subnetmask_len; i++) {
+  for (uint8_t i = 0; i < subnetmask_len; i++) {
     subnetmask_str[i] = subnetmask[i];
   }
   subnetmask_str[subnetmask_len] = '\0';
@@ -175,7 +127,6 @@ int8_t set_ethernet_ip_address_l2(const uint8_t ethernet_len,
     return ret;
 
   // current_wifi_state = 1;
-  // writeState(motocam_wifi_state_file, &current_wifi_state);
   return 0;
 }
 
@@ -236,21 +187,20 @@ int8_t get_WifiHotspot_l2(uint8_t **wifiHotspot, uint8_t *length) {
   *wifiHotspot = (uint8_t *)malloc(*length);
   uint8_t wifiHotspot_idx = 0;
   (*wifiHotspot)[wifiHotspot_idx] = ssid_len;
-  uint8_t i;
-  for (i = 0; i < ssid_len; i++) {
+  for (uint8_t i = 0; i < ssid_len; i++) {
     (*wifiHotspot)[++wifiHotspot_idx] = (uint8_t)ssid[i];
   }
   (*wifiHotspot)[++wifiHotspot_idx] = encryption_type;
   (*wifiHotspot)[++wifiHotspot_idx] = encryption_key_len;
-  for (i = 0; i < encryption_key_len; i++) {
+  for (uint8_t i = 0; i < encryption_key_len; i++) {
     (*wifiHotspot)[++wifiHotspot_idx] = (uint8_t)encryption_key[i];
   }
   (*wifiHotspot)[++wifiHotspot_idx] = ipaddress_len;
-  for (i = 0; i < ipaddress_len; i++) {
+  for (uint8_t i = 0; i < ipaddress_len; i++) {
     (*wifiHotspot)[++wifiHotspot_idx] = (uint8_t)ipaddress[i];
   }
   (*wifiHotspot)[++wifiHotspot_idx] = subnetmask_len;
-  for (i = 0; i < subnetmask_len; i++) {
+  for (uint8_t i = 0; i < subnetmask_len; i++) {
     (*wifiHotspot)[++wifiHotspot_idx] = (uint8_t)subnetmask[i];
   }
   return 0;
@@ -263,16 +213,13 @@ int8_t set_WifiClient_l2(const uint8_t wifiClient_len,
   uint8_t ssid_len = wifiClient[ssid_len_idx];
   uint8_t ssid_idx = (uint8_t)(ssid_len_idx + 1);
   const uint8_t *ssid = &wifiClient[ssid_idx];
-  // printf("set_WifiClient_l2 1 %d,%d\n", ssid, ssid_len);
   if (wifiClient_len < ssid_idx + ssid_len + 1) // 1 for val
   {
-    // printf("set_WifiClient_l2 1 %d,%d\n", ssid_idx, ssid_len);
     return -1;
   }
 
   uint8_t encryption_type_idx = (uint8_t)(ssid_idx + ssid_len);
   const uint8_t encryption_type = wifiClient[encryption_type_idx];
-  // printf("set_WifiClient_l2 2 %d\n", encryption_type);
   if (wifiClient_len < encryption_type_idx + 2) // 2---1 for len 1 for val
   {
     printf("set_WifiClient_l2 2 %d\n", encryption_type_idx);
@@ -283,18 +230,15 @@ int8_t set_WifiClient_l2(const uint8_t wifiClient_len,
   uint8_t encryption_key_len = wifiClient[encryption_key_len_idx];
   uint8_t encryption_key_idx = (uint8_t)(encryption_key_len_idx + 1);
   const uint8_t *encryption_key = &wifiClient[encryption_key_idx];
-  // printf("set_WifiClient_l2 3 %d,%d\n", encryption_key, encryption_key_len);
   if (wifiClient_len <
       encryption_key_idx + encryption_key_len + 2) // 2-- 1 for len, 1 for val
   {
-    // printf("set_WifiClient_l2 3 %d,%d\n", encryption_key_idx,
-    // encryption_key_len);
+
     return -1;
   }
 
   char ssid_str[32];
-  uint8_t i;
-  for (i = 0; i < ssid_len; i++) {
+  for (uint8_t i = 0; i < ssid_len; i++) {
     ssid_str[i] = ssid[i];
   }
   ssid_str[ssid_len] = '\0';
@@ -303,7 +247,7 @@ int8_t set_WifiClient_l2(const uint8_t wifiClient_len,
   }
 
   char encryption_key_str[32];
-  for (i = 0; i < encryption_key_len; i++) {
+  for (uint8_t i = 0; i < encryption_key_len; i++) {
     encryption_key_str[i] = encryption_key[i];
   }
   encryption_key_str[encryption_key_len] = '\0';
@@ -337,11 +281,9 @@ int8_t set_WifiClient_l2(const uint8_t wifiClient_len,
   }
   uint8_t ipaddress_idx = (uint8_t)(ipaddress_len_idx + 1);
   const uint8_t *ipaddress = &wifiClient[ipaddress_idx];
-  // printf("set_WifiClient_l2 4 %d,%d\n", ipaddress, ipaddress_len);
   if (wifiClient_len <
       ipaddress_idx + ipaddress_len + 2) // 2-- 1 for len, 1 for val
   {
-    // printf("set_WifiClient_l2 4 %d,%d\n", ipaddress_idx, ipaddress_len);
     return -1;
   }
 
@@ -351,18 +293,17 @@ int8_t set_WifiClient_l2(const uint8_t wifiClient_len,
   const uint8_t *subnetmask = &wifiClient[subnetmask_idx];
   printf("set_WifiClient_l2 5 %p,%d\n", (void *)subnetmask, subnetmask_len);
   if (wifiClient_len < subnetmask_idx + subnetmask_len) {
-    // printf("set_WifiClient_l2 5 %d,%d\n", subnetmask, subnetmask_len);
     return -1;
   }
 
   char ipaddress_str[32];
-  for (i = 0; i < ipaddress_len; i++) {
+  for (uint8_t i = 0; i < ipaddress_len; i++) {
     ipaddress_str[i] = ipaddress[i];
   }
   ipaddress_str[ipaddress_len] = '\0';
 
   char subnetmask_str[32];
-  for (i = 0; i < subnetmask_len; i++) {
+  for (uint8_t i = 0; i < subnetmask_len; i++) {
     subnetmask_str[i] = subnetmask[i];
   }
   subnetmask_str[subnetmask_len] = '\0';
@@ -379,7 +320,6 @@ int8_t set_WifiClient_l2(const uint8_t wifiClient_len,
     return ret;
 
   current_wifi_state = 2;
-  // writeState(motocam_wifi_state_file, &current_wifi_state);
   return 0;
 }
 
@@ -406,21 +346,20 @@ int8_t get_WifiClient_l2(uint8_t **wifiClient, uint8_t *length) {
   *wifiClient = (uint8_t *)malloc(*length);
   uint8_t wificlient_idx = 0;
   (*wifiClient)[wificlient_idx] = ssid_len;
-  uint8_t i;
-  for (i = 0; i < ssid_len; i++) {
+  for (uint8_t i = 0; i < ssid_len; i++) {
     (*wifiClient)[++wificlient_idx] = (uint8_t)ssid[i];
   }
   (*wifiClient)[++wificlient_idx] = encryption_type;
   (*wifiClient)[++wificlient_idx] = encryption_key_len;
-  for (i = 0; i < encryption_key_len; i++) {
+  for (uint8_t i = 0; i < encryption_key_len; i++) {
     (*wifiClient)[++wificlient_idx] = (uint8_t)encryption_key[i];
   }
   (*wifiClient)[++wificlient_idx] = ipaddress_len;
-  for (i = 0; i < ipaddress_len; i++) {
+  for (uint8_t i = 0; i < ipaddress_len; i++) {
     (*wifiClient)[++wificlient_idx] = (uint8_t)ipaddress[i];
   }
   (*wifiClient)[++wificlient_idx] = subnetmask_len;
-  for (i = 0; i < subnetmask_len; i++) {
+  for (uint8_t i = 0; i < subnetmask_len; i++) {
     (*wifiClient)[++wificlient_idx] = (uint8_t)subnetmask[i];
   }
   return 0;
@@ -428,7 +367,6 @@ int8_t get_WifiClient_l2(uint8_t **wifiClient, uint8_t *length) {
 
 int8_t get_wifi_state_l2(uint8_t **wifi_state, uint8_t *length) {
   printf("get_wifi_state_l2\n");
-  // enum ON_OFF ir_cutfilter;
   uint8_t state;
   if (get_wifi_state(&state) < 0) {
     return -1;

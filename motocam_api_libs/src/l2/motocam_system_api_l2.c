@@ -57,8 +57,7 @@ int8_t provision_device_l2(const uint8_t provision_data_len,
     return -1;
 
   char macid_str[100];
-  uint8_t i;
-  for (i = 0; i < macid_len; i++) {
+  for (uint8_t i = 0; i < macid_len; i++) {
     macid_str[i] = macid[i];
   }
   macid_str[macid_len] = '\0';
@@ -68,19 +67,17 @@ int8_t provision_device_l2(const uint8_t provision_data_len,
   }
 
   char serial_number_str[100];
-  for (i = 0; i < serial_number_len; i++) {
+  for (uint8_t i = 0; i < serial_number_len; i++) {
     serial_number_str[i] = serial_number[i];
   }
   serial_number_str[serial_number_len] = '\0';
 
   char manufacture_date_str[100];
-  for (i = 0; i < manufacture_date_len; i++) {
+  for (uint8_t i = 0; i < manufacture_date_len; i++) {
     manufacture_date_str[i] = manufacture_date[i];
   }
   manufacture_date_str[manufacture_date_len] = '\0';
 
-  // int8_t ret = set_wifi_hotspot_config(ssid_str, encryption_type,
-  // encryption_key_str, ipaddress_str, subnetmask_str);
   int8_t ret =
       provisioning_mode(macid_str, serial_number_str, manufacture_date_str);
   printf("provisioning_mode  macid_str=%s, serial_number_str=%s, "
@@ -90,7 +87,6 @@ int8_t provision_device_l2(const uint8_t provision_data_len,
   if (ret < 0)
     return ret;
 
-  // writeState(motocam_wifi_state_file, &current_wifi_state);
   return 0;
 }
 
@@ -363,8 +359,7 @@ int8_t login_with_pin_l2(const uint8_t pinLength, const uint8_t *loginPin,
   }
 
   char user_provided_pin[32];
-  uint8_t i;
-  for (i = 0; i < user_pin_len; i++) {
+  for (uint8_t i = 0; i < user_pin_len; i++) {
 
     // Check if character is not numeric (ASCII '0' to '9')
     if (user_pin[i] < 48 || user_pin[i] > 57) {
@@ -460,19 +455,6 @@ static int validate_dob_string(const char *date_str) {
     return -2;
 
   printf("validate_dob_string: day=%d, month=%d, year=%d\n", day, month, year);
-  // time_t t = time(NULL);
-  // struct tm *now = localtime(&t);
-  // int current_year = now->tm_year + 1900;
-  // int current_month = now->tm_mon + 1;
-  // int current_day = now->tm_mday;
-  // printf("current_year: %d, current_month: %d, current_day: %d\n",
-  // current_year, current_month, current_day);
-
-  // if (year > current_year) return -3;
-  // if (year == current_year) {
-  //     if (month > current_month) return -3;
-  //     if (month == current_month && day > current_day) return -3;
-  // }
 
   return 0;
 }

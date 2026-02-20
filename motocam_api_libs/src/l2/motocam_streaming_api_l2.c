@@ -7,29 +7,20 @@ uint8_t current_streaming_state; // 1-running, 2-not running
 
 int8_t start_stream_l2() {
   printf("start_stream_l2 %d\n", current_streaming_state);
-  //    if(current_streaming_state==0) {
-  //        printf("start_stream_l2 inside\n");
+
   start_stream();
-  // current_streaming_state = 1;
-  //        writeState(motocam_streaming_state_file, &current_streaming_state);
-  //    }
+
   return 0;
 }
 
 int8_t stop_stream_l2() {
   printf("stop_stream_l2 %d\n", current_streaming_state);
-  //    if(current_streaming_state==1) {
-  //        printf("stop_stream_l2 inside\n");
-  //        stop_stream();
-  //        current_streaming_state = 0;
-  //        writeState(motocam_streaming_state_file, &current_streaming_state);
-  //    }
+
   return 0;
 }
 
 int8_t get_stream_state_l2() {
   printf("get_stream_state_l2\n");
-  // return current_streaming_state;
   return get_stream_state();
 }
 
