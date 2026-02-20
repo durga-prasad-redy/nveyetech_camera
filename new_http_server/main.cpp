@@ -1,11 +1,12 @@
-#include "include/log.h"
-#include "include/motocam_api_l2.h"
+#include "motocam_api_l2.h"
+#include "log.h"
 #include "net.h"
 #include <atomic>
 #include <chrono>
 #include <csignal>
 #include <iostream>
 #include <thread>
+
 
 // Use atomic for thread-safety and signal handling
 // Keeping it static to the file (internal linkage)

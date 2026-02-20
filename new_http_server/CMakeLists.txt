@@ -55,6 +55,8 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/../motocam_api_libs/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../motocam_api_libs/include/l1
         ${CMAKE_CURRENT_SOURCE_DIR}/../motocam_api_libs/include/l2
+        ${CMAKE_CURRENT_SOURCE_DIR}/../motocam_fw_libs/include
+
         ${CMAKE_CURRENT_SOURCE_DIR}/../motocam_fw_libs/include/fw
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../cryptographic/install_temp_open_src_3rd/include

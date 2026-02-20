@@ -60,7 +60,9 @@ void WebServer::add_client(struct mg_connection *conn) {
 
 void WebServer::remove_client(const struct mg_connection *conn) {
   std::lock_guard<std::mutex> lock(clients_mutex);
-  clients.erase((struct mg_connection *)conn); // cast const away
+  // clients.erase((struct mg_connection *)conn); // cast const away
+clients.erase(const_cast<struct mg_connection*>(conn));
+
 }
 
 void WebServer::broadcast_message(const char *json_msg) {
