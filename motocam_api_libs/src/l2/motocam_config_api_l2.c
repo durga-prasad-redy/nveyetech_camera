@@ -12,53 +12,6 @@
 #include "motocam_api_l2.h"
 #include "motocam_config_api_l2.h"
 
-const char *motocam_default_config_file =
-    "/mnt/flash/vienna/motocam/motocam_default_config";
-const char *motocam_current_config_file =
-    "/mnt/flash/vienna/motocam/motocam_current_config";
-
-int8_t writeConfigFile(const char *fileName, struct MotocamConfig *config);
-
-int8_t set_config_defaulttofactory_l2() {
-  printf("config_defaulttofactory_l2\n");
-  int8_t ret = writeConfigFile(motocam_default_config_file, &factory_config);
-  if (ret == -1) {
-    return -1;
-  }
-  default_config = factory_config;
-  return 0;
-}
-
-int8_t set_config_defaulttocurrent_l2() {
-  printf("config_defaulttocurrent_l2\n");
-  int8_t ret = writeConfigFile(motocam_default_config_file, &current_config);
-  if (ret == -1) {
-    return -1;
-  }
-  default_config = current_config;
-  return 0;
-}
-
-int8_t set_config_currenttofactory_l2() {
-  printf("config_currenttofactory_l2\n");
-  int8_t ret = writeConfigFile(motocam_current_config_file, &factory_config);
-  if (ret == -1) {
-    return -1;
-  }
-  current_config = factory_config;
-  return 0;
-}
-
-int8_t set_config_currenttodefault_l2() {
-  printf("config_currenttodefault_l2\n");
-  int8_t ret = writeConfigFile(motocam_current_config_file, &default_config);
-  if (ret == -1) {
-    return -1;
-  }
-  current_config = default_config;
-  return 0;
-}
-
 int8_t get_config_factory_l2(uint8_t **config, uint8_t *length) {
   printf("get_config_factory_l2\n");
   *length = 14;
@@ -248,22 +201,5 @@ int8_t get_config_streaming_config_l2(uint8_t **config, uint8_t *length) {
            resolution, fps, (*config)[i * 4 + 2], encoder);
   }
 
-  return 0;
-}
-
-int8_t writeConfigFile(const char *fileName, struct MotocamConfig *config) {
-  printf("writeToFile %s\n", fileName);
-  FILE *f = fopen(fileName, "wb");
-  if (f == NULL) {
-    printf("open file error %s\n", fileName);
-    return -1;
-  }
-  size_t write_bytes = fwrite(config, sizeof(struct MotocamConfig), 1, f);
-  if (write_bytes <= 0) {
-    printf("error writing bytes to file %s\n", fileName);
-    fclose(f);
-    return -1;
-  }
-  fclose(f);
   return 0;
 }

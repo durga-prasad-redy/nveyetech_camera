@@ -15,8 +15,7 @@ int8_t validate_req_bytes_crc(const uint8_t *req_bytes,
                               const uint8_t req_bytes_size) {
   printf("validate_req_bytes\n");
   uint64_t sum_req_bytes = 0;
-  int i;
-  for (i = 0; i < req_bytes_size; i++) {
+  for (int i = 0; i < req_bytes_size; i++) {
     sum_req_bytes += req_bytes[i];
   }
   uint8_t lower_8_bits = (uint8_t)sum_req_bytes;
@@ -28,8 +27,7 @@ int8_t validate_req_bytes_crc(const uint8_t *req_bytes,
 uint8_t calc_crc(const uint8_t *res_bytes, const uint8_t res_bytes_size) {
   printf("calc_crc\n");
   uint64_t sum_res_bytes_except_crc = 0;
-  int i;
-  for (i = 0; i < res_bytes_size - 1; i++) {
+  for (int i = 0; i < res_bytes_size - 1; i++) {
     sum_res_bytes_except_crc += res_bytes[i];
   }
   return get2sComplement(sum_res_bytes_except_crc);

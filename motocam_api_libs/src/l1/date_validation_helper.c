@@ -67,7 +67,7 @@ int validate_date_string(const char *date_str) {
 
   time_t t = time(NULL);
   struct tm tm_buf;
-  struct tm *now = localtime_r(&t, &tm_buf);
+  const struct tm *now = localtime_r(&t, &tm_buf);
   if (!now)
     return -1;
   int current_year = now->tm_year + 1900;

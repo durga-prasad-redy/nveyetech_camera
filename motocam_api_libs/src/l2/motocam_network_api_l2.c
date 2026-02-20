@@ -126,7 +126,6 @@ int8_t set_ethernet_ip_address_l2(const uint8_t ethernet_len,
   if (ret < 0)
     return ret;
 
-  // current_wifi_state = 1;
   return 0;
 }
 

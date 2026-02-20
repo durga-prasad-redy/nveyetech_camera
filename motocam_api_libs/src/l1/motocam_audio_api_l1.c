@@ -26,14 +26,15 @@ int8_t set_audio_command(const uint8_t sub_command, const uint8_t data_length,
 int8_t get_audio_command(const uint8_t sub_command, const uint8_t data_length,
                          const uint8_t *data, uint8_t **res_data_bytes,
                          uint8_t *res_data_bytes_size) {
-  switch (sub_command) {
-  case MIC:
+
+  if (sub_command == MIC) {
     return get_audio_mic_l1(data_length, data, res_data_bytes,
                             res_data_bytes_size);
-  default:
-    printf("invalid sub command\n");
-    return -4;
   }
+
+  // Fallback for any unhandled sub_command
+  printf("invalid sub command\n");
+  return -4;
 }
 
 int8_t get_audio_mic_l1(const uint8_t data_length, const uint8_t *data,
