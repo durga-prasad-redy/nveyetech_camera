@@ -1,9 +1,6 @@
-//
-// Created by sr on 2/6/25.
-//
-
 #ifndef TEST_GEN_MOTOCAM_HW_API_H
 #define TEST_GEN_MOTOCAM_HW_API_H
+
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -25,13 +22,14 @@ typedef struct MotocamConfig {
   uint8_t gyroreader;
   uint8_t misc;
   uint8_t mic;
-
 } MotocamConfig;
 
+// Function to initialize configs to zero or default values
 int8_t init_motocam_configs();
-struct MotocamConfig factory_config;
-struct MotocamConfig default_config;
-struct MotocamConfig current_config;
+
+extern struct MotocamConfig factory_config;
+extern struct MotocamConfig default_config;
+extern struct MotocamConfig current_config;
 
 #ifdef __cplusplus
 }

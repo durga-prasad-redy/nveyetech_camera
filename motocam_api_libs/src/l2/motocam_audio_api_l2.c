@@ -6,12 +6,6 @@
 
 int8_t get_audio_mic_l2(uint8_t **mic, uint8_t *length) {
   printf("get_mic_l2\n");
-  enum ON_OFF mic_e;
-  if (get_mic(&mic_e) < 0) {
-    return -1;
-  }
-  *length = 1;
-  *mic = (uint8_t *)malloc(*length);
-  (*mic)[0] = mic_e;
+  printf("get_audio_mic feature not implemented yet\n");
   return 0;
 }

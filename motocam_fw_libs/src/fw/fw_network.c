@@ -208,6 +208,7 @@ int8_t get_onvif_interface_state(uint8_t *interface) {
     return -1;
   }
 
+
   /* trim trailing \n / \r (handle \r\n too) */
   size_t len = strlen(output);
   while (len > 0 && (output[len - 1] == '\n' || output[len - 1] == '\r')) {
@@ -227,7 +228,7 @@ int8_t get_onvif_interface_state(uint8_t *interface) {
     pthread_mutex_unlock(&lock);
     return -1;
   }
-
+  printf("get_onvif_interface_state %d\n", interface[0]);
   pthread_mutex_unlock(&lock);
   return 0;
 }

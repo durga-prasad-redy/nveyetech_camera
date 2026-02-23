@@ -290,7 +290,6 @@ int8_t set_WifiClient_l2(const uint8_t wifiClient_len,
   uint8_t subnetmask_len = wifiClient[subnetmask_len_idx];
   uint8_t subnetmask_idx = (uint8_t)(subnetmask_len_idx + 1);
   const uint8_t *subnetmask = &wifiClient[subnetmask_idx];
-  printf("set_WifiClient_l2 5 %p,%d\n", (void *)subnetmask, subnetmask_len);
   if (wifiClient_len < subnetmask_idx + subnetmask_len) {
     return -1;
   }
@@ -414,9 +413,12 @@ int8_t get_onvif_interface_state_l2(uint8_t **interface, uint8_t *length) {
   if (ret < 0) {
     return ret;
   }
-  printf("interface value=%d", onvif_interface);
-
+      printf("interface value=%d", onvif_interface);
   *length = 1;
-  **interface = onvif_interface;
+  *interface = (uint8_t *)malloc(*length);
+  if (*interface == NULL) {
+    return -1;
+  }
+  (*interface)[0] = onvif_interface;
   return 0;
 }
