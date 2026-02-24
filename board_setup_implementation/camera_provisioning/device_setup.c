@@ -52,6 +52,7 @@ void capture_defaults()
 	if (strcmp(e->d_name, "user_dob") == 0) continue;
 
 	char path[256];
+    char val[512] = {0};
 	snprintf(path, sizeof(path), "%s/%s", CONFIG_DIR, e->d_name);
 
 	FILE *f = fopen(path, "r");
