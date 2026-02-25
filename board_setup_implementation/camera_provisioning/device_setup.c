@@ -23,6 +23,7 @@
 
 #define SERIAL_FILE      "/mnt/flash/vienna/m5s_config/serial_number"
 #define MFG_FILE         "/mnt/flash/vienna/m5s_config/mfg_date"
+#define MAC_FILE         "/mnt/flash/vienna/m5s_config/ethaddr"
 #define HOTSPOT_FILE     "/mnt/flash/vienna/m5s_config/hotspot_ssid"
 #define DEVICE_SETUP_BIN "/mnt/flash/vienna/firmware/board_setup/device_setup"
 
@@ -271,6 +272,10 @@ int main(int argc, char *argv[]) {
     printf("Successfully set ethaddr to %s\n", mac);
 
     /* Step 4: Write serial number and mfg date */
+    if (write_to_file(MAC_FILE, mac) != 0) {
+        fprintf(stderr, "Failed to write mac_addr.\n");
+        return 1;
+    }
     if (write_to_file(SERIAL_FILE, serial) != 0) {
         fprintf(stderr, "Failed to write serial_number.\n");
         return 1;
@@ -279,7 +284,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Failed to write mfg_date.\n");
         return 1;
     }
-    printf("Serial and Mfg date written successfully.\n");
+    printf("MAC, Serial and Mfg date written successfully.\n");
 
     /* Step 5: Update hotspot_ssid */
     if (update_hotspot_ssid(mac) != 0) {
