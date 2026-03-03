@@ -23,7 +23,9 @@
 #define ISP_HIGH_TEMP_THRESHOLD 80
 #define ISP_LOW_TEMP_THRESHOLD 70
 
+#ifndef GAIN_FILE
 #define GAIN_FILE "/mnt/flash/vienna/tmp/asc_ae_log.txt"
+#endif
 
 #define DAY_MODE_MISC 2
 #define LL_MODE_MISC 8
@@ -85,7 +87,7 @@ static void load_mode_thresholds_from_config(void)
 
     for (size_t i = 0; i < sizeof(cfg)/sizeof(cfg[0]); i++) {
         snprintf(path, sizeof(path),
-                 "/mnt/flash/vienna/m5s_config/%s", cfg[i].file);
+                 M5S_CONFIG_DIR "/%s", cfg[i].file);
 
         if (read_float_from_file(path, &val) == 0) {
             LOG_INFO("AutoDN cfg: %s=%.2f (override)\n",

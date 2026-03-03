@@ -35,8 +35,10 @@ int exec_cmd(const char *cmd, char *out, size_t out_size)
         strncat(out, buffer, out_size - len - 1);
     }
 
-    pclose(pipe);
-    return 0;
+    int status = pclose(pipe);
+    if (WIFEXITED(status))
+        return WEXITSTATUS(status);
+    return status;
 }
 
 int exec_return(const char *cmd)
@@ -62,26 +64,26 @@ int exec_return(const char *cmd)
     }
 
     status = pclose(pipe);
-
-    if ((status != -1) && (WIFEXITED(status)))
-    {
-        exitCode = WEXITSTATUS(status);
-    }
-
-    return exitCode;
+    if (WIFEXITED(status))
+        return WEXITSTATUS(status);
+    return status;
 }
 
 int is_running(const char *process_name)
 {
     DIR *proc;
     struct dirent *ent;
-    char path[256];
+    char path[512];
     char cmdline[512];
 
     if (!process_name || *process_name == '\0')
         return 0;
 
-    proc = opendir("/proc");
+#ifndef PROC_PATH
+#define PROC_PATH "/proc"
+#endif
+
+    proc = opendir(PROC_PATH);
     if (!proc)
         return 0;
 
@@ -90,7 +92,7 @@ int is_running(const char *process_name)
         if (!isdigit((unsigned char)ent->d_name[0]))
             continue;
 
-        snprintf(path, sizeof(path), "/proc/%s/cmdline", ent->d_name);
+        snprintf(path, sizeof(path), PROC_PATH "/%s/cmdline", ent->d_name);
 
         FILE *fp = fopen(path, "r");
         if (!fp)
@@ -164,8 +166,8 @@ int8_t get_ir_tmp_ctl(void)
 
 int8_t set_uboot_env(const char *key, uint8_t value)
 {
-  char tmp_path[256];
-  char file_path[256];
+  char tmp_path[512];
+  char file_path[512];
   snprintf(file_path, sizeof(file_path), "%s/%s", M5S_CONFIG_DIR, key);
   snprintf(tmp_path, sizeof(tmp_path), "%s/%s.tmp", M5S_CONFIG_DIR, key);
 
@@ -190,8 +192,8 @@ int8_t set_uboot_env(const char *key, uint8_t value)
 
 int8_t set_uboot_env_chars(const char *key, const char *value)
 {
-  char tmp_path[256];
-  char file_path[256];
+  char tmp_path[512];
+  char file_path[512];
   snprintf(file_path, sizeof(file_path), "%s/%s", M5S_CONFIG_DIR, key);
   snprintf(tmp_path, sizeof(tmp_path), "%s/%s.tmp", M5S_CONFIG_DIR, key);
 

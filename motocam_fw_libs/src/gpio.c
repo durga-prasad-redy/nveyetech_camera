@@ -12,16 +12,34 @@
 #include <time.h>
 #include <unistd.h>
 
+#ifndef GPIO_EXPORT_PATH
 #define GPIO_EXPORT_PATH "/sys/class/gpio/export"
+#endif
+#ifndef GPIO_DIRECTION_PATH
 #define GPIO_DIRECTION_PATH "/sys/class/gpio/gpio%d/direction"
+#endif
+#ifndef GPIO_VALUE_PATH
 #define GPIO_VALUE_PATH "/sys/class/gpio/gpio%d/value"
+#endif
 
+#ifndef OTA_WATCH_DIR
 #define OTA_WATCH_DIR "/mnt/flash/vienna/firmware/ota/"
+#endif
+#ifndef OTA_STATUS_FILE
 #define OTA_STATUS_FILE "/mnt/flash/vienna/m5s_config/ota_status"
+#endif
+#ifndef WIFI_STATE_PATH
 #define WIFI_STATE_PATH "/sys/class/net/wlan0/operstate"
+#endif
+#ifndef IRCUT_FILTER
 #define IRCUT_FILTER "ircut_filter"
+#endif
+#ifndef IRCUT_STATE_FILE
 #define IRCUT_STATE_FILE "/mnt/flash/vienna/m5s_config/ircut_filter"
+#endif
+#ifndef WIFI_STATE_FILE
 #define WIFI_STATE_FILE "/mnt/flash/vienna/m5s_config/wifi_state"
+#endif
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
@@ -102,7 +120,7 @@ static void export_gpio(int gpio_pin) {
 
   if (export_file == NULL) {
     perror("Failed to export GPIO pin");
-    exit(EXIT_FAILURE);
+    return;
   }
   fprintf(export_file, "%d", gpio_pin);
   fclose(export_file);
@@ -116,7 +134,7 @@ static void set_gpio_direction(int gpio_pin, const char *direction) {
 
   if (direction_file == NULL) {
     perror("Failed to set GPIO direction");
-    exit(EXIT_FAILURE);
+    return;
   }
   fprintf(direction_file, "%s", direction);
   fclose(direction_file);
@@ -129,13 +147,13 @@ static void set_gpio_value(int gpio_pin, int value) {
 
   if (value_file == NULL) {
     perror("Failed to set GPIO value");
-    exit(EXIT_FAILURE);
+    return;
   }
   fprintf(value_file, "%d", value);
   fclose(value_file);
 }
 
-static uint8_t get_gpio_value(int gpio_pin) {
+uint8_t get_gpio_value(int gpio_pin) {
   char value_path[64];
   snprintf(value_path, sizeof(value_path), GPIO_VALUE_PATH, gpio_pin);
 
@@ -294,7 +312,7 @@ static void decide_and_run_led(const system_state_t *st) {
     fw_sm_yield();
 }
 
-static int read_wifi_state(void) {
+int read_wifi_state(void) {
   FILE *fp;
   int state = 0;
 

@@ -6,15 +6,23 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+#ifndef CONFIG_DIR
 #define CONFIG_DIR "/mnt/flash/vienna/m5s_config"
+#endif
+#ifndef SNAPSHOT_FILE
 #define SNAPSHOT_FILE "/mnt/flash/vienna/default_snapshot.txt"
+#endif
 
+#ifndef FACTORY_BACKUP_DIR
 #define FACTORY_BACKUP_DIR "/mnt/flash/vienna/factory_backup"
+#endif
 #define FACTORY_VIENNA_BACKUP FACTORY_BACKUP_DIR "/vienna"
 #define FACTORY_ETC_BACKUP FACTORY_BACKUP_DIR "/etc"
 
+#ifndef FACTORY_RESET_STATUS_FILE
 #define FACTORY_RESET_STATUS_FILE \
     "/mnt/flash/vienna/m5s_config/factory_reset_status"
+#endif
 #define STATUS_IDLE        "idle"
 #define STATUS_IN_PROGRESS "in-progress"
 #define STATUS_FAIL        "fail"

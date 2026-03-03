@@ -17,18 +17,38 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+#ifndef FACTORY_BACKUP_DIR
 #define FACTORY_BACKUP_DIR "/mnt/flash/vienna/factory_backup"
+#endif
+#ifndef SRC_ROOT
 #define SRC_ROOT "/mnt/flash/vienna"
+#endif
+#ifndef SRC_ETC
 #define SRC_ETC "/mnt/flash/etc"
+#endif
 
+#ifndef SERIAL_FILE
 #define SERIAL_FILE      "/mnt/flash/vienna/m5s_config/serial_number"
+#endif
+#ifndef MFG_FILE
 #define MFG_FILE         "/mnt/flash/vienna/m5s_config/mfg_date"
+#endif
+#ifndef MAC_FILE
 #define MAC_FILE         "/mnt/flash/vienna/m5s_config/ethaddr"
+#endif
+#ifndef HOTSPOT_FILE
 #define HOTSPOT_FILE     "/mnt/flash/vienna/m5s_config/hotspot_ssid"
+#endif
+#ifndef DEVICE_SETUP_BIN
 #define DEVICE_SETUP_BIN "/mnt/flash/vienna/firmware/board_setup/device_setup"
+#endif
 
+#ifndef CONFIG_DIR
 #define CONFIG_DIR "/mnt/flash/vienna/m5s_config"
+#endif
+#ifndef SNAPSHOT_FILE
 #define SNAPSHOT_FILE "/mnt/flash/vienna/default_snapshot.txt"
+#endif
 
 void capture_defaults()
 {
@@ -52,7 +72,7 @@ void capture_defaults()
 	if (strcmp(e->d_name, "..") == 0) continue;
 	if (strcmp(e->d_name, "user_dob") == 0) continue;
 
-	char path[256];
+	char path[512];
     char val[512] = {0};
 	snprintf(path, sizeof(path), "%s/%s", CONFIG_DIR, e->d_name);
 

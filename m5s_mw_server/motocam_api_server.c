@@ -8,8 +8,12 @@
 #include "timer.h"
 #include "log.h"
 
+#ifndef CONFIG_PATH
 #define CONFIG_PATH "/mnt/flash/vienna/config"
+#endif
+#ifndef GYRO_PATH
 #define GYRO_PATH "/sys/bus/iio/devices/iio:device1"
+#endif
 
 static float read_calibration_value(const char *filepath)
 {
@@ -37,7 +41,7 @@ int update_calibration_value()
     float z_cali;
     FILE *outfile;
 
-    outfile = fopen("/sys/bus/iio/devices/iio:device1/misc_self_test", "r");
+    outfile = fopen(GYRO_PATH "/misc_self_test", "r");
     if (outfile == NULL) {
         LOG_ERROR("Failed to open file");
         return 1;

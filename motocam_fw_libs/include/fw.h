@@ -17,22 +17,36 @@
 #include <ctype.h>
 #include <pthread.h>
 
+#ifndef CONFIG_PATH
 #define CONFIG_PATH "/mnt/flash/vienna/config"
+#endif
+#ifndef RES_PATH
 #define RES_PATH    "/mnt/flash/vienna"
+#endif
 
 static const char BIN_RES_PATH[] = "/mnt/flash/vienna/bin";
 
+#ifndef PWM5_FILE
 static const char PWM5_FILE[] = "/dev/pwmdev-5";
+#endif
+#ifndef PWM4_FILE
 static const char PWM4_FILE[] = "/dev/pwmdev-4";
+#endif
+#ifndef PWM7_FILE
 static const char PWM7_FILE[] = "/dev/pwmdev-7";
+#endif
 
+#ifndef LOCK_FILE
 static const char LOCK_FILE[] = "/tmp/pwmdev.lock";
+#endif
 static const char DEVICE_SETUP_FILE[] =
     "/mnt/flash/vienna/firmware/board_setup/device_setup";
 
 static const char IR[] = "ir_led_brightness";
 
+#ifndef M5S_CONFIG_DIR
 #define M5S_CONFIG_DIR "/mnt/flash/vienna/m5s_config"
+#endif
 
 #define GET_MISC "cat " M5S_CONFIG_DIR "/misc"
 
