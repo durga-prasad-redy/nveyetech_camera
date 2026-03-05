@@ -369,12 +369,12 @@ TEST_F(MotocamFwLibsTest, LedWatcherLogicTest) {
 
     // WiFi OK, but no client on AP (hits PATTERN_WIFI_AP_NO_CLIENT)
     set_wifi_up(true);
-    set_mock_popen_output("inet addr:192.168.1.1");
+    // Combine both strings so check_wifi passes and ap_has_connected_sta continues processing
+    set_mock_popen_output("inet addr:192.168.1.1\nNOT_A_MAC\n");
     // read_wifi_state=1 (AP)
     FILE* f_ws2 = fopen("/tmp/test_fw/wifi_state", "w");
     if(f_ws2) { fprintf(f_ws2, "1"); fclose(f_ws2); }
     // ap_has_connected_sta=0
-    set_mock_popen_output("NOT_A_MAC"); 
     sleep(1);
 
     // WiFi OK, client connected (hits normal green LED / IR magenta)
@@ -538,4 +538,88 @@ TEST_F(MotocamFwLibsTest, ReadWifiState_Fail_Empty) {
     fclose(f);
     read_wifi_state();
     SUCCEED();
+}
+
+TEST_F(MotocamFwLibsTest, ExecCmd_BufferFull_MultiLine) {
+    set_mock_popen_output("line 1\nline 2\nline 3\nline 4\n");
+    char out[15] = {0};
+    exec_cmd("cmd", out, sizeof(out));
+}
+
+TEST_F(MotocamFwLibsTest, ExecReturn_StatusFalse2) {
+    set_mock_popen_return(1); 
+    exec_return("echo test");
+}
+
+TEST_F(MotocamFwLibsTest, IsRunning_NullOrEmpty) {
+    EXPECT_EQ(is_running(NULL), 0);
+    EXPECT_EQ(is_running(""), 0);
+}
+
+TEST_F(MotocamFwLibsTest, PwmAndLock_OpenFail) {
+    // Fail the lock_fd = open(...)
+    system("mkdir -p /tmp/test_fw/fw_lock");
+    set_haptic_motor(50, 100);
+    debug_pwm4_set(50);
+    debug_pwm5_set(50);
+    outdu_update_brightness(50);
+    system("rm -rf /tmp/test_fw/fw_lock");
+}
+
+TEST_F(MotocamFwLibsTest, Pwm7_WriteFail) {
+    system("mkdir -p /tmp/test_fw/pwmdev-7");
+    set_haptic_motor(50, 100);
+    system("rm -rf /tmp/test_fw/pwmdev-7");
+}
+
+TEST_F(MotocamFwLibsTest, KillAllProcesses_AllRunning) {
+    // Make them all return 1
+    const char *procs[] = {
+        "stream_restart", "portable_rtc", "signaling_serve", 
+        "streamer", "rtsp_server", "multionvifserve", "camera_monitor"
+    };
+    for(int i=0; i<7; i++) {
+        char path[128];
+        snprintf(path, sizeof(path), "/tmp/test_fw/proc/%d", i+10);
+        system((std::string("mkdir -p ") + path).c_str());
+        snprintf(path, sizeof(path), "/tmp/test_fw/proc/%d/cmdline", i+10);
+        FILE *f = fopen(path, "w");
+        if(f) { fprintf(f, "%s", procs[i]); fclose(f); }
+    }
+    
+    set_mock_system_return(0);
+    kill_all_processes();
+    
+    for(int i=0; i<7; i++) {
+        char cmd[128];
+        snprintf(cmd, sizeof(cmd), "rm -rf /tmp/test_fw/proc/%d", i+10);
+        system(cmd);
+    }
+}
+
+TEST_F(MotocamFwLibsTest, GpioRead_Failures) {
+    // Test get_gpio_value missing
+    EXPECT_EQ(get_gpio_value(100), 2);
+}
+
+// Removed malformed test
+
+
+TEST_F(MotocamFwLibsTest, ReadOtaStatus_Fail) {
+    // Ensure ota_status is read when it doesn't exist to hit `return -1;` for fgets fail.
+    FILE *f = fopen("/tmp/test_fw/ota_status", "w");
+    // empty file
+    fclose(f);
+    // start_led_watcher will eventually call check_ota which calls read_ota_status
+}
+
+TEST_F(MotocamFwLibsTest, WifiNoIp) {
+    auto set_wifi_up = [](bool up) {
+        FILE* f = fopen("/tmp/test_fw/wifi_operstate", "w");
+        if(f) { fprintf(f, "%s\n", up ? "up" : "down"); fclose(f); }
+    };
+    set_wifi_up(true);
+    set_mock_popen_output("no ip string\n");
+    // led watcher picks this up, makes check_wifi fail early
+    sleep(1);
 }

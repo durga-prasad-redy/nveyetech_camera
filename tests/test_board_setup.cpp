@@ -234,3 +234,59 @@ TEST_F(BoardSetupTest, CaptureFactoryBackup_Fail) {
     SUCCEED();
     set_mock_system_return(0);
 }
+
+TEST_F(BoardSetupTest, Main_WriteMacFail) {
+    char arg0[] = "device_setup";
+    char arg1[] = "02:1A:2B:3C:4D:5E"; char arg2[] = "SN1"; char arg3[] = "2023-10-10"; char arg4[] = "100";
+    char* argv[] = {arg0, arg1, arg2, arg3, arg4};
+    unlink("/tmp/test_board/ethaddr");
+    mkdir("/tmp/test_board/ethaddr", 0777); 
+    EXPECT_EQ(device_setup_main(5, argv), 1);
+    rmdir("/tmp/test_board/ethaddr");
+}
+
+TEST_F(BoardSetupTest, Main_WriteSerialFail) {
+    char arg0[] = "device_setup";
+    char arg1[] = "02:1A:2B:3C:4D:5E"; char arg2[] = "SN1"; char arg3[] = "2023-10-10"; char arg4[] = "100";
+    char* argv[] = {arg0, arg1, arg2, arg3, arg4};
+    FILE* f = fopen(HOTSPOT_FILE, "w"); fprintf(f, "NveyetechCamera\n"); fclose(f);
+    unlink("/tmp/test_board/serial_number");
+    mkdir("/tmp/test_board/serial_number", 0777);
+    EXPECT_EQ(device_setup_main(5, argv), 1);
+    rmdir("/tmp/test_board/serial_number");
+}
+
+TEST_F(BoardSetupTest, Main_WriteMfgFail) {
+    char arg0[] = "device_setup";
+    char arg1[] = "02:1A:2B:3C:4D:5E"; char arg2[] = "SN1"; char arg3[] = "2023-10-10"; char arg4[] = "100";
+    char* argv[] = {arg0, arg1, arg2, arg3, arg4};
+    FILE* f = fopen(HOTSPOT_FILE, "w"); fprintf(f, "NveyetechCamera\n"); fclose(f);
+    unlink("/tmp/test_board/mfg_date");
+    mkdir("/tmp/test_board/mfg_date", 0777);
+    EXPECT_EQ(device_setup_main(5, argv), 1);
+    rmdir("/tmp/test_board/mfg_date");
+}
+
+TEST_F(BoardSetupTest, Main_UpdateHotspotFail) {
+    char arg0[] = "device_setup";
+    char arg1[] = "02:1A:2B:3C:4D:5E"; char arg2[] = "SN1"; char arg3[] = "2023-10-10"; char arg4[] = "100";
+    char* argv[] = {arg0, arg1, arg2, arg3, arg4};
+    unlink(HOTSPOT_FILE);
+    EXPECT_EQ(device_setup_main(5, argv), 1);
+}
+
+TEST_F(BoardSetupTest, CaptureDefaults_UserDobAndNoReadPerm) {
+    system("mkdir -p /tmp/test_board");
+    FILE* f1 = fopen("/tmp/test_board/user_dob", "w"); fclose(f1);
+    
+    // Create an empty file for testing empty string handling
+    FILE* f2 = fopen("/tmp/test_board/empty_file", "w"); fclose(f2);
+    
+    // Create directory to fail fopen
+    mkdir("/tmp/test_board/dir_test", 0777);
+    
+    capture_defaults();
+    
+    rmdir("/tmp/test_board/dir_test");
+}
+
