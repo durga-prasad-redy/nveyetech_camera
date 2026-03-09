@@ -16,6 +16,7 @@ int8_t set_image_tilt_l2(const uint8_t tilt);
 int8_t set_image_wdr_l2(const uint8_t wdr);
 int8_t set_image_eis_l2(const uint8_t eis);
 int8_t set_image_misc_l2(const uint8_t misc);
+int8_t set_image_video_frequency_l2(const uint8_t video_frequency);
 
 int8_t get_image_zoom_l2(uint8_t **zoom, uint8_t *length);
 int8_t get_image_rotation_l2(uint8_t **rotation, uint8_t *length);
@@ -29,3 +30,4 @@ int8_t get_eis_l2(uint8_t **mirror, uint8_t *length);
 int8_t get_image_mirror_l2(uint8_t **mirror, uint8_t *length);
 int8_t get_image_flip_l2(uint8_t **flip, uint8_t *length);
 int8_t get_image_tilt_l2(uint8_t **tilt, uint8_t *length);
+int8_t get_image_video_frequency_l2(uint8_t **video_frequency, uint8_t *length);

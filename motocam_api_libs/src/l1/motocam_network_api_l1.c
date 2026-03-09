@@ -25,6 +25,8 @@ int8_t set_network_command(const uint8_t sub_command, const uint8_t data_length,
     return set_onvif_interface_l1(data_length, data);
   case ETHERNET_DHCP:
     return set_ethernet_dhcp_config_l1();
+  case WifiCountryCode:
+    return set_wifi_country_code_l1(data_length, data);
   default:
     printf("invalid sub command\n");
     return -4;
@@ -96,6 +98,20 @@ int8_t set_onvif_interface_l1(const uint8_t data_length, const uint8_t *data) {
   return -5;
 }
 
+int8_t set_wifi_country_code_l1(const uint8_t data_length,
+                                const uint8_t *data) {
+  if (data_length >= 2 && data_length <= 3) {
+    int8_t ret = set_wifi_country_code_l2(data_length, data);
+    if (ret == 0) {
+      return 0;
+    }
+    printf("error in executing the command\n");
+    return ret;
+  }
+  printf("invalid data/data length\n");
+  return -5;
+}
+
 /*
  *
  * NETWORK GET COMMAND
@@ -120,6 +136,9 @@ int8_t get_network_command(const uint8_t sub_command, const uint8_t data_length,
   case Onvif:
     return get_onvif_interface_l1(data_length, data, res_data_bytes,
                                   res_data_bytes_size);
+  case WifiCountryCode:
+    return get_wifi_country_code_l1(data_length, data, res_data_bytes,
+                                    res_data_bytes_size);
   default:
     printf("invalid sub command\n");
     return -4;
@@ -132,6 +151,23 @@ int8_t get_network_WifiHotspot(const uint8_t data_length, const uint8_t *data,
   (void)data;
   if (data_length == 0) {
     int8_t ret = get_WifiHotspot_l2(res_data_bytes, res_data_bytes_size);
+    if (ret == 0) {
+      return 0;
+    }
+    printf("error in executing the command\n");
+    return -1;
+  }
+  printf("invalid data/data length\n");
+  return -5;
+}
+
+int8_t get_wifi_country_code_l1(const uint8_t data_length, const uint8_t *data,
+                                uint8_t **res_data_bytes,
+                                uint8_t *res_data_bytes_size) {
+  (void)data;
+  if (data_length == 0) {
+    int8_t ret =
+        get_wifi_country_code_l2(res_data_bytes, res_data_bytes_size);
     if (ret == 0) {
       return 0;
     }

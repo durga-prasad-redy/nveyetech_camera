@@ -159,6 +159,19 @@ int8_t set_image_misc_l2(const uint8_t misc) {
   return 0;
 }
 
+int8_t set_image_video_frequency_l2(const uint8_t video_frequency) {
+  printf("set_image_video_frequency_l2 %d\n", video_frequency);
+  if (video_frequency < F50 || video_frequency > F60) {
+    printf("Invalid video frequency: %d (valid: 1=F25, 2=F30, 3=F50, 4=F60)\n",
+           video_frequency);
+    return -1;
+  }
+  VideoFrequency freq = (VideoFrequency)video_frequency;
+  apply_video_frequency_change(&freq);
+  current_config.video_frequency = video_frequency;
+  return 0;
+}
+
 int8_t get_image_zoom_l2(uint8_t **zoom, uint8_t *length) {
   printf("get_image_zoom_l2\n");
   *length = 1;
@@ -269,5 +282,17 @@ int8_t get_image_tilt_l2(uint8_t **tilt, uint8_t *length) {
   *length = 1;
   *tilt = (uint8_t *)malloc(*length);
   (*tilt)[0] = current_config.tilt;
+  return 0;
+}
+int8_t get_image_video_frequency_l2(uint8_t **video_frequency,
+                                     uint8_t *length) {
+  printf("get_image_video_frequency_l2\n");
+  VideoFrequency freq;
+  if (get_video_frequency(&freq) < 0) {
+    return -1;
+  }
+  *length = 1;
+  *video_frequency = (uint8_t *)malloc(*length);
+  (*video_frequency)[0] = (uint8_t)freq;
   return 0;
 }

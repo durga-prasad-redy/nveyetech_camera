@@ -1,10 +1,11 @@
 #!/bin/bash
 set -e
 
-# Define directories
-PROJECT_ROOT="/home/sr/outdu/nveyetech_camera"
-BUILD_DIR="$PROJECT_ROOT/build_tests"
-COVERAGE_DIR="$PROJECT_ROOT/coverage_report"
+# Define directories (run from project root or any dir; script dir = project root)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="${PROJECT_ROOT:-$SCRIPT_DIR}"
+BUILD_DIR="${BUILD_DIR:-$PROJECT_ROOT/build_tests}"
+COVERAGE_DIR="${COVERAGE_DIR:-$PROJECT_ROOT/coverage_report}"
 
 # Threshold
 MIN_COVERAGE=85

@@ -16,7 +16,8 @@ enum NetworkSubCommands {
   WifiState,
   ETHERNET,
   Onvif,
-  ETHERNET_DHCP
+  ETHERNET_DHCP,
+  WifiCountryCode
 };
 enum ConfigSetSubCommands {
   DefaultToFactory = 9,
@@ -45,7 +46,8 @@ enum ImageSubCommands {
   GYROREADER,
   MISC,
   MID_IRBRIGHTNESS,
-  SIDE_IRBRIGHTNESS
+  SIDE_IRBRIGHTNESS,
+  VIDEO_FREQUENCY
 };
 enum AudioSubCommands { MIC = 1 };
 enum SystemGetSubCommands {

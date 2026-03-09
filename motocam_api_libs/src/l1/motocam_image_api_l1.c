@@ -44,6 +44,8 @@ int8_t set_image_command(const uint8_t sub_command, const uint8_t data_length,
     return set_image_mid_irbrightness_l1(data_length, data);
   case SIDE_IRBRIGHTNESS:
     return set_image_side_irbrightness_l1(data_length, data);
+  case VIDEO_FREQUENCY:
+    return set_image_video_frequency_l1(data_length, data);
   default:
     printf("invalid sub command\n");
     return -4;
@@ -210,6 +212,18 @@ int8_t set_image_eis_l1(const uint8_t data_length, const uint8_t *data) {
   return -5;
 }
 
+int8_t set_image_video_frequency_l1(const uint8_t data_length,
+                                    const uint8_t *data) {
+  if (data_length == 1) {
+    if (set_image_video_frequency_l2(data[0]) == 0) {
+      return 0;
+    }
+    printf("error in executing the command\n");
+    return -1;
+  }
+  printf("invalid data/data length\n");
+  return -5;
+}
 int8_t set_image_misc_l1(const uint8_t data_length, const uint8_t *data) {
   if (data_length == 1) {
     int8_t ret = set_image_misc_l2(data[0]);
@@ -272,6 +286,9 @@ int8_t get_image_command(const uint8_t sub_command, const uint8_t data_length,
   case EIS:
     return get_image_eis_l1(data_length, data, res_data_bytes,
                             res_data_bytes_size);
+  case VIDEO_FREQUENCY:
+    return get_image_video_frequency_l1(data_length, data, res_data_bytes,
+                                        res_data_bytes_size);
   case GYROREADER:
     return get_image_gyroreader_l1(data_length, data, res_data_bytes,
                                    res_data_bytes_size);
@@ -452,6 +469,23 @@ int8_t get_image_eis_l1(const uint8_t data_length, const uint8_t *data,
   (void)data;
   if (data_length == 0) {
     int8_t ret = get_eis_l2(res_data_bytes, res_data_bytes_size);
+    if (ret == 0) {
+      return 0;
+    }
+    printf("error in executing the command\n");
+    return -1;
+  }
+  printf("invalid data/data length\n");
+  return -5;
+}
+int8_t get_image_video_frequency_l1(const uint8_t data_length,
+                                    const uint8_t *data,
+                                    uint8_t **res_data_bytes,
+                                    uint8_t *res_data_bytes_size) {
+  (void)data;
+  if (data_length == 0) {
+    int8_t ret = get_image_video_frequency_l2(res_data_bytes,
+                                              res_data_bytes_size);
     if (ret == 0) {
       return 0;
     }

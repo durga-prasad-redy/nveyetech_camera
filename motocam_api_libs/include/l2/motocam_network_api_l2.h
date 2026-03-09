@@ -6,7 +6,7 @@ int8_t set_WifiHotspot_l2(const uint8_t wifiHotspot_len,
 int8_t set_ethernet_ip_address_l2(const uint8_t wifiHotspot_len,
                           const uint8_t *wifiHotspot);
 int8_t set_ethernet_dhcp_config_l2();
-                          
+
 uint8_t set_onvif_interface_l2(const uint8_t onvif_interface_len, const uint8_t *onvif_interface);
 int8_t get_ipaddress_subnetmask_l2(uint8_t **ipaddress_subnetmask,
                                    uint8_t *length);
@@ -18,4 +18,8 @@ int8_t get_wifi_state_l2(uint8_t **wifi_state,
                          uint8_t *length); // Hotspot=1, Client=2
 int8_t get_ethernet_l2(uint8_t **ethernet, uint8_t *length);
 int8_t get_onvif_interface_state_l2(uint8_t **interface,uint8_t *length);
+
+int8_t set_wifi_country_code_l2(const uint8_t country_code_len,
+                               const uint8_t *country_code);
+int8_t get_wifi_country_code_l2(uint8_t **country_code, uint8_t *length);
 

@@ -79,3 +79,32 @@ target_compile_definitions(test_motocam_fw_libs PRIVATE
     PROC_PATH=\"/tmp/test_fw/proc\"
 )
 add_test(NAME test_motocam_fw_libs COMMAND test_motocam_fw_libs)
+
+# --- 5. motocam_api_libs ---
+file(GLOB MOTOCAM_API_L1_SRCS "../motocam_api_libs/src/l1/motocam_*.c")
+file(GLOB MOTOCAM_API_L2_SRCS "../motocam_api_libs/src/l2/motocam_*.c")
+add_executable(test_motocam_api_libs
+  test_motocam_api_libs.cpp
+  ../motocam_api_libs/src/motocam_api_l1.c
+  ../motocam_api_libs/src/motocam_api_l2.c
+  ${MOTOCAM_API_L1_SRCS}
+  ${MOTOCAM_API_L2_SRCS}
+  mocks/mock_fw_api.c
+)
+target_include_directories(test_motocam_api_libs PRIVATE
+  ../motocam_api_libs/include
+  ../motocam_api_libs/include/l1
+  ../motocam_api_libs/include/l2
+  ../motocam_fw_libs/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/mocks
+)
+target_compile_options(test_motocam_api_libs PRIVATE
+  -include ${CMAKE_CURRENT_SOURCE_DIR}/mocks/mock_fw_extra.h
+)
+target_compile_definitions(test_motocam_api_libs PRIVATE
+  CONFIG_PATH=\"/tmp/test_api/config\"
+  M5S_CONFIG_DIR=\"/tmp/test_api/m5s_config\"
+  RES_PATH=\"/tmp/test_api\"
+)
+target_link_libraries(test_motocam_api_libs gtest gtest_main pthread)
+add_test(NAME test_motocam_api_libs COMMAND test_motocam_api_libs)

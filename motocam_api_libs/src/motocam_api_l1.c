@@ -67,7 +67,7 @@ int8_t do_processing(const uint8_t *req_bytes, const uint8_t req_bytes_size,
         calc_crc(*res_bytes, *res_bytes_size); // last byte CRC
   } else if (header == GET) {
     uint8_t res_data_bytes_size = 0;
-    uint8_t *res_data_bytes;
+    uint8_t *res_data_bytes = NULL;
     int8_t ret = get_command(command, sub_command, data_length, data,
                              &res_data_bytes, &res_data_bytes_size);
     if (ret == 0) {
@@ -98,7 +98,10 @@ int8_t do_processing(const uint8_t *req_bytes, const uint8_t req_bytes_size,
       (*res_bytes)[4] = 1;                              // failed
       (*res_bytes)[5] = (uint8_t)ret;                   // err
       (*res_bytes)[*res_bytes_size - 1] =
-          calc_crc(*res_bytes, *res_bytes_size); // last byte CRC
+      calc_crc(*res_bytes, *res_bytes_size); // last byte CRC
+      if(res_data_bytes != NULL) {
+        free(res_data_bytes);
+      }
     }
   } else {
     uint8_t res_data_bytes_size = 1;

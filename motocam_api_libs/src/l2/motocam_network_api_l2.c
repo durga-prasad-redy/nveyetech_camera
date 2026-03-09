@@ -422,3 +422,73 @@ int8_t get_onvif_interface_state_l2(uint8_t **interface, uint8_t *length) {
   (*interface)[0] = onvif_interface;
   return 0;
 }
+
+int8_t set_wifi_country_code_l2(const uint8_t country_code_len,
+                               const uint8_t *country_code) {
+  printf("set_wifi_country_code_l2 country_code_len=%d\n", country_code_len);
+
+  if (country_code == NULL || country_code_len < 2) {
+    return -1;
+  }
+
+  uint8_t code_len_idx = 0;
+  uint8_t code_len = country_code[code_len_idx];
+  uint8_t code_idx = (uint8_t)(code_len_idx + 1);
+
+  if (code_len == 0) {
+    return -5;
+  }
+
+  if (country_code_len < code_idx + code_len) {
+    return -1;
+  }
+
+  if (code_len != 2) {
+    /* Match firmware expectations of 2-character ISO country code */
+    return -5;
+  }
+
+  char code_str[3];
+  for (uint8_t i = 0; i < code_len; i++) {
+    code_str[i] = (char)country_code[code_idx + i];
+  }
+  code_str[code_len] = '\0';
+
+  int8_t ret = set_wifi_country_code(code_str);
+  printf("set_wifi_country_code_l2 code=%s ret=%d\n", code_str, ret);
+  return ret;
+}
+
+int8_t get_wifi_country_code_l2(uint8_t **country_code, uint8_t *length) {
+  printf("get_wifi_country_code_l2\n");
+
+  if (country_code == NULL || length == NULL) {
+    return -1;
+  }
+
+  char code[3] = {0};
+  int8_t ret = get_wifi_country_code(code);
+  if (ret < 0) {
+    return ret;
+  }
+
+  uint8_t code_len = (uint8_t)strlen(code);
+  if (code_len != 2) {
+    /* treat missing/invalid country code as error */
+    return -1;
+  }
+
+  *length = (uint8_t)(1 + code_len);
+  *country_code = (uint8_t *)malloc(*length);
+  if (*country_code == NULL) {
+    return -1;
+  }
+
+  uint8_t idx = 0;
+  (*country_code)[idx++] = code_len;
+  for (uint8_t i = 0; i < code_len; i++) {
+    (*country_code)[idx++] = (uint8_t)code[i];
+  }
+
+  return 0;
+}

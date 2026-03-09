@@ -203,9 +203,9 @@ Session creation, validation, and invalidation handled using `SessionManager`.
 
 #### Network Sub Commands:
 
-| Wifi Hotspot | Wifi Client | Wifi State | Ethernet | Onvif | Ethernet DHCP |
-| ------------ | ----------- | ---------- | -------- | ----- | ------------- |
-| 1            | 2           | 3          | 4        | 5     | 6             |
+| Wifi Hotspot | Wifi Client | Wifi State | Ethernet | Onvif | Ethernet DHCP | Wifi Country Code |
+| ------------ | ----------- | ---------- | -------- | ----- | ------------- | ----------------- |
+| 1            | 2           | 3          | 4        | 5     | 6             | 7                 |
 
 #### Config Set Sub Commands:
 
@@ -804,6 +804,61 @@ NB For the first access, default SSID, default encryption type & key, default IP
 | Ack    | Image   | EIS         | 1 byte      | Failed              | Error Code | 1 byte |
 | 3      | 4       | 11          | 2           | 1                   | -1 to -6   | 1 byte |
 
+### Set Video Frequency:
+
+| Header | Command | Sub-command      | Data Length | Data              | CRC    |
+| ------ | ------- | ---------------- | ----------- | ----------------- | ------ |
+| Set    | Image   | VIDEO_FREQUENCY  | 1 byte      | 50 Hz / 60 Hz     | 1 byte |
+| 1      | 4       | 49               | 1           | 1 = 50Hz, 2 = 60Hz | 1 byte |
+
+#### Set Video Frequency Success Ack:
+
+| Header | Command | Sub-command     | Data Length | Success/Failed flag | Data    | CRC    |
+| ------ | ------- | --------------- | ----------- | ------------------- | ------- | ------ |
+| Ack    | Image   | VIDEO_FREQUENCY | 1 byte      | Success             | Success | 1 byte |
+| 3      | 4       | 16              | 2           | 0                   | 0       | 1 byte |
+
+#### Set Video Frequency Error Ack:
+
+| Header | Command | Sub-command     | Data Length | Success/Failed flag | Data       | CRC    |
+| ------ | ------- | --------------- | ----------- | ------------------- | ---------- | ------ |
+| Ack    | Image   | VIDEO_FREQUENCY | 1 byte      | Failed              | Error Code | 1 byte |
+| 3      | 4       | 16              | 2           | 1                   | -1 to -6   | 1 byte |
+
+### Get Video Frequency Request:
+
+| Header | Command | Sub-command     | Data Length | Data | CRC    |
+| ------ | ------- | --------------- | ----------- | ---- | ------ |
+| Get    | Image   | VIDEO_FREQUENCY | 0 bytes     | -    | 1 byte |
+| 2      | 4       | 16              | 0           | -    | 1 byte |
+
+### Get Video Frequency Success Response
+
+#### Main Response Structure
+
+| Header   | Command | Sub-command     | Data Length | Success/Failed flag |
+| -------- | ------- | --------------- | ----------- | ------------------- |
+| Response | Image   | VIDEO_FREQUENCY | 1 byte      | Success (0)         |
+
+#### Data Parameters
+
+| Parameter        | Values          | Description                            |
+| ---------------- | -------------- | -------------------------------------- |
+| video_frequency  | 1 = 50Hz, 2 = 60Hz | Current video frequency configuration |
+
+##### Example Success Response
+
+| Header | Command | Sub-command     | Data Length | Success | video_frequency | CRC |
+| ------ | ------- | --------------- | ----------- | ------- | --------------- | --- |
+| 4      | 4       | 16              | 2           | 0       | 1 (50Hz) / 2 (60Hz) | 1 |
+
+#### Get Video Frequency Error Response:
+
+| Header   | Command | Sub-command     | Data Length | Success/Failed flag | Data       | CRC    |
+| -------- | ------- | --------------- | ----------- | ------------------- | ---------- | ------ |
+| Response | Image   | VIDEO_FREQUENCY | 1 byte      | Failed              | Error Code | 1 byte |
+| 4        | 4       | 16              | 2           | 1                   | -1 to -6   | 1 byte |
+
 Note: To get IR Brightness, Resolution, Ircutfilter, Mirror, Flip, WDR, EIS values use "Get Config Request" (with sub-command "Current")
 
 Note: Changing Resolution, EIS, and WDR command will change the encoder pipeline, we need to restart the streaming app to apply these changes.
@@ -1019,6 +1074,82 @@ Note: Changing Resolution, EIS, and WDR command will change the encoder pipeline
 | -------- | ------- | ----------- | ----------- | ------------------- | ---------- | ------ |
 | Response | Network | Wifi Client | 1 byte      | Failed              | Error Code | 1 byte |
 | 3        | 2       | 3           | 2           | 1                   | -1 to -6   | 1 byte |
+
+### Set Wifi Country Code
+
+#### Main Command Structure
+
+| Header | Command | Sub-command       | Data Length |
+| ------ | ------- | ----------------- | ----------- |
+| Set    | Network | Wifi Country Code | 3 bytes     |
+| 1      | 2       | 7                 | 3           |
+
+#### Data Parameters
+
+| Parameter        | Values / Format                     | Description                         |
+| ---------------- | ----------------------------------- | ----------------------------------- |
+| Country Code Len | Must be `2`                         | Length of the ISO 3166-1 code      |
+| Country Code     | 2 ASCII characters (e.g., `US`, `IN`) | Regulatory WiFi country (hostapd) |
+
+##### Example Command
+
+| Header | Command | Sub-command       | Data Length | Country Code Len | Country Code | CRC |
+| ------ | ------- | ----------------- | ----------- | ---------------- | ------------ | --- |
+| 1      | 2       | 7                 | 3           | 2                | `U` `S`      | 1   |
+
+###### Notes:
+- **Supported Codes**: Valid 2-letter ISO country codes only (validated in firmware).
+- **Invalid Input**: Returns error code `-5` for invalid or unsupported codes.
+- **CRC**: 1-byte checksum.
+
+#### Set Wifi Country Code Success Ack:
+
+| Header | Command | Sub-command       | Data Length | Success/Failed flag | Data    | CRC    |
+| ------ | ------- | ----------------- | ----------- | ------------------- | ------- | ------ |
+| Ack    | Network | Wifi Country Code | 1 byte      | Success             | Success | 1 byte |
+| 3      | 2       | 7                 | 2           | 0                   | 0       | 1 byte |
+
+#### Set Wifi Country Code Error Ack:
+
+| Header | Command | Sub-command       | Data Length | Success/Failed flag | Data       | CRC    |
+| ------ | ------- | ----------------- | ----------- | ------------------- | ---------- | ------ |
+| Ack    | Network | Wifi Country Code | 1 byte      | Failed              | Error Code | 1 byte |
+| 3      | 2       | 7                 | 2           | 1                   | -1 to -6   | 1 byte |
+
+### Get Wifi Country Code Request:
+
+| Header | Command | Sub-command       | Data Length | Data | CRC    |
+| ------ | ------- | ----------------- | ----------- | ---- | ------ |
+| Get    | Network | Wifi Country Code | 0 bytes     | -    | 1 byte |
+| 2      | 2       | 7                 | 0           | -    | 1 byte |
+
+### Get Wifi Country Code Success Response
+
+#### Response Structure
+
+| Header   | Command | Sub-command       | Data Length | Success Flag |
+| -------- | ------- | ----------------- | ----------- | ------------ |
+| Response | Network | Wifi Country Code | 1 byte      | 0 (Success)  |
+
+#### Response Data Parameters
+
+| Parameter        | Values / Format                     | Description                         |
+| ---------------- | ----------------------------------- | ----------------------------------- |
+| Country Code Len | `2`                                 | Length of the ISO 3166-1 code      |
+| Country Code     | 2 ASCII characters (e.g., `US`, `IN`) | Regulatory WiFi country (hostapd) |
+
+##### Example Success Response
+
+| Header | Command | Sub-command       | Data Length | Success | Country Code Len | Country Code | CRC |
+| ------ | ------- | ----------------- | ----------- | ------- | ---------------- | ------------ | --- |
+| 4      | 2       | 7                 | 3           | 0       | 2                | `U` `S`      | 1   |
+
+#### Get Wifi Country Code Error Response:
+
+| Header   | Command | Sub-command       | Data Length | Success/Failed flag | Data       | CRC    |
+| -------- | ------- | ----------------- | ----------- | ------------------- | ---------- | ------ |
+| Response | Network | Wifi Country Code | 1 byte      | Failed              | Error Code | 1 byte |
+| 4        | 2       | 7                 | 2           | 1                   | -1 to -6   | 1 byte |
 
 ### Get Wifi State Request:
 

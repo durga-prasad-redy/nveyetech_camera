@@ -22,6 +22,7 @@ typedef struct MotocamConfig {
   uint8_t gyroreader;
   uint8_t misc;
   uint8_t mic;
+  uint8_t video_frequency;
 } MotocamConfig;
 
 // Function to initialize configs to zero or default values
